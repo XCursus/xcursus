@@ -98,6 +98,7 @@ Historical JSON fixtures at schema 1.0.0 (`examples/core-three-scenes`, `example
 | 22 Oct 2026 | 0.4                                             | Linux CI ([run 39730492795](https://github.com/XCursus/xcursus/actions/runs/39730492795))                                                            |  233 | 120 | passed                        |
 | 26 Oct 2026 | `5ad6a89` (0.6)                                 | Linux CI, Chromium, Firefox 157.0, WebKit 27.2 ([run 40323855783](https://github.com/XCursus/xcursus/actions/runs/40323855783))                      |  458 | 246 | passed                        |
 | 1 Nov 2026  | XCursus rename (branch `chore/xcursus-rebrand`) | macOS 14.8.7 (Darwin 23.6.0, arm64), Node 24.22.0, pnpm 12.14.0; Chromium and Firefox with Playwright 1.64.1, WebKit with the macOS 14 runner 1.61.1 |  478 | 273 | passed, zero skipped or flaky |
+| 1 Nov 2026  | `6be7eab` (XCursus rename)                      | Linux CI, Chromium, Firefox 157.0, WebKit 27.2 ([run 41322884897](https://github.com/XCursus/xcursus/actions/runs/41322884897))                      |  478 | 273 | passed                        |
 
 Measurements from the 1 November 2026 run:
 
@@ -108,7 +109,7 @@ Measurements from the 1 November 2026 run:
 | Realistic consumer (content gallery from the archive) | 65 681 B JS and 9 100 B CSS initially; 170 038 B JS once the on-demand renderers load; 23 font files, 309 656 B, loaded only when used |
 | Package checks (`check:packages`)                     | 80 of 80                                                                                                                               |
 
-The rename run has not yet been executed on Linux CI: it happens when the branch is pushed.
+The bundle and package figures above come from the local run.
 
 ## Not verified and known limits
 
