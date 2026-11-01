@@ -31,7 +31,7 @@ function deck(): ProjectDocument {
 }
 async function openStudio(page: Page, document: ProjectDocument = deck()) {
   await page.goto(studioURL);
-  await expect(page.locator(".preview-player .sd-player")).toHaveCount(1);
+  await expect(page.locator(".preview-player .xc-player")).toHaveCount(1);
   await page.getByLabel("JSON project file").setInputFiles({
     name: "project.json",
     mimeType: "application/json",
@@ -263,10 +263,10 @@ test("messages with a wrong source, session, sequence or origin are ignored", as
   await openStudio(page);
   const { popup } = await startPresenter(page);
   const sessionId = (await page.evaluate(() =>
-    sessionStorage.getItem("spatialdeck-presenter-session"),
+    sessionStorage.getItem("xcursus-presenter-session"),
   ))!;
   const forged = (session: string, type = "navigate") => ({
-    protocol: "spatialdeck-presenter/1",
+    protocol: "xcursus-presenter/1",
     sessionId: session,
     epoch: "f".repeat(32),
     seq: 1,
@@ -274,7 +274,7 @@ test("messages with a wrong source, session, sequence or origin are ignored", as
     type,
     command: { kind: "next", edgeId: "AB" },
   });
-  const named = `spatialdeck-public-${sessionId}`;
+  const named = `xcursus-public-${sessionId}`;
   // Wrong source: the public window posts to itself, not from its opener.
   await popup.evaluate(
     (m) => window.postMessage(m, location.origin),
@@ -348,7 +348,7 @@ test("a blocked popup falls back to instructions and a single-window presentatio
   await expect(
     page.getByRole("region", { name: "Presentation mode" }),
   ).toBeVisible();
-  await expect(page.locator(".presentation-player .sd-player")).toHaveCount(1);
+  await expect(page.locator(".presentation-player .xc-player")).toHaveCount(1);
   expect(await page.locator(".presentation-player").innerText()).not.toContain(
     "PRIVATE-NOTE",
   );

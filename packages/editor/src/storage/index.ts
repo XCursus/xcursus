@@ -1,11 +1,22 @@
-import { validateDocument } from "@spatialdeck/core";
-import type { ProjectDocument } from "@spatialdeck/core";
-import { sha256, verifyAsset } from "@spatialdeck/player";
-import type { AssetBlobs } from "@spatialdeck/player";
-import { ARCHIVE_LIMIT, JSON_LIMIT } from "@spatialdeck/plugins/archive";
+import { validateDocument } from "@xcursus/core";
+import type { ProjectDocument } from "@xcursus/core";
+import { sha256, verifyAsset } from "@xcursus/player";
+import type { AssetBlobs } from "@xcursus/player";
+import {
+  ARCHIVE_LIMIT,
+  JSON_LIMIT,
+  ARCHIVE_EXTENSION,
+  LEGACY_ARCHIVE_EXTENSION,
+  archiveFormat,
+} from "@xcursus/plugins/archive";
 import { documentJSON } from "../store/index.js";
 export * from "./archive.js";
 export * from "./assets.js";
+/**
+ * Storage identifier inherited from the product's former name (SpatialDeck).
+ * It is deliberately unchanged: renaming the database would orphan the
+ * autosaved revisions and resources already kept by existing installations.
+ */
 export const DATABASE_NAME = "spatialdeck-studio";
 /** v3 adds the multiEntry `assetKeys` index used by garbage collection. */
 export const DATABASE_VERSION = 3;
@@ -26,9 +37,9 @@ export class StorageConflict extends Error {
   }
 }
 const NEWER =
-  "A newer version of SpatialDeck Studio upgraded the local storage in another tab. Autosave and recovery are suspended: the work stays in memory; use Save JSON and reload the page.";
+  "A newer version of XCursus Studio upgraded the local storage in another tab. Autosave and recovery are suspended: the work stays in memory; use Save JSON and reload the page.";
 const BLOCKED =
-  "Local storage is blocked by another SpatialDeck Studio tab running an older version. Close or reload the other tabs: autosave resumes on its own and the work stays in memory.";
+  "Local storage is blocked by another XCursus Studio tab running an older version. Close or reload the other tabs: autosave resumes on its own and the work stays in memory.";
 export class StorageVersionError extends Error {
   constructor() {
     super(NEWER);
@@ -39,18 +50,18 @@ export function openLimitError(file: {
   name: string;
   size: number;
 }): string | null {
-  const archive = file.name.endsWith(".spatialdeck");
+  const archive = archiveFormat(file.name);
   const limit = archive ? ARCHIVE_LIMIT : JSON_LIMIT;
   if (file.size <= limit) return null;
   const mib = limit / 1024 / 1024;
   return archive
-    ? `The .spatialdeck archive exceeds ${mib} MiB.`
+    ? `The ${archive === "legacy" ? LEGACY_ARCHIVE_EXTENSION : ARCHIVE_EXTENSION} archive exceeds ${mib} MiB.`
     : `The JSON file exceeds ${mib} MiB.`;
 }
 /** Download name from the project title: one underscore per run of other characters. */
 export function downloadName(title: string, extension: string): string {
   const base = title.replace(/[^\p{L}\p{N}_-]+/gu, "_").replace(/^_+|_+$/g, "");
-  return `${base || "spatialdeck"}.${extension}`;
+  return `${base || "xcursus"}.${extension}`;
 }
 /** Revision times in the language of the Studio interface, not the browser's. */
 export function revisionTime(updatedAt: number): string {

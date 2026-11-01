@@ -1,15 +1,21 @@
-import { createPlayer, createAssetResolver } from "@spatialdeck/player";
-import type { Player } from "@spatialdeck/player";
+import { createPlayer, createAssetResolver } from "@xcursus/player";
+import type { Player } from "@xcursus/player";
 import {
   RendererRegistry,
   createAssetResolver as assetResolver,
-} from "@spatialdeck/player";
-import { PluginHost } from "@spatialdeck/plugins";
-import { samplePlugin } from "@spatialdeck/plugins/sample";
-import { registerNavigation } from "@spatialdeck/plugins/navigation";
-import { createBuiltinRegistry } from "@spatialdeck/plugins/builtins";
-import { readArchive, writeArchive } from "@spatialdeck/plugins/archive";
-import { success, validateDocument } from "@spatialdeck/core";
+} from "@xcursus/player";
+import { PluginHost } from "@xcursus/plugins";
+import { LEGACY_SAMPLE_PLUGIN_ID, samplePlugin } from "@xcursus/plugins/sample";
+import { registerNavigation } from "@xcursus/plugins/navigation";
+import { createBuiltinRegistry } from "@xcursus/plugins/builtins";
+import {
+  ARCHIVE_EXTENSION,
+  PROJECT_ACCEPT,
+  archiveFormat,
+  readArchive,
+  writeArchive,
+} from "@xcursus/plugins/archive";
+import { success, validateDocument } from "@xcursus/core";
 import gallery from "../../examples/content-gallery/project.json";
 import diagram from "../../examples/content-gallery/assets/diagram.svg?url";
 import tone from "../../examples/content-gallery/assets/tone.wav?url";
@@ -30,7 +36,9 @@ export async function contentDemo() {
   }
   let resolver = createAssetResolver(doc.assets, blobs);
   // The badge is a demo plugin, approved explicitly by this host.
-  const builtin = createBuiltinRegistry({ plugins: [samplePlugin()] });
+  const builtin = createBuiltinRegistry({
+    plugins: [samplePlugin(), samplePlugin(LEGACY_SAMPLE_PLUGIN_ID)],
+  });
   const players: Player[] = [];
   for (let i = 0; i < 2; i++) {
     const section = document.createElement("section");
@@ -43,7 +51,6 @@ export async function contentDemo() {
     const controls = document.createElement("nav");
     controls.setAttribute("aria-label", `Player ${i + 1} controls`);
     const player = createPlayer({
-      // The playground interface is Italian, like Studio, until 1.0.
       registry: builtin.registry,
       assets: {
         resolve: (id, signal) => resolver.resolve(id, signal),
@@ -81,14 +88,14 @@ export async function contentDemo() {
   status.setAttribute("role", "status");
   const open = document.createElement("input");
   open.type = "file";
-  open.accept = ".json,.spatialdeck";
+  open.accept = PROJECT_ACCEPT;
   open.setAttribute("aria-label", "Open local gallery");
   open.onchange = () =>
     void (async () => {
       try {
         const file = open.files?.[0];
         if (!file) return;
-        const imported = file.name.endsWith(".spatialdeck")
+        const imported = archiveFormat(file.name)
           ? await readArchive(file)
           : null;
         const valid = imported
@@ -117,7 +124,7 @@ export async function contentDemo() {
           url = URL.createObjectURL(blob),
           a = document.createElement("a");
         a.href = url;
-        a.download = "content-gallery.spatialdeck";
+        a.download = `content-gallery${ARCHIVE_EXTENSION}`;
         a.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
       } catch (e) {
@@ -142,10 +149,10 @@ export async function contentDemo() {
       writeArchive,
     },
   });
-  document.title = "SpatialDeck · Content";
+  document.title = "XCursus · Content";
   const header = document.querySelector("main header");
   if (header) {
-    header.querySelector("p")!.textContent = "SpatialDeck 0.5 / vanilla";
+    header.querySelector("p")!.textContent = "XCursus 0.5 / vanilla";
     header.querySelector("h1")!.textContent = "Local content";
   }
 }

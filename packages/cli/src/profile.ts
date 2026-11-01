@@ -1,5 +1,5 @@
-import { diagnostic } from "@spatialdeck/core";
-import type { Block, Diagnostic, ProjectDocument } from "@spatialdeck/core";
+import { diagnostic } from "@xcursus/core";
+import type { Block, Diagnostic, ProjectDocument } from "@xcursus/core";
 import type { LoadedResource } from "./io.js";
 
 export type Format = "html" | "build" | "pdf" | "video";

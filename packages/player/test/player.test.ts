@@ -5,8 +5,8 @@ import {
   sampleCapture,
   validateDocument,
   viewMatrix,
-} from "@spatialdeck/core";
-import type { Block, ProjectDocument } from "@spatialdeck/core";
+} from "@xcursus/core";
+import type { Block, ProjectDocument } from "@xcursus/core";
 import fixture from "../../../examples/content-gallery/project.json";
 import {
   RendererRegistry,
@@ -220,7 +220,7 @@ describe("incremental updateDocument", () => {
     expect(host.querySelector('[data-scene-id="html"]')).toBe(wrapper);
     expect(wrapper.querySelector("h2")!.textContent).toBe("Nuovo titolo");
     expect(wrapper.style.transform).not.toBe(transform);
-    expect(wrapper.querySelector<HTMLElement>(".sd-content")!.style.width).toBe(
+    expect(wrapper.querySelector<HTMLElement>(".xc-content")!.style.width).toBe(
       "500px",
     );
     expect(
@@ -333,7 +333,7 @@ describe("incremental updateDocument", () => {
               .join("")}>${[...node.childNodes].map(canonical).join("")}</>`
           : "";
     const normalize = (host: HTMLElement, id: string) =>
-      canonical(host.querySelector(".sd-player")!).split(id).join("ID");
+      canonical(host.querySelector(".xc-player")!).split(id).join("ID");
     expect(normalize(incremental.host, incremental.instanceId)).toBe(
       normalize(fresh.host, fresh.instanceId),
     );
@@ -435,7 +435,7 @@ describe("per-frame rendering", () => {
         !(
           r.type === "attributes" &&
           r.attributeName === "style" &&
-          (r.target as Element).classList.contains("sd-world")
+          (r.target as Element).classList.contains("xc-world")
         ),
     );
     expect(
@@ -483,16 +483,16 @@ describe("messages, language and outline", () => {
   it("replaces every player control string and applies document and UI languages", async () => {
     const doc = edit(gallery(), (d) => void (d.metadata.language = "en-GB"));
     const { host, player } = await mounted(doc, { messages: english });
-    const root = host.querySelector<HTMLElement>(".sd-player")!;
+    const root = host.querySelector<HTMLElement>(".xc-player")!;
     expect(root.lang).toBe("en-GB");
-    expect(host.querySelector<HTMLElement>(".sd-access")!.lang).toBe("en");
+    expect(host.querySelector<HTMLElement>(".xc-access")!.lang).toBe("en");
     const chrome = [
-      ...host.querySelectorAll(".sd-access, .sd-empty, .sd-choices"),
+      ...host.querySelectorAll(".xc-access, .xc-empty, .xc-choices"),
     ]
       .map((e) => e.textContent)
       .join(" ");
     const labels = [...host.querySelectorAll("[aria-label]")]
-      .filter((e) => !e.closest(".sd-world") && e !== root)
+      .filter((e) => !e.closest(".xc-world") && e !== root)
       .map((e) => e.getAttribute("aria-label"))
       .join(" ");
     for (const [key, italian] of Object.entries(defaultMessages)) {
@@ -524,10 +524,10 @@ describe("messages, language and outline", () => {
     });
     expect((await player.updateDocument(withEmpty)).ok).toBe(true);
     expect((await player.setPath("empty")).status).toBe("completed");
-    expect(host.querySelector(".sd-empty")!.textContent).toBe(
+    expect(host.querySelector(".xc-empty")!.textContent).toBe(
       "No scene in the selected path.",
     );
-    expect(host.querySelector(".sd-live")!.textContent).toBe(
+    expect(host.querySelector(".xc-live")!.textContent).toBe(
       "Empty presentation",
     );
   });
@@ -556,7 +556,7 @@ describe("messages, language and outline", () => {
       d.requiredCapabilities = ["linear", "blocks", "structure"];
     });
     const { host } = await mounted(doc, { messages: english });
-    const choices = host.querySelector(".sd-choices")!;
+    const choices = host.querySelector(".xc-choices")!;
     expect(choices.textContent).toContain("Choose the path");
     // The destination is named by its scene title, not its node ID.
     expect(choices.textContent).toContain(
@@ -572,14 +572,14 @@ describe("messages, language and outline", () => {
     const rendered = await mounted(doc, { registry, assets });
     const bare = await mounted(doc);
     for (const { host } of [rendered, bare]) {
-      const outline = host.querySelector(".sd-outline")!.textContent!;
+      const outline = host.querySelector(".xc-outline")!.textContent!;
       expect(outline).not.toContain("**");
       expect(outline).not.toContain("<p>");
       expect(outline).not.toContain("<svg");
       expect(outline).not.toContain("\\int");
       expect(outline).toContain("Rectangle with a blue to pink gradient");
     }
-    const outline = rendered.host.querySelector(".sd-outline")!.textContent!;
+    const outline = rendered.host.querySelector(".xc-outline")!.textContent!;
     expect(outline).toContain("Rendered markdown markdown-block");
     expect(outline).toContain("Rendered html html-block");
   });
@@ -631,7 +631,7 @@ describe("message defaults and overrides", () => {
         enableMedia: undefined,
       } as unknown as Partial<PlayerMessages>,
     });
-    const controls = host.querySelector(".sd-access")!.textContent!;
+    const controls = host.querySelector(".xc-access")!.textContent!;
     expect(controls).toContain(defaultMessages.outline);
     expect(controls).toContain("Overview");
     expect(controls).toContain(defaultMessages.enableMedia);
@@ -666,7 +666,7 @@ describe("capture clock and public data (0.6)", () => {
       player.on(name, () => events.push(name));
     const before = player.getState();
     const p = plan(doc);
-    const world = host.querySelector<HTMLElement>(".sd-world")!;
+    const world = host.querySelector<HTMLElement>(".xc-world")!;
     const t = p.visits[0]!.transition!.startMs + 100;
     expect((await player.renderAt(p, t)).ok).toBe(true);
     const sample = sampleCapture(p, t);
@@ -759,8 +759,8 @@ describe("capture clock and public data (0.6)", () => {
   });
   it("controls: false leaves only the stage for capture pages", async () => {
     const { host } = await mounted(gallery(), { controls: false });
-    expect(host.querySelector<HTMLElement>(".sd-access")!.hidden).toBe(true);
-    expect(host.querySelector(".sd-choices")).toBeNull();
-    expect(host.querySelector<HTMLElement>(".sd-stage")!.style.top).toBe("0px");
+    expect(host.querySelector<HTMLElement>(".xc-access")!.hidden).toBe(true);
+    expect(host.querySelector(".xc-choices")).toBeNull();
+    expect(host.querySelector<HTMLElement>(".xc-stage")!.style.top).toBe("0px");
   });
 });

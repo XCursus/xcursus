@@ -2,15 +2,13 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   resolve: {
     alias: {
-      "@spatialdeck/core": new URL(
-        "./packages/core/src/index.ts",
-        import.meta.url,
-      ).pathname,
-      "@spatialdeck/player": new URL(
+      "@xcursus/core": new URL("./packages/core/src/index.ts", import.meta.url)
+        .pathname,
+      "@xcursus/player": new URL(
         "./packages/player/src/index.ts",
         import.meta.url,
       ).pathname,
-      "@spatialdeck/plugins/archive": new URL(
+      "@xcursus/plugins/archive": new URL(
         "./packages/plugins/src/archive.ts",
         import.meta.url,
       ).pathname,

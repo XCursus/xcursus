@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { expect, it } from "vitest";
 import { zipSync, strToU8, unzipSync, strFromU8 } from "fflate";
 import { readArchive, writeArchive } from "../src/archive.js";
-import { validateDocument } from "@spatialdeck/core";
+import { validateDocument } from "@xcursus/core";
 import { verifyAsset, sha256 } from "../../player/src/assets/index.js";
 import fixture from "../../../examples/content-gallery/project.json";
 async function gallery() {

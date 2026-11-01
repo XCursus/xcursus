@@ -1,1 +1,1 @@
-export * from "@spatialdeck/plugins/archive";
+export * from "@xcursus/plugins/archive";

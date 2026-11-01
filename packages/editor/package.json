@@ -1,20 +1,20 @@
 {
-  "name": "@spatialdeck/editor",
+  "name": "@xcursus/editor",
   "version": "0.6.0",
-  "description": "React editor of SpatialDeck Studio: command store with undo/redo, IndexedDB recovery, archive I/O and the Studio component.",
+  "description": "React editor of XCursus Studio: command store with undo/redo, IndexedDB recovery, archive I/O and the Studio component.",
   "license": "GPL-3.0-or-later",
   "author": "Francesco Vitucci",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fv-c/SpatialDeck.git",
+    "url": "git+https://github.com/XCursus/xcursus.git",
     "directory": "packages/editor"
   },
-  "homepage": "https://github.com/fv-c/SpatialDeck/tree/main/packages/editor#readme",
+  "homepage": "https://github.com/XCursus/xcursus/tree/main/packages/editor#readme",
   "bugs": {
-    "url": "https://github.com/fv-c/SpatialDeck/issues"
+    "url": "https://github.com/XCursus/xcursus/issues"
   },
   "keywords": [
-    "spatialdeck",
+    "xcursus",
     "presentation",
     "editor",
     "react",
@@ -47,9 +47,9 @@
     "prepack": "node ../../scripts/package-license.mjs"
   },
   "dependencies": {
-    "@spatialdeck/core": "workspace:*",
-    "@spatialdeck/player": "workspace:*",
-    "@spatialdeck/plugins": "workspace:*"
+    "@xcursus/core": "workspace:*",
+    "@xcursus/player": "workspace:*",
+    "@xcursus/plugins": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.3.1",

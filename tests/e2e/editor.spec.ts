@@ -10,7 +10,7 @@ import { evidencePath, studioURL, writeEvidence } from "./evidence.js";
 import fixture from "../../examples/editor-roundtrip/project.json" with { type: "json" };
 async function open(page: Page) {
   await page.goto(studioURL);
-  await expect(page.locator(".preview-player .sd-player")).toHaveCount(1);
+  await expect(page.locator(".preview-player .xc-player")).toHaveCount(1);
 }
 async function upload(page: Page, document: unknown = fixture) {
   await page.getByLabel("JSON project file").setInputFiles({
@@ -29,9 +29,9 @@ async function landmarks(page: Page, present = false) {
       present ? ".presentation-player" : ".preview-player",
     )!;
     const wrapper = host.querySelector<HTMLElement>(
-        '.sd-scene[data-active="true"]',
+        '.xc-scene[data-active="true"]',
       )!,
-      stage = host.querySelector(".sd-stage")!.getBoundingClientRect();
+      stage = host.querySelector(".xc-stage")!.getBoundingClientRect();
     const fit = Math.min(stage.width / 1280, stage.height / 720);
     return [
       [-150, -80],
@@ -575,7 +575,7 @@ test("player updateDocument validates atomically, cancels transitions and rebuil
       changes,
       cancels,
       history: player.getState().history.length,
-      count: document.querySelectorAll(".preview-player .sd-player").length,
+      count: document.querySelectorAll(".preview-player .xc-player").length,
     };
   });
   expect(result).toEqual({
@@ -660,9 +660,9 @@ test("preview coalesces edits, preserves input focus and disposes players when c
         ).previousPlayer.getState().status,
     ),
   ).toBe("destroyed");
-  await expect(page.locator(".preview-player .sd-player")).toHaveCount(0);
+  await expect(page.locator(".preview-player .xc-player")).toHaveCount(0);
   await page.getByRole("button", { name: "Preview", exact: true }).click();
-  await expect(page.locator(".preview-player .sd-player")).toHaveCount(1);
+  await expect(page.locator(".preview-player .xc-player")).toHaveCount(1);
 });
 test("player invalid update during transition leaves it running, active deletion resets to start and then empty", async ({
   page,
@@ -704,7 +704,7 @@ test("player invalid update during transition leaves it running, active deletion
   expect(result.history).toBe(1);
   expect(result.empty.status).toBe("empty");
   expect(result.empty.history).toEqual([]);
-  await expect(page.locator(".presentation-player .sd-empty")).toBeVisible();
+  await expect(page.locator(".presentation-player .xc-empty")).toBeVisible();
 });
 test("save shortcut commits the focused text draft before downloading the validated snapshot", async ({
   page,

@@ -10,22 +10,39 @@ import {
   normalizedPath,
   serializeDocument,
   validateDocument,
-} from "@spatialdeck/core";
-import type { ProjectDocument } from "@spatialdeck/core";
-import {
-  FILE_LIMIT,
-  TOTAL_LIMIT,
-  sha256,
-  verifyAsset,
-} from "@spatialdeck/player";
-import type { AssetBlobs } from "@spatialdeck/player";
+} from "@xcursus/core";
+import type { ProjectDocument } from "@xcursus/core";
+import { FILE_LIMIT, TOTAL_LIMIT, sha256, verifyAsset } from "@xcursus/player";
+import type { AssetBlobs } from "@xcursus/player";
 export const JSON_LIMIT = 10 * 1024 * 1024;
-/** Largest .spatialdeck accepted before decompression: all resources plus project and manifest JSON. */
+/** Largest .xcursus accepted before decompression: all resources plus project and manifest JSON. */
 export const ARCHIVE_LIMIT = TOTAL_LIMIT + JSON_LIMIT * 2;
 const ENTRY_LIMIT = 10000;
+/** Extension of the native archive; every archive written by XCursus uses it. */
+export const ARCHIVE_EXTENSION = ".xcursus";
+/**
+ * Extension of the archives written before the rename (SpatialDeck 0.4–0.6).
+ * Read only: the ZIP container and manifest 1.0.0 are identical, so a legacy
+ * archive is imported as it is and saved again as `.xcursus`.
+ */
+export const LEGACY_ARCHIVE_EXTENSION = ".spatialdeck";
+/** `current` for `.xcursus`, `legacy` for `.spatialdeck`. */
+export type ArchiveFormat = "current" | "legacy";
+/** Archive format named by a file name (case-insensitive), or null for JSON and anything else. */
+export function archiveFormat(name: string): ArchiveFormat | null {
+  const lower = name.toLowerCase();
+  if (lower.endsWith(ARCHIVE_EXTENSION)) return "current";
+  if (lower.endsWith(LEGACY_ARCHIVE_EXTENSION)) return "legacy";
+  return null;
+}
+/** File-input `accept` list for projects: JSON, native and legacy archives. */
+export const PROJECT_ACCEPT = `.json,${ARCHIVE_EXTENSION},${LEGACY_ARCHIVE_EXTENSION},application/json,application/zip`;
 export interface ArchiveProject {
+  /** Validated copy migrated to the current schema. */
   document: ProjectDocument;
   blobs: Map<string, Blob>;
+  /** `schemaVersion` declared by the archived project.json, before migration. */
+  sourceSchemaVersion: string;
 }
 interface Entry {
   name: string;
@@ -226,7 +243,8 @@ export async function readArchive(blob: Blob): Promise<ArchiveProject> {
       decoder.decode()
     );
   };
-  const valid = validateDocument(decode("project.json"));
+  const projectText = decode("project.json");
+  const valid = validateDocument(projectText);
   if (!valid.ok)
     throw new Error(valid.diagnostics.map((d) => d.message).join("; "));
   const manifest: unknown = JSON.parse(decode("manifest.json"));
@@ -272,7 +290,10 @@ export async function readArchive(blob: Blob): Promise<ArchiveProject> {
   }
   if (files.size !== blobs.size + 2)
     throw new Error("Extra files not declared in the manifest.");
-  return { document: valid.value, blobs };
+  // Valid JSON at this point: validateDocument parsed the same text.
+  const declared = (JSON.parse(projectText) as { schemaVersion: string })
+    .schemaVersion;
+  return { document: valid.value, blobs, sourceSchemaVersion: declared };
 }
 /** Already compressed formats are stored, not deflated again. */
 const STORED = new Set([

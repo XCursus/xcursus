@@ -1,8 +1,8 @@
 import { useState } from "react";
-import type { ProjectDocument, Asset } from "@spatialdeck/core";
-import { success } from "@spatialdeck/core";
-import { sha256, verifyAsset } from "@spatialdeck/player";
-import type { AssetBlobs } from "@spatialdeck/player";
+import type { ProjectDocument, Asset } from "@xcursus/core";
+import { success } from "@xcursus/core";
+import { sha256, verifyAsset } from "@xcursus/player";
+import type { AssetBlobs } from "@xcursus/player";
 import type { EditorStore } from "../store/index.js";
 import { randomId } from "../commands/index.js";
 import { Icon } from "./icons.js";
@@ -127,7 +127,7 @@ export function AssetPanel({
       </ul>
       {!document.assets.length && (
         <p className="panel-note">
-          The JSON keeps the references; the .spatialdeck archive includes the
+          The JSON keeps the references; the .xcursus archive includes the
           files.
         </p>
       )}

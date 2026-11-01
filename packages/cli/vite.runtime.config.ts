@@ -13,11 +13,11 @@ const player = new URL("../player", import.meta.url).pathname;
 export default defineConfig({
   plugins: [
     licenseBanner(
-      `/*! SpatialDeck export runtime ${version} | GPL-3.0-or-later | source: https://github.com/fv-c/SpatialDeck | bundled third-party code: THIRD_PARTY_NOTICES.txt */`,
+      `/*! XCursus export runtime ${version} | GPL-3.0-or-later | source: https://github.com/XCursus/xcursus | bundled third-party code: THIRD_PARTY_NOTICES.txt */`,
     ),
     licenseNotices({
       fileName: "THIRD_PARTY_NOTICES.txt",
-      title: `SpatialDeck CLI ${version}, export runtime (spatialdeck-runtime.js) and embedded fonts`,
+      title: `XCursus CLI ${version}, export runtime (xcursus-runtime.js) and embedded fonts`,
       extra: [installedPackage("@fontsource/atkinson-hyperlegible", player)],
     }),
   ],
@@ -29,8 +29,8 @@ export default defineConfig({
     lib: {
       entry: "src/runtime/standalone.ts",
       formats: ["iife"],
-      name: "SpatialDeckRuntime",
-      fileName: () => "spatialdeck-runtime.js",
+      name: "XCursusRuntime",
+      fileName: () => "xcursus-runtime.js",
     },
     rollupOptions: {
       output: { inlineDynamicImports: true },

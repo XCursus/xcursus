@@ -27,19 +27,17 @@ for (const name of ["core", "player"]) {
       issues.push(`${file}: unsafe runtime operation`);
     if (
       name === "core" &&
-      /\b(?:window|HTMLElement|requestAnimationFrame|localStorage|fetch)\b|from ['"](?:node:|@spatialdeck\/(?:player|editor)|react)/.test(
+      /\b(?:window|HTMLElement|requestAnimationFrame|localStorage|fetch)\b|from ['"](?:node:|@xcursus\/(?:player|editor)|react)/.test(
         source,
       )
     )
       issues.push(`${file}: core boundary`);
-    if (/from ['"](?:react|@spatialdeck\/(?:editor|plugins))/.test(source))
+    if (/from ['"](?:react|@xcursus\/(?:editor|plugins))/.test(source))
       issues.push(`${file}: forbidden import`);
   }
   const built = await readFile(`packages/${name}/dist/index.js`, "utf8");
   if (
-    /new Function|eval\(|Ajv|react-dom|react\/jsx|@spatialdeck\/editor/.test(
-      built,
-    )
+    /new Function|eval\(|Ajv|react-dom|react\/jsx|@xcursus\/editor/.test(built)
   )
     issues.push(`${name}: forbidden bundled code`);
 }
@@ -50,14 +48,14 @@ for (const dependency of Object.keys(cli.dependencies ?? {}))
   if (/react|editor/.test(dependency)) issues.push(`cli: ${dependency}`);
 for (const file of await walk("packages/cli/src"))
   if (
-    /from ['"](?:react|react-dom|@spatialdeck\/editor)/.test(
+    /from ['"](?:react|react-dom|@xcursus\/editor)/.test(
       await readFile(file, "utf8"),
     )
   )
     issues.push(`${file}: forbidden import`);
 if (
-  /react-dom|react\/jsx|__SECRET_INTERNALS|@spatialdeck\/editor|new Function\(|eval\(/.test(
-    await readFile("packages/cli/dist/runtime/spatialdeck-runtime.js", "utf8"),
+  /react-dom|react\/jsx|__SECRET_INTERNALS|@xcursus\/editor|new Function\(|eval\(/.test(
+    await readFile("packages/cli/dist/runtime/xcursus-runtime.js", "utf8"),
   )
 )
   issues.push("cli: export runtime contains editor, React or dynamic code");
@@ -67,11 +65,9 @@ const editor = JSON.parse(
 );
 for (const dependency of Object.keys(editor.dependencies ?? {}))
   if (
-    ![
-      "@spatialdeck/core",
-      "@spatialdeck/player",
-      "@spatialdeck/plugins",
-    ].includes(dependency)
+    !["@xcursus/core", "@xcursus/player", "@xcursus/plugins"].includes(
+      dependency,
+    )
   )
     throw new Error(`Unexpected editor dependency: ${dependency}`);
 for (const peer of ["react", "react-dom"])
@@ -86,8 +82,8 @@ const plugins = JSON.parse(
 for (const dep of Object.keys(plugins.dependencies ?? {}))
   if (
     ![
-      "@spatialdeck/core",
-      "@spatialdeck/player",
+      "@xcursus/core",
+      "@xcursus/player",
       "dompurify",
       "marked",
       "katex",

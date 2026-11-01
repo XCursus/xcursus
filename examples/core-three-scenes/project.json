@@ -4,7 +4,7 @@
   "metadata": {
     "title": "Three places",
     "language": "en",
-    "author": "SpatialDeck example"
+    "author": "XCursus example"
   },
   "settings": {
     "viewport": {
@@ -36,7 +36,7 @@
           "id": "t1",
           "type": "text",
           "data": {
-            "text": "SpatialDeck"
+            "text": "XCursus"
           }
         }
       ],

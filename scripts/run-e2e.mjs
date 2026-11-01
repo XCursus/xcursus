@@ -48,7 +48,7 @@ try {
     console.log(`Playwright ${version} [${job.profile}]: ${command.join(" ")}`);
     const result = spawnSync(process.execPath, [cli, ...command], {
       cwd: root,
-      env: { ...process.env, SPATIALDECK_E2E_RUNNER: job.profile },
+      env: { ...process.env, XCURSUS_E2E_RUNNER: job.profile },
       stdio: "inherit",
     });
     if (result.error) throw result.error;

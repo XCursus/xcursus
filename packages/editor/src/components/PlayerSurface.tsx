@@ -1,18 +1,18 @@
 import { useEffect, useRef } from "react";
-import { createPlayer, createAssetResolver } from "@spatialdeck/player";
-import type { Player } from "@spatialdeck/player";
-import type { AssetBlobs } from "@spatialdeck/player";
-import { createBuiltinRegistry } from "@spatialdeck/plugins/builtins";
-import type { PluginDefinition } from "@spatialdeck/plugins";
+import { createPlayer, createAssetResolver } from "@xcursus/player";
+import type { Player } from "@xcursus/player";
+import type { AssetBlobs } from "@xcursus/player";
+import { createBuiltinRegistry } from "@xcursus/plugins/builtins";
+import type { PluginDefinition } from "@xcursus/plugins";
 import {
   sampleTransition,
   resolveSceneCamera,
   cameraPose,
   success,
-} from "@spatialdeck/core";
+} from "@xcursus/core";
 import type { Capture } from "./CameraTimeline.js";
 import type { NavigationSelection } from "./PathPanel.js";
-import type { ProjectDocument } from "@spatialdeck/core";
+import type { ProjectDocument } from "@xcursus/core";
 export function PlayerSurface({
   document,
   selection,

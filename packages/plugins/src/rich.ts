@@ -1,12 +1,12 @@
 import { marked } from "marked";
 import katex from "katex";
 import { sanitizeContent } from "./security.js";
-import { defaultMessages } from "@spatialdeck/player";
+import { defaultMessages } from "@xcursus/player";
 import type {
   ContentContext,
   ContentRenderer,
   RendererRegistry,
-} from "@spatialdeck/player";
+} from "@xcursus/player";
 export { sanitizeContent } from "./security.js";
 /** Markdown, HTML, SVG and LaTeX; `createBuiltinRegistry` loads this module on first use. */
 export function richRenderer(): ContentRenderer {

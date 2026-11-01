@@ -1,5 +1,5 @@
 import { useEffect, useState, useId } from "react";
-import type { Scene, Result } from "@spatialdeck/core";
+import type { Scene, Result } from "@xcursus/core";
 import { ContentPanel } from "./ContentPanel.js";
 import { editScene } from "../commands/index.js";
 import { parseFinite } from "../store/index.js";

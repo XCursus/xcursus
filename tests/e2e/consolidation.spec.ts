@@ -25,7 +25,7 @@ declare global {
 async function remoteHosts(context: BrowserContext) {
   // Non-localhost HTTP origins are not secure contexts: crypto.subtle is absent.
   await context.route(
-    /^http:\/\/(gallery|studio)\.spatialdeck\.test\//,
+    /^http:\/\/(gallery|studio)\.xcursus\.test\//,
     async (route) => {
       const url = new URL(route.request().url());
       const port = url.hostname.startsWith("gallery") ? 4173 : 4174;
@@ -38,10 +38,10 @@ async function remoteHosts(context: BrowserContext) {
   );
 }
 async function loadedGallery(page: Page) {
-  await expect(page.locator(".sd-player")).toHaveCount(2);
+  await expect(page.locator(".xc-player")).toHaveCount(2);
   await expect(
     page
-      .locator('.sd-block [role="status"]')
+      .locator('.xc-block [role="status"]')
       .filter({ hasText: "Loading local resource" }),
   ).toHaveCount(0);
 }
@@ -50,7 +50,7 @@ test("assets with digests load over HTTP on a non-localhost host: gallery, archi
   context,
 }) => {
   await remoteHosts(context);
-  await page.goto("http://gallery.spatialdeck.test/content");
+  await page.goto("http://gallery.xcursus.test/content");
   await loadedGallery(page);
   expect(
     await page.evaluate(() => ({
@@ -71,17 +71,17 @@ test("assets with digests load over HTTP on a non-localhost host: gallery, archi
   const video = page.locator('#player-1 [data-block-type="video"] video');
   await expect(video).toHaveAttribute("playsinline", "");
   await expect(video.locator("track")).toHaveCount(1);
-  await expect(page.locator("#player-1 .sd-world")).not.toContainText(
+  await expect(page.locator("#player-1 .xc-world")).not.toContainText(
     /digest|signature|Missing resource/,
   );
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download gallery archive" }).click();
   const archive = await readFile((await (await download).path())!);
   const studio = await context.newPage();
-  await studio.goto("http://studio.spatialdeck.test/?studio-debug");
-  await expect(studio.locator(".preview-player .sd-player")).toHaveCount(1);
+  await studio.goto("http://studio.xcursus.test/?studio-debug");
+  await expect(studio.locator(".preview-player .xc-player")).toHaveCount(1);
   await studio.getByLabel("JSON project file").setInputFiles({
-    name: "gallery.spatialdeck",
+    name: "gallery.xcursus",
     mimeType: "application/zip",
     buffer: archive,
   });
@@ -171,7 +171,7 @@ test("Studio preview with 50 MiB of media stays incremental: no digests or URLs 
     };
   });
   await page.goto(studioURL);
-  await expect(page.locator(".preview-player .sd-player")).toHaveCount(1);
+  await expect(page.locator(".preview-player .xc-player")).toHaveCount(1);
   for (let i = 0; i < 3; i++)
     await page.getByRole("button", { name: "New scene", exact: true }).click();
   for (const file of [
@@ -295,7 +295,7 @@ test("Studio preview with 50 MiB of media stays incremental: no digests or URLs 
   const summary = {
     browser: info.project.name,
     browserVersion: browser.version(),
-    runner: process.env.SPATIALDECK_E2E_RUNNER,
+    runner: process.env.XCURSUS_E2E_RUNNER,
     ci: !!process.env.CI,
     media: {
       videoBytes: (await stat(files.video)).size,
@@ -375,13 +375,13 @@ test("an embedded player shows host-supplied texts, document language and derive
     });
     await player.mount(host, doc);
     await new Promise((resolve) => setTimeout(resolve, 300));
-    const root = host.querySelector<HTMLElement>(".sd-player")!;
-    const outline = root.querySelector(".sd-outline")!.textContent!;
+    const root = host.querySelector<HTMLElement>(".xc-player")!;
+    const outline = root.querySelector(".xc-outline")!.textContent!;
     const out = {
       lang: root.lang,
-      uiLang: root.querySelector<HTMLElement>(".sd-access")!.lang,
+      uiLang: root.querySelector<HTMLElement>(".xc-access")!.lang,
       controls: [
-        ...root.querySelectorAll(".sd-access button, .sd-access summary"),
+        ...root.querySelectorAll(".xc-access button, .xc-access summary"),
       ].map((b) => b.textContent),
       play: [...root.querySelectorAll('[data-block-type="video"] button')].map(
         (b) => b.textContent,
@@ -471,7 +471,7 @@ test("production Studio has no ws: in its CSP and no window.studio unless explic
   expect(csp).not.toMatch(/\bws:/);
   expect(csp).toMatch(/connect-src 'self'/);
   await page.goto("http://127.0.0.1:4174/");
-  await expect(page.locator(".preview-player .sd-player")).toHaveCount(1);
+  await expect(page.locator(".preview-player .xc-player")).toHaveCount(1);
   expect(await page.evaluate(() => typeof window.studio)).toBe("undefined");
   expect(
     await page.evaluate(() =>
@@ -481,12 +481,12 @@ test("production Studio has no ws: in its CSP and no window.studio unless explic
     ),
   ).not.toMatch(/\bws:/);
   await page.goto(studioURL);
-  await expect(page.locator(".preview-player .sd-player")).toHaveCount(1);
+  await expect(page.locator(".preview-player .xc-player")).toHaveCount(1);
   expect(await page.evaluate(() => typeof window.studio?.store)).toBe("object");
 });
 async function openStudio(page: Page, document: unknown = fixture) {
   await page.goto(studioURL);
-  await expect(page.locator(".preview-player .sd-player")).toHaveCount(1);
+  await expect(page.locator(".preview-player .xc-player")).toHaveCount(1);
   await page.getByLabel("JSON project file").setInputFiles({
     name: "project.json",
     mimeType: "application/json",
@@ -583,7 +583,7 @@ test("an upgrade blocked by an old tab waits with a warning and resumes autosave
   await page.getByLabel("Speaker notes").fill("waiting");
   await page.getByLabel("Speaker notes").press("Tab");
   await expect(page.locator(".warning")).toContainText(
-    "another SpatialDeck Studio tab",
+    "another XCursus Studio tab",
   );
   await old.evaluate(() => window.heldDatabase!.close());
   await expect
@@ -680,7 +680,7 @@ test("recovery is proposed after unsaved edits but not after a clean save", asyn
     )
     .toBe(true);
   await page.reload();
-  await expect(page.locator(".preview-player .sd-player")).toHaveCount(1);
+  await expect(page.locator(".preview-player .xc-player")).toHaveCount(1);
   await page.waitForTimeout(300);
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });

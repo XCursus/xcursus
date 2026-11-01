@@ -3,7 +3,7 @@
 // user chooses to reload; unsaved work is flushed to local recovery first and
 // the usual unsaved-changes prompt still applies. Projects in IndexedDB are
 // never touched; the player and exported HTML never depend on this worker.
-const ACTIVATE = "spatialdeck-sw-activate";
+const ACTIVATE = "xcursus-sw-activate";
 function banner(registration: ServiceWorkerRegistration) {
   if (document.getElementById("shell-update")) return;
   const bar = document.createElement("div");
@@ -20,7 +20,7 @@ function banner(registration: ServiceWorkerRegistration) {
     button.disabled = true;
     const pending: Promise<unknown>[] = [];
     window.dispatchEvent(
-      new CustomEvent("spatialdeck:before-update", {
+      new CustomEvent("xcursus:before-update", {
         detail: { wait: (p: Promise<unknown>) => pending.push(p) },
       }),
     );

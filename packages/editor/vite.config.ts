@@ -20,7 +20,7 @@ export default defineConfig({
       cssFileName: "editor",
     },
     rollupOptions: {
-      external: (id) => id !== "@spatialdeck/player/style.css" && external(id),
+      external: (id) => id !== "@xcursus/player/style.css" && external(id),
     },
   },
 });

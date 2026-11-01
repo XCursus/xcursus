@@ -1,20 +1,20 @@
 {
-  "name": "@spatialdeck/cli",
+  "name": "@xcursus/cli",
   "version": "0.6.0",
-  "description": "SpatialDeck command line: validate projects, build static bundles and export standalone HTML, PDF and WebM from an explicit itinerary.",
+  "description": "XCursus command line: validate projects, build static bundles and export standalone HTML, PDF and WebM from an explicit itinerary.",
   "license": "GPL-3.0-or-later",
   "author": "Francesco Vitucci",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fv-c/SpatialDeck.git",
+    "url": "git+https://github.com/XCursus/xcursus.git",
     "directory": "packages/cli"
   },
-  "homepage": "https://github.com/fv-c/SpatialDeck/tree/main/packages/cli#readme",
+  "homepage": "https://github.com/XCursus/xcursus/tree/main/packages/cli#readme",
   "bugs": {
-    "url": "https://github.com/fv-c/SpatialDeck/issues"
+    "url": "https://github.com/XCursus/xcursus/issues"
   },
   "keywords": [
-    "spatialdeck",
+    "xcursus",
     "presentation",
     "cli",
     "export",
@@ -30,7 +30,7 @@
     "node": ">=24"
   },
   "bin": {
-    "spatialdeck": "./dist/cli.js"
+    "xcursus": "./dist/cli.js"
   },
   "files": [
     "dist",
@@ -49,9 +49,9 @@
     "prepack": "node ../../scripts/package-license.mjs"
   },
   "dependencies": {
-    "@spatialdeck/core": "workspace:*",
-    "@spatialdeck/player": "workspace:*",
-    "@spatialdeck/plugins": "workspace:*",
+    "@xcursus/core": "workspace:*",
+    "@xcursus/player": "workspace:*",
+    "@xcursus/plugins": "workspace:*",
     "pdf-lib": "1.17.1",
     "playwright-core": "1.64.1"
   }

@@ -1,8 +1,12 @@
-import { createPlayer, createAssetResolver } from "@spatialdeck/player";
-import type { Player } from "@spatialdeck/player";
-import { createBuiltinRegistry } from "@spatialdeck/plugins/builtins";
-import { readArchive } from "@spatialdeck/plugins/archive";
-import { success, validateDocument } from "@spatialdeck/core";
+import { createPlayer, createAssetResolver } from "@xcursus/player";
+import type { Player } from "@xcursus/player";
+import { createBuiltinRegistry } from "@xcursus/plugins/builtins";
+import {
+  PROJECT_ACCEPT,
+  archiveFormat,
+  readArchive,
+} from "@xcursus/plugins/archive";
+import { success, validateDocument } from "@xcursus/core";
 import project from "../../examples/layout-canvas/project.json";
 import skyline from "../../examples/layout-canvas/assets/skyline.svg?url";
 /** Layout example on the vanilla player; also opens projects saved by Studio. */
@@ -47,7 +51,6 @@ export async function layoutDemo() {
     const controls = document.createElement("nav");
     controls.setAttribute("aria-label", `Player ${i + 1} controls`);
     const player = createPlayer({
-      // The playground interface is Italian, like Studio, until 1.0.
       registry: builtin.registry,
       assets: {
         resolve: (id, signal) => resolver.resolve(id, signal),
@@ -81,14 +84,14 @@ export async function layoutDemo() {
   status.setAttribute("role", "status");
   const open = document.createElement("input");
   open.type = "file";
-  open.accept = ".json,.spatialdeck";
+  open.accept = PROJECT_ACCEPT;
   open.setAttribute("aria-label", "Open local project");
   open.onchange = () =>
     void (async () => {
       try {
         const file = open.files?.[0];
         if (!file) return;
-        const imported = file.name.endsWith(".spatialdeck")
+        const imported = archiveFormat(file.name)
           ? await readArchive(file)
           : null;
         const valid = imported
@@ -124,10 +127,10 @@ export async function layoutDemo() {
     layoutRegistry: builtin.registry,
     layoutBlobs: blobs,
   });
-  document.title = "SpatialDeck · Layout";
+  document.title = "XCursus · Layout";
   const header = document.querySelector("main header");
   if (header) {
-    header.querySelector("p")!.textContent = "SpatialDeck 0.5 / vanilla";
+    header.querySelector("p")!.textContent = "XCursus 0.5 / vanilla";
     header.querySelector("h1")!.textContent = "Layout inside the scene";
   }
 }

@@ -5,15 +5,15 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import type { Player } from "@spatialdeck/player";
-import type { AssetBlobs } from "@spatialdeck/player";
-import type { PluginDefinition } from "@spatialdeck/plugins";
+import type { Player } from "@xcursus/player";
+import type { AssetBlobs } from "@xcursus/player";
+import type { PluginDefinition } from "@xcursus/plugins";
 import {
   contrastIssues,
   serializeDocument,
   validateDocument,
-} from "@spatialdeck/core";
-import type { Result, ProjectDocument } from "@spatialdeck/core";
+} from "@xcursus/core";
+import type { Result, ProjectDocument } from "@xcursus/core";
 import {
   convertToFlow,
   createScene,
@@ -26,7 +26,11 @@ import {
   Autosave,
   RecoveryRepository,
   downloadName,
+  archiveFormat,
+  ARCHIVE_EXTENSION,
+  LEGACY_ARCHIVE_EXTENSION,
   openLimitError,
+  PROJECT_ACCEPT,
   pendingRecovery,
   revisionTime,
   readArchive,
@@ -55,7 +59,7 @@ import {
   findPublicWindow,
   openPublicWindow,
 } from "./PresenterView.js";
-import { randomToken } from "@spatialdeck/player/presenter";
+import { randomToken } from "@xcursus/player/presenter";
 const noPlugins: readonly PluginDefinition[] = [];
 const inspectorTabs = [
   ["scene", "Scene"],
@@ -247,11 +251,11 @@ export function Studio({
       if (current.dirty && !current.dragging && wait)
         wait(autosave.flush(current.document));
     };
-    window.addEventListener("spatialdeck:before-update", beforeUpdate);
+    window.addEventListener("xcursus:before-update", beforeUpdate);
     return () => {
       document.removeEventListener("visibilitychange", flush);
       window.removeEventListener("beforeunload", unload);
-      window.removeEventListener("spatialdeck:before-update", beforeUpdate);
+      window.removeEventListener("xcursus:before-update", beforeUpdate);
     };
   }, [autosave, store]);
   useEffect(() => {
@@ -318,14 +322,14 @@ export function Studio({
     else action();
   }
   async function openFile(input: File) {
-    const archive = input.name.endsWith(".spatialdeck");
+    const format = archiveFormat(input.name);
     const limit = openLimitError(input);
     if (limit) {
       setError(limit);
       return;
     }
     try {
-      const imported = archive ? await readArchive(input) : null;
+      const imported = format ? await readArchive(input) : null;
       const valid = imported
         ? { ok: true as const, value: imported.document, diagnostics: [] }
         : validateDocument(await input.text());
@@ -337,6 +341,12 @@ export function Studio({
         autosave.cancelPending();
         report(store.replace(valid.value));
         if (imported) loadBlobs(valid.value, imported.blobs);
+        // The legacy file is read as a copy and never written back.
+        setWarning(
+          format === "legacy"
+            ? `Imported a legacy ${LEGACY_ARCHIVE_EXTENSION} archive. The original file is unchanged; Save archive writes a ${ARCHIVE_EXTENSION} file.`
+            : "",
+        );
         void repository
           .heads()
           .then((heads) => {
@@ -400,7 +410,10 @@ export function Studio({
       const url = URL.createObjectURL(blob),
         link = window.document.createElement("a");
       link.href = url;
-      link.download = downloadName(doc.metadata.title, "spatialdeck");
+      link.download = downloadName(
+        doc.metadata.title,
+        ARCHIVE_EXTENSION.slice(1),
+      );
       window.document.body.append(link);
       link.click();
       link.remove();
@@ -542,7 +555,7 @@ export function Studio({
       <header className="toolbar">
         <div className="brand">
           <BrandMark />
-          <h1 className="brand-name">SpatialDeck</h1>
+          <h1 className="brand-name">XCursus</h1>
         </div>
         <span className="toolbar-divider" aria-hidden="true" />
         <label className="title-field">
@@ -576,7 +589,7 @@ export function Studio({
           <IconButton
             icon="open"
             label="Open"
-            shortcut="⌘O · JSON or .spatialdeck"
+            shortcut="⌘O · JSON, .xcursus or legacy .spatialdeck"
             ref={openButton}
             onClick={() => file.current?.click()}
           />
@@ -589,7 +602,7 @@ export function Studio({
           <IconButton
             icon="archive"
             label="Save archive"
-            shortcut=".spatialdeck file with the assets"
+            shortcut=".xcursus file with the assets"
             onClick={() => void savePortable()}
           />
           <span className="toolbar-divider" aria-hidden="true" />
@@ -656,7 +669,7 @@ export function Studio({
         <input
           ref={file}
           type="file"
-          accept=".json,.spatialdeck,application/json,application/zip"
+          accept={PROJECT_ACCEPT}
           aria-label="JSON project file"
           className="file-input"
           onChange={(e) => {

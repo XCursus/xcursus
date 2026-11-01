@@ -2,7 +2,7 @@ import "fake-indexeddb/auto";
 import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { IDBFactory, IDBIndex, IDBObjectStore } from "fake-indexeddb";
-import type { ProjectDocument } from "@spatialdeck/core";
+import type { ProjectDocument } from "@xcursus/core";
 import {
   Autosave,
   DATABASE_VERSION,
@@ -179,7 +179,7 @@ describe("IndexedDB versionchange and blocked upgrades", () => {
     const { repo, warnings } = repository(factory);
     const saving = repo.save(emptyProject(), 0);
     await until(() =>
-      warnings.some((w) => w && /another SpatialDeck Studio tab/.test(w)),
+      warnings.some((w) => w && /another XCursus Studio tab/.test(w)),
     );
     old.close();
     expect((await saving).revision).toBe(1);
@@ -356,10 +356,8 @@ describe("names shown and written by Studio", () => {
     expect(downloadName("Temporal System — stress-test (edited)", "json")).toBe(
       "Temporal_System_stress-test_edited.json",
     );
-    expect(downloadName("Café: «draft»", "spatialdeck")).toBe(
-      "Café_draft.spatialdeck",
-    );
-    expect(downloadName(" — ", "json")).toBe("spatialdeck.json");
+    expect(downloadName("Café: «draft»", "xcursus")).toBe("Café_draft.xcursus");
+    expect(downloadName(" — ", "json")).toBe("xcursus.json");
   });
   it("revision times use the British English interface, not the browser locale", () => {
     const time = revisionTime(Date.UTC(2026, 9, 29, 10, 11, 22));

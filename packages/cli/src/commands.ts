@@ -5,11 +5,12 @@ import {
   mkdtemp,
   readFile,
   readdir,
+  realpath,
   rename,
   rm,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, join } from "node:path";
+import { basename, join, resolve } from "node:path";
 import {
   diagnostic,
   frameSchedule,
@@ -18,13 +19,13 @@ import {
   publicDocument,
   sampleCapture,
   viewMatrix,
-} from "@spatialdeck/core";
+} from "@xcursus/core";
 import type {
   CapturePlan,
   Diagnostic,
   FrameSchedule,
   ProjectDocument,
-} from "@spatialdeck/core";
+} from "@xcursus/core";
 import {
   buildPage,
   inlineFonts,
@@ -46,6 +47,12 @@ import {
 } from "./capture.js";
 import type { Chromium } from "./capture.js";
 import { PDFDocument } from "pdf-lib";
+import {
+  ARCHIVE_EXTENSION,
+  LEGACY_ARCHIVE_EXTENSION,
+  archiveFormat,
+  writeArchive,
+} from "@xcursus/plugins/archive";
 import {
   CliError,
   EXIT,
@@ -256,6 +263,69 @@ export async function validate(input: string) {
   return { project, diagnostics: problems, ok: problems.length === 0 };
 }
 
+/**
+ * Writes the project as a `.xcursus` archive: the document migrated to the
+ * current schema, private notes and extensions included, with every asset
+ * verified. Accepts JSON with its assets, `.xcursus` and legacy `.spatialdeck`;
+ * the input is only read.
+ */
+export async function pack(
+  input: string,
+  options: { out: string; overwrite: boolean },
+  report: Report,
+) {
+  if (archiveFormat(options.out) !== "current")
+    throw new CliError(
+      EXIT.data,
+      `--out must name a ${ARCHIVE_EXTENSION} file: ${options.out}`,
+    );
+  const target = await prepareOutput(options.out, options.overwrite, "file");
+  const project = await loadProject(input);
+  // The source is a real path: compare against the real target when it exists.
+  const existing = await realpath(target.path).catch(() =>
+    resolve(target.path),
+  );
+  if (existing === project.source)
+    throw new CliError(
+      EXIT.output,
+      `Refusing to replace the input project: ${project.source}`,
+    );
+  const problems = project.resources.flatMap((r) =>
+    r.diagnostic ? [{ ...r.diagnostic, severity: "error" as const }] : [],
+  );
+  if (problems.length)
+    throw new CliError(
+      EXIT.data,
+      "Every asset must be available and verified to write an archive",
+      problems,
+    );
+  let bytes: Uint8Array;
+  try {
+    const blob = await writeArchive(project.document, project.blobs);
+    bytes = new Uint8Array(await blob.arrayBuffer());
+  } catch (error) {
+    throw new CliError(EXIT.data, `Cannot write the archive: ${String(error)}`);
+  }
+  await writeAtomic(target.path, bytes);
+  const from =
+    project.sourceSchemaVersion === project.document.schemaVersion
+      ? ""
+      : `, migrated from ${project.sourceSchemaVersion}`;
+  const legacy =
+    project.archiveFormat === "legacy"
+      ? `, from a legacy ${LEGACY_ARCHIVE_EXTENSION} archive`
+      : "";
+  report.log(
+    `archive ${target.path} (schema ${project.document.schemaVersion}${from}${legacy}, ${project.resources.length} resources, ${bytes.length} bytes)`,
+  );
+  return {
+    path: target.path,
+    byteLength: bytes.length,
+    schemaVersion: project.document.schemaVersion,
+    sourceSchemaVersion: project.sourceSchemaVersion,
+  };
+}
+
 export async function exportHtml(
   input: string,
   options: CommonOptions,
@@ -345,7 +415,7 @@ export async function exportHtml(
       ),
       ...fontResources(fonts, "embedded"),
       {
-        id: "spatialdeck-runtime.js",
+        id: "xcursus-runtime.js",
         kind: "runtime",
         sha256: sha(runtime.script),
         status: "embedded",
@@ -406,7 +476,7 @@ export async function build(
         byteLength: Buffer.byteLength(data),
       });
     };
-    await put("spatialdeck-runtime.js", runtime.script);
+    await put("xcursus-runtime.js", runtime.script);
     await put("THIRD_PARTY_NOTICES.txt", runtime.notices);
     for (const sheet of sheets) {
       await put(sheet.name, sheet.css);
@@ -458,7 +528,7 @@ export async function build(
         ),
         ...fontResources(fonts, "copied"),
         {
-          id: "spatialdeck-runtime.js",
+          id: "xcursus-runtime.js",
           kind: "runtime",
           sha256: sha(runtime.script),
           status: "copied",
@@ -572,7 +642,7 @@ async function withCapture<T>(
     capture: true,
   });
   // Owned temporary directory: the only thing this command removes.
-  const dir = await mkdtemp(join(tmpdir(), `spatialdeck-${format}-`));
+  const dir = await mkdtemp(join(tmpdir(), `xcursus-${format}-`));
   const chromium = await launchChromium().catch(async (error: unknown) => {
     await rm(dir, { recursive: true, force: true });
     throw error;
@@ -613,14 +683,14 @@ async function renderAt(
     ([p, time]) =>
       (
         window as unknown as {
-          spatialdeckCapture: {
+          xcursusCapture: {
             renderAt(
               plan: unknown,
               t: number,
             ): Promise<{ ok: boolean; diagnostics: Diagnostic[] }>;
           };
         }
-      ).spatialdeckCapture.renderAt(p, time),
+      ).xcursusCapture.renderAt(p, time),
     [plan, t] as const,
   );
   if (!result.ok)
@@ -632,7 +702,7 @@ async function renderAt(
   // relative to its magnitude, since CSSOM serializes about six significant digits.
   const rendered = await session.page.evaluate(() => {
     const world = document.querySelector<HTMLElement>(
-      "#spatialdeck-stage .sd-world",
+      "#xcursus-stage .xc-world",
     );
     return world?.style.transform ?? "";
   });
@@ -695,7 +765,7 @@ export async function exportPdf(
         // A flow scene does not grow: what it cannot show is not on the page.
         const hidden = await session.page.evaluate((id) => {
           const content = window.document.querySelector<HTMLElement>(
-            `.sd-scene[data-scene-id="${CSS.escape(id)}"] .sd-content`,
+            `.xc-scene[data-scene-id="${CSS.escape(id)}"] .xc-content`,
           );
           return content ? content.scrollHeight - content.clientHeight : 0;
         }, visit.sceneId);
@@ -717,8 +787,8 @@ export async function exportPdf(
         ))
           book.addPage(page);
       }
-      book.setTitle(document.metadata.title || "SpatialDeck");
-      book.setCreator(`SpatialDeck CLI ${toolVersion}`);
+      book.setTitle(document.metadata.title || "XCursus");
+      book.setCreator(`XCursus CLI ${toolVersion}`);
       book.setProducer("Chromium (Skia/PDF) pages joined with pdf-lib");
       const pdf = Buffer.from(await book.save({ useObjectStreams: false }));
       return {
@@ -840,7 +910,7 @@ function captureManifest(
       ),
       ...fontResources(fonts, "embedded"),
       {
-        id: "spatialdeck-runtime.js",
+        id: "xcursus-runtime.js",
         kind: "runtime",
         sha256: sha(runtime.script),
         status: "embedded",

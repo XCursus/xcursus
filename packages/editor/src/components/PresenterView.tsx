@@ -1,25 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createAssetResolver, createPlayer } from "@spatialdeck/player";
-import type {
-  AssetBlobs,
-  NavigationRequest,
-  Player,
-} from "@spatialdeck/player";
+import { createAssetResolver, createPlayer } from "@xcursus/player";
+import type { AssetBlobs, NavigationRequest, Player } from "@xcursus/player";
 import {
   createPresenterSession,
   publicWindowName,
-} from "@spatialdeck/player/presenter";
+} from "@xcursus/player/presenter";
 import type {
   PresenterCommand,
   PresenterSession,
-} from "@spatialdeck/player/presenter";
-import { createBuiltinRegistry } from "@spatialdeck/plugins/builtins";
-import type { PluginDefinition } from "@spatialdeck/plugins";
-import { publicDocument } from "@spatialdeck/core";
+} from "@xcursus/player/presenter";
+import { createBuiltinRegistry } from "@xcursus/plugins/builtins";
+import type { PluginDefinition } from "@xcursus/plugins";
+import { publicDocument } from "@xcursus/core";
 import { Icon, IconButton } from "./icons.js";
-import type { Choice, ProjectDocument } from "@spatialdeck/core";
+import type { Choice, ProjectDocument } from "@xcursus/core";
 
-export const PRESENTER_SESSION_KEY = "spatialdeck-presenter-session";
+export const PRESENTER_SESSION_KEY = "xcursus-presenter-session";
 /** Opens the public window on the user's gesture; null when a blocker refuses it. */
 export function openPublicWindow(sessionId: string): Window | null {
   return window.open(

@@ -4,7 +4,7 @@
   "metadata": {
     "title": "Layout inside the scene",
     "language": "en",
-    "author": "SpatialDeck example",
+    "author": "XCursus example",
     "description": "0.5 example: canvas scenes with side-by-side, overlapping and rotated blocks, a hidden title, a non-default theme and a reading order that differs from the visual order."
   },
   "settings": {

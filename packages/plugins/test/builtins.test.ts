@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { validateDocument } from "@spatialdeck/core";
-import type { ProjectDocument } from "@spatialdeck/core";
+import { validateDocument } from "@xcursus/core";
+import type { ProjectDocument } from "@xcursus/core";
 import fixture from "../../../examples/content-gallery/project.json";
-import { ContentMount, defaultMessages } from "@spatialdeck/player";
+import { ContentMount, defaultMessages } from "@xcursus/player";
 import type {
   ContentContext,
   ContentRenderer,
   RendererFactory,
-} from "@spatialdeck/player";
+} from "@xcursus/player";
 import { createBuiltinRegistry, lazyRenderer } from "../src/builtins.js";
 import { samplePlugin } from "../src/sample.js";
 
@@ -105,7 +105,7 @@ describe("renderers on demand (0.6)", () => {
       context("plugin"),
       createBuiltinRegistry().registry,
     );
-    expect(host.textContent).toContain("org.spatialdeck.badge");
+    expect(host.textContent).toContain("org.xcursus.badge");
     without.destroy();
     const approved = createBuiltinRegistry({ plugins: [samplePlugin()] });
     const host2 = document.createElement("div");
@@ -114,7 +114,7 @@ describe("renderers on demand (0.6)", () => {
       context("plugin"),
       approved.registry,
     );
-    expect(host2.classList.contains("sd-plugin-badge")).toBe(true);
+    expect(host2.classList.contains("xc-plugin-badge")).toBe(true);
     withBadge.destroy();
   });
   it("replace swaps single builtin types, e.g. for export profiles", () => {

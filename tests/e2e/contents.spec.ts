@@ -25,10 +25,10 @@ declare global {
 }
 async function gallery(page: Page) {
   await page.goto("/content");
-  await expect(page.locator(".sd-player")).toHaveCount(2);
+  await expect(page.locator(".xc-player")).toHaveCount(2);
   await expect(
     page
-      .locator('.sd-block [role="status"]')
+      .locator('.xc-block [role="status"]')
       .filter({ hasText: "Loading local resource" }),
   ).toHaveCount(0);
   await page.evaluate(() => document.fonts.ready);
@@ -155,11 +155,11 @@ test("hostile HTML Markdown SVG formulas remain inert at mount and update with n
       const root = document.querySelector("#player-1")!;
       checks.push(
         !root.querySelector(
-          ".sd-block script,.sd-block iframe,.sd-block foreignObject,.sd-block animate,.sd-block form,.sd-block object,.sd-block style,.sd-block img",
+          ".xc-block script,.xc-block iframe,.xc-block foreignObject,.xc-block animate,.xc-block form,.xc-block object,.xc-block style,.xc-block img",
         ),
       );
       checks.push(
-        ![...root.querySelectorAll(".sd-block *")].some((n) =>
+        ![...root.querySelectorAll(".xc-block *")].some((n) =>
           [...n.attributes].some(
             (a) =>
               a.name.startsWith("on") ||
@@ -487,7 +487,7 @@ test("gallery archive opens in Studio; every builtin edits with undo/redo and do
     bytes = await readFile(source);
   await page.goto(studioURL);
   await page.getByLabel("JSON project file").setInputFiles({
-    name: "gallery.spatialdeck",
+    name: "gallery.xcursus",
     mimeType: "application/zip",
     buffer: bytes,
   });
@@ -552,7 +552,7 @@ test("gallery archive opens in Studio; every builtin edits with undo/redo and do
     () => window.studio!.store.getSnapshot().document,
   );
   await page.getByRole("button", { name: "Present", exact: true }).click();
-  await expect(page.locator(".presentation-player .sd-player")).toHaveCount(1);
+  await expect(page.locator(".presentation-player .xc-player")).toHaveCount(1);
   await page
     .getByRole("button", { name: "Back to the editor", exact: true })
     .click();
@@ -569,7 +569,7 @@ test("gallery archive opens in Studio; every builtin edits with undo/redo and do
     vanilla = await fresh.newPage();
   await gallery(vanilla);
   await vanilla.getByLabel("Open local gallery").setInputFiles({
-    name: "edited.spatialdeck",
+    name: "edited.xcursus",
     mimeType: "application/zip",
     buffer: saved,
   });
@@ -604,7 +604,7 @@ test("missing assets recover manually, Blob revisions survive reload and malform
     JSON.stringify(window.studio!.store.getSnapshot().document),
   );
   await page.getByLabel("JSON project file").setInputFiles({
-    name: "bad.spatialdeck",
+    name: "bad.xcursus",
     mimeType: "application/zip",
     buffer: Buffer.from("not a zip"),
   });
@@ -795,7 +795,7 @@ test("Blob recovery is atomic with revisions, retains old resources and collects
   const bytes = await readFile((await (await download).path())!);
   await page.goto(studioURL);
   await page.getByLabel("JSON project file").setInputFiles({
-    name: "gallery.spatialdeck",
+    name: "gallery.xcursus",
     mimeType: "application/zip",
     buffer: bytes,
   });

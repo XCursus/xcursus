@@ -5,7 +5,7 @@ import {
   sha256,
   verifyAsset,
 } from "../src/assets/index.js";
-import type { Asset } from "@spatialdeck/core";
+import type { Asset } from "@xcursus/core";
 const encoder = new TextEncoder();
 const reference = (bytes: Uint8Array) =>
   createHash("sha256").update(bytes).digest("hex");

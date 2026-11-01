@@ -6,8 +6,8 @@ import {
   updateCapabilities,
   getWorldMatrix,
   worldPositionToLocal,
-} from "@spatialdeck/core";
-import type { ProjectDocument, Result } from "@spatialdeck/core";
+} from "@xcursus/core";
+import type { ProjectDocument, Result } from "@xcursus/core";
 import type { DocumentEdit } from "../commands/index.js";
 export interface MapCamera {
   x: number;

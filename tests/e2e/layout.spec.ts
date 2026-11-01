@@ -25,7 +25,7 @@ declare global {
     cspViolations: string[];
   }
 }
-const archive = "examples/layout-canvas/layout-canvas.spatialdeck";
+const archive = "examples/layout-canvas/layout-canvas.xcursus";
 const doc = (input: unknown = project): ProjectDocument => {
   const r = validateDocument(input);
   if (!r.ok) throw Error(JSON.stringify(r.diagnostics));
@@ -68,12 +68,12 @@ async function rendered(
   return page.evaluate(
     ({ host, sceneId, blocks }) => {
       const root = document.querySelector(host)!;
-      const viewport = root.querySelector<HTMLElement>(".sd-viewport")!,
+      const viewport = root.querySelector<HTMLElement>(".xc-viewport")!,
         rect = viewport.getBoundingClientRect(),
         fit = rect.width / parseFloat(viewport.style.width);
       return blocks.map(({ id, points }) => {
         const element = root.querySelector<HTMLElement>(
-          `.sd-scene[data-scene-id="${sceneId}"] [data-block-id="${id}"]`,
+          `.xc-scene[data-scene-id="${sceneId}"] [data-block-id="${id}"]`,
         )!;
         return points.map(([x, y]) => {
           const marker = document.createElement("i");
@@ -99,7 +99,7 @@ const close = (a: number[][], b: number[][], tolerance = 1) =>
   );
 async function vanilla(page: Page) {
   await page.goto("/layout");
-  await expect(page.locator(".sd-player")).toHaveCount(2);
+  await expect(page.locator(".xc-player")).toHaveCount(2);
   await expect(
     page.locator('#player-1 [data-block-id="picture"] img'),
   ).toHaveCount(1);
@@ -119,7 +119,7 @@ async function clientPoint(
     ({ host, x, y, width }) => {
       const viewport = document
         .querySelector(host)!
-        .querySelector<HTMLElement>(".sd-viewport")!;
+        .querySelector<HTMLElement>(".xc-viewport")!;
       const rect = viewport.getBoundingClientRect(),
         fit = rect.width / width;
       return [rect.x + x * fit, rect.y + y * fit] as const;
@@ -210,9 +210,9 @@ test.describe("player", () => {
     const camera = resolveSceneCamera(d, "cover");
     if (!camera.ok) throw Error();
     const cover = page.locator(
-      '#player-1 .sd-scene[data-scene-id="cover"] .sd-content',
+      '#player-1 .xc-scene[data-scene-id="cover"] .xc-content',
     );
-    await expect(cover).toHaveClass(/sd-layout-canvas/);
+    await expect(cover).toHaveClass(/xc-layout-canvas/);
     expect(
       await cover
         .locator("[data-block-id]")
@@ -287,7 +287,7 @@ test.describe("player", () => {
       }),
     );
     await update(page, links, "n1");
-    await page.locator("#player-1 .sd-player button").first().focus();
+    await page.locator("#player-1 .xc-player button").first().focus();
     const order: string[] = [];
     // WebKit, like Safari by default, reaches buttons and links with Option+Tab.
     const tab = info.project.name === "webkit" ? "Alt+Tab" : "Tab";
@@ -314,11 +314,11 @@ test.describe("player", () => {
       .locator("#player-1")
       .getByRole("button", { name: "Text view" })
       .click();
-    await expect(page.locator("#player-1 .sd-outline")).toContainText(
+    await expect(page.locator("#player-1 .xc-outline")).toContainText(
       "Spaces that read",
     );
     const outline = await page
-      .locator("#player-1 .sd-outline li")
+      .locator("#player-1 .xc-outline li")
       .first()
       .locator("p")
       .allTextContents();
@@ -336,7 +336,7 @@ test.describe("player", () => {
         window.cspViolations.push(
           `${e.violatedDirective} ${e.blockedURI} ${target?.nodeName ?? ""}.${
             target?.getAttribute?.("class") ?? ""
-          } ${target?.closest?.(".sd-player") ? "player" : "page"} ${
+          } ${target?.closest?.(".xc-player") ? "player" : "page"} ${
             e.sample
           } ${target?.outerHTML?.slice(0, 160) ?? ""}`,
         );
@@ -354,7 +354,7 @@ test.describe("player", () => {
       });
     });
     await page.goto("/core");
-    await expect(page.locator(".sd-player")).toHaveCount(2);
+    await expect(page.locator(".xc-player")).toHaveCount(2);
     await page.evaluate(() => document.fonts.ready);
     expect(
       await page.evaluate(
@@ -371,16 +371,16 @@ test.describe("player", () => {
         .getEntriesByType("resource")
         .map((e) => e.name.split("/").pop()!)
         .filter((n) => n.includes("atkinson")),
-      loaded: document.fonts.check('26px "SpatialDeck Atkinson Hyperlegible"'),
+      loaded: document.fonts.check('26px "XCursus Atkinson Hyperlegible"'),
     }));
     expect(fonts.loaded).toBe(true);
     expect(fonts.files.some((n) => n.includes("latin-400-normal"))).toBe(true);
     const content = page.locator(
-      '#player-1 .sd-scene[data-scene-id="cover"] .sd-content',
+      '#player-1 .xc-scene[data-scene-id="cover"] .xc-content',
     );
     const styles = await content.evaluate((el) => {
       const c = getComputedStyle(el),
-        stage = getComputedStyle(el.closest(".sd-stage")!),
+        stage = getComputedStyle(el.closest(".xc-stage")!),
         headline = getComputedStyle(
           el.querySelector('[data-block-id="headline"]')!,
         );
@@ -402,7 +402,7 @@ test.describe("player", () => {
       backdrop: "rgb(30, 41, 59)",
       headlineColor: "rgb(154, 52, 18)",
     });
-    expect(styles.font).toContain("SpatialDeck Atkinson Hyperlegible");
+    expect(styles.font).toContain("XCursus Atkinson Hyperlegible");
     expect(styles.shadow).toContain("rgb(249, 115, 22)");
     expect(parseFloat(styles.headlineSize)).toBeCloseTo(26 * 2.2, 1);
     // Motivated exception: Playwright's Linux WebKit (CI) reports
@@ -428,7 +428,7 @@ test.describe("player", () => {
     page,
   }) => {
     await page.goto("/content");
-    await expect(page.locator(".sd-player")).toHaveCount(2);
+    await expect(page.locator(".xc-player")).toHaveCount(2);
     await page.evaluate(async () => {
       const d = structuredClone(window.demoDocument);
       for (const id of ["image", "video"]) {
@@ -487,11 +487,11 @@ test.describe("player", () => {
   }) => {
     for (const route of ["/core", "/structure", "/content"]) {
       await page.goto(route);
-      await expect(page.locator(".sd-player")).toHaveCount(2);
+      await expect(page.locator(".xc-player")).toHaveCount(2);
       const result = await page.evaluate(() => {
         const player = document.querySelector("#player-1")!;
         const contents = [
-          ...player.querySelectorAll<HTMLElement>(".sd-content"),
+          ...player.querySelectorAll<HTMLElement>(".xc-content"),
         ];
         const style = (el: Element) => {
           const c = getComputedStyle(el);
@@ -524,15 +524,15 @@ test.describe("player", () => {
             ...new Set(
               [...player.querySelectorAll<HTMLElement>("[data-block-id]")].map(
                 (b) =>
-                  `${/sd-(?:framed|align|valign|size)/.test(b.className)}|${b.getAttribute("style") ?? ""}`,
+                  `${/xc-(?:framed|align|valign|size)/.test(b.className)}|${b.getAttribute("style") ?? ""}`,
               ),
             ),
           ],
-          stage: getComputedStyle(player.querySelector(".sd-stage")!)
+          stage: getComputedStyle(player.querySelector(".xc-stage")!)
             .backgroundColor,
         };
       });
-      expect(result.classes).toEqual(["sd-content"]);
+      expect(result.classes).toEqual(["xc-content"]);
       expect(result.contents).toHaveLength(1);
       const [
         padding,
@@ -585,7 +585,7 @@ async function openStudio(
   file: string | { name: string; mimeType: string; buffer: Buffer } = archive,
 ) {
   await page.goto(studioURL);
-  await expect(page.locator(".preview-player .sd-player")).toHaveCount(1);
+  await expect(page.locator(".preview-player .xc-player")).toHaveCount(1);
   await page.getByLabel("JSON project file").setInputFiles(file);
   await expect(page.getByLabel("Project title")).not.toHaveValue("Untitled");
 }
@@ -621,7 +621,7 @@ async function previewMatches(page: Page, sceneId: string, blockId: string) {
     .poll(() =>
       page
         .locator(
-          `.preview-player .sd-scene[data-scene-id="${sceneId}"] [data-block-id="${blockId}"]`,
+          `.preview-player .xc-scene[data-scene-id="${sceneId}"] [data-block-id="${blockId}"]`,
         )
         .evaluate((el) =>
           (el as HTMLElement).style.transform
@@ -648,7 +648,7 @@ async function overlayAligned(page: Page, sceneId: string) {
         ...document.querySelectorAll<HTMLElement>("[data-layout-block]"),
       ].map((f) => {
         const b = document.querySelector(
-          `.preview-player .sd-scene[data-scene-id="${sceneId}"] [data-block-id="${f.dataset.layoutBlock}"]`,
+          `.preview-player .xc-scene[data-scene-id="${sceneId}"] [data-block-id="${f.dataset.layoutBlock}"]`,
         )!;
         const r1 = f.getBoundingClientRect(),
           r2 = b.getBoundingClientRect();
@@ -859,7 +859,7 @@ test.describe("Studio scene editor", () => {
       .poll(() =>
         page
           .locator(
-            '.preview-player .sd-scene[data-scene-id="cover"] [data-block-id]',
+            '.preview-player .xc-scene[data-scene-id="cover"] [data-block-id]',
           )
           .evaluateAll((els) =>
             els.map((e) => (e as HTMLElement).dataset.blockId),
@@ -887,7 +887,7 @@ test.describe("Studio scene editor", () => {
         ["flow-1", "flow-2"].map((id) =>
           document
             .querySelector(
-              `.preview-player .sd-scene[data-scene-id="context"] [data-block-id="${id}"]`,
+              `.preview-player .xc-scene[data-scene-id="context"] [data-block-id="${id}"]`,
             )!
             .getBoundingClientRect()
             .toJSON(),
@@ -944,9 +944,9 @@ test.describe("Studio scene editor", () => {
     await expect
       .poll(() =>
         page
-          .locator(".preview-player .sd-player")
+          .locator(".preview-player .xc-player")
           .evaluate((el) =>
-            (el as HTMLElement).style.getPropertyValue("--sd-font-body"),
+            (el as HTMLElement).style.getPropertyValue("--xc-font-body"),
           ),
       )
       .toContain("serif");
@@ -968,9 +968,9 @@ test.describe("Studio scene editor", () => {
       .selectOption("plain");
     await expect(
       page.locator(
-        '.preview-player .sd-scene[data-scene-id="cover"] .sd-content',
+        '.preview-player .xc-scene[data-scene-id="cover"] .xc-content',
       ),
-    ).toHaveClass(/sd-variant-plain/);
+    ).toHaveClass(/xc-variant-plain/);
     await page.getByRole("checkbox", { name: /Visible title/ }).check();
     expect(scene(await studioDoc(page), "cover").appearance).toEqual({
       variant: "plain",
@@ -982,7 +982,7 @@ test.describe("Studio scene editor", () => {
     await page.getByRole("combobox", { name: "Text size" }).selectOption("xs");
     await expect(
       page.locator('.preview-player [data-block-id="headline"]'),
-    ).toHaveClass(/sd-size-xs/);
+    ).toHaveClass(/xc-size-xs/);
     expect(scene(await studioDoc(page), "cover").blocks[0]!.style).toEqual({
       size: "xs",
       color: "rust",
@@ -1081,7 +1081,7 @@ test.describe("Studio scene editor", () => {
       .getByRole("button", { name: "Save archive", exact: true })
       .click();
     const archivePath = evidencePath(
-      `layout/saved-${info.project.name}.spatialdeck`,
+      `layout/saved-${info.project.name}.xcursus`,
     );
     await (await zip).saveAs(archivePath);
     expect(JSON.parse(await readFile(jsonPath, "utf8"))).toEqual(edited);
@@ -1110,7 +1110,7 @@ test.describe("Studio scene editor", () => {
     ).toHaveCount(1);
     // Presenting in Studio uses the same player and the same frames.
     await fresh.getByRole("button", { name: "Present", exact: true }).click();
-    await expect(fresh.locator(".presentation-player .sd-player")).toHaveCount(
+    await expect(fresh.locator(".presentation-player .xc-player")).toHaveCount(
       1,
     );
     const fit = resolveSceneCamera(edited, "cover");
@@ -1312,7 +1312,7 @@ test.describe("Studio scene editor", () => {
     const summary = {
       browser: info.project.name,
       browserVersion: browser.version(),
-      runner: process.env.SPATIALDECK_E2E_RUNNER,
+      runner: process.env.XCURSUS_E2E_RUNNER,
       ci: !!process.env.CI,
       blocks: 30,
       gestures: 100,

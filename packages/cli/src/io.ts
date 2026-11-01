@@ -11,24 +11,22 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { basename, dirname, join, resolve, sep } from "node:path";
-import {
-  diagnostic,
-  normalizedPath,
-  validateDocument,
-} from "@spatialdeck/core";
-import type { Diagnostic, ProjectDocument } from "@spatialdeck/core";
+import { diagnostic, normalizedPath, validateDocument } from "@xcursus/core";
+import type { Diagnostic, ProjectDocument } from "@xcursus/core";
 import {
   AssetError,
   FILE_LIMIT,
   TOTAL_LIMIT,
   sha256,
   verifyAsset,
-} from "@spatialdeck/player";
+} from "@xcursus/player";
 import {
   ARCHIVE_LIMIT,
   JSON_LIMIT,
+  archiveFormat,
   readArchive,
-} from "@spatialdeck/plugins/archive";
+} from "@xcursus/plugins/archive";
+import type { ArchiveFormat } from "@xcursus/plugins/archive";
 
 /** Exit codes of the contract: 0 success (warnings allowed), 1 data, 2 environment, 3 write/export. */
 export const EXIT = { ok: 0, data: 1, environment: 2, output: 3 } as const;
@@ -54,6 +52,8 @@ export interface LoadedResource {
 }
 export interface LoadedProject {
   kind: "json" | "archive";
+  /** `current` for `.xcursus`, `legacy` for a `.spatialdeck` archive; absent for JSON. */
+  archiveFormat?: ArchiveFormat;
   /** Real path of the project file or archive. */
   source: string;
   sourceSchemaVersion: string;
@@ -66,8 +66,9 @@ export interface LoadedProject {
 const within = (root: string, path: string) => path.startsWith(root + sep);
 
 /**
- * Reads a project JSON with its asset root (the file's directory) or a
- * .spatialdeck archive. Asset paths are confined to the root: traversal,
+ * Reads a project JSON with its asset root (the file's directory), a
+ * .xcursus archive or a legacy .spatialdeck archive (same container, read
+ * only; the source file is never modified). Asset paths are confined to the root: traversal,
  * absolute and encoded paths and symbolic links are rejected; bytes are
  * checked against the declared size, MIME signature and digest.
  */
@@ -79,7 +80,8 @@ export async function loadProject(input: string): Promise<LoadedProject> {
   } catch {
     throw new CliError(EXIT.data, `Project not found or not a file: ${input}`);
   }
-  if (source.toLowerCase().endsWith(".spatialdeck")) {
+  const format = archiveFormat(source);
+  if (format) {
     const size = (await stat(source)).size;
     if (size > ARCHIVE_LIMIT)
       throw new CliError(EXIT.data, "Archive exceeds the size limit");
@@ -103,9 +105,10 @@ export async function loadProject(input: string): Promise<LoadedProject> {
       });
     return {
       kind: "archive",
+      archiveFormat: format,
       source,
-      // readArchive returns the migrated copy; archives are written by Studio/CLI at the current version.
-      sourceSchemaVersion: archive.document.schemaVersion,
+      // The document is the migrated copy; this is the version the archive declared.
+      sourceSchemaVersion: archive.sourceSchemaVersion,
       document: archive.document,
       blobs: archive.blobs,
       resources,
@@ -126,7 +129,7 @@ export async function loadProject(input: string): Promise<LoadedProject> {
   if (!valid.ok)
     throw new CliError(
       EXIT.data,
-      "The project is not a valid SpatialDeck document",
+      "The project is not a valid XCursus document",
       valid.diagnostics,
     );
   const document = valid.value;
@@ -281,7 +284,7 @@ export async function prepareOutput(
     )
       throw new CliError(
         EXIT.output,
-        `Refusing to replace ${target}: it is not a previous SpatialDeck build (no ${MANIFEST_NAME}).`,
+        `Refusing to replace ${target}: it is not a previous XCursus build (no ${MANIFEST_NAME}).`,
       );
   }
   return { path, manifest };

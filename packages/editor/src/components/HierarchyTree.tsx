@@ -1,4 +1,4 @@
-import type { Scene } from "@spatialdeck/core";
+import type { Scene } from "@xcursus/core";
 import type { EditorSession, EditorStore } from "../store/index.js";
 import { reparent } from "../commands/index.js";
 import { useState } from "react";

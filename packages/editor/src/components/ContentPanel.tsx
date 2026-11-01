@@ -1,12 +1,16 @@
 import { useState } from "react";
-import { failure, success } from "@spatialdeck/core";
-import type { Block, Scene, JsonValue } from "@spatialdeck/core";
+import { failure, success } from "@xcursus/core";
+import type { Block, Scene, JsonValue } from "@xcursus/core";
 import { defaultFrame, editScene, randomId } from "../commands/index.js";
 import type { EditorStore } from "../store/index.js";
 import { TextField } from "./Inspector.js";
 import { Icon, IconButton } from "./icons.js";
 import { blockTypes } from "./blockTypes.js";
-import { sampleInspector } from "@spatialdeck/plugins/sample";
+import {
+  SAMPLE_PLUGIN_ID,
+  SAMPLE_PLUGIN_IDS,
+  sampleInspector,
+} from "@xcursus/plugins/sample";
 export function ContentPanel({
   store,
   scene,
@@ -77,7 +81,7 @@ export function ContentPanel({
       },
       embed: { url: "https://example.invalid/", title: "External content" },
       plugin: {
-        pluginId: "org.spatialdeck.badge",
+        pluginId: SAMPLE_PLUGIN_ID,
         apiVersion: "1.0.0",
         dataVersion: "1.0.0",
         payload: { label: "Local plugin" },
@@ -134,7 +138,7 @@ export function ContentPanel({
                 />
               )}
               {block.type === "plugin" &&
-                block.data.pluginId === sampleInspector.pluginId &&
+                SAMPLE_PLUGIN_IDS.includes(block.data.pluginId) &&
                 !!block.data.payload &&
                 typeof block.data.payload === "object" &&
                 !Array.isArray(block.data.payload) &&

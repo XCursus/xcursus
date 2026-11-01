@@ -97,13 +97,14 @@ test("Studio shell: offline reload with the IndexedDB project, explicit update k
   const site = await deployment(browserName);
   try {
     await page.goto(`${site.url}/?studio-debug`);
-    await expect(page.locator(".preview-player .sd-player")).toHaveCount(1);
+    await expect(page.locator(".preview-player .xc-player")).toHaveCount(1);
     await controlled(page);
     const first = await shellCaches(page);
-    expect(
-      first.filter((k) => k.startsWith("spatialdeck-studio-")),
-    ).toHaveLength(1);
-    // Work that exists only in IndexedDB (autosave), plus a cache of another app.
+    expect(first.filter((k) => k.startsWith("xcursus-studio-"))).toHaveLength(
+      1,
+    );
+    // Work that exists only in IndexedDB (autosave), a cache of another app and
+    // one left by a release published under the former name.
     await page.getByRole("button", { name: "Create the first scene" }).click();
     await expect
       .poll(
@@ -119,13 +120,15 @@ test("Studio shell: offline reload with the IndexedDB project, explicit update k
     await page.evaluate(async () => {
       const cache = await caches.open("another-app");
       await cache.put("/another-app/data", new Response("keep me"));
+      const legacy = await caches.open("spatialdeck-studio-0123456789abcdef");
+      await legacy.put("/legacy/data", new Response("stale shell"));
     });
     // Offline: the server is down, the shell comes from the cache and the
     // project from IndexedDB.
     await site.stop();
     page.on("dialog", (d) => void d.accept());
     await page.reload();
-    await expect(page.locator(".preview-player .sd-player")).toHaveCount(1);
+    await expect(page.locator(".preview-player .xc-player")).toHaveCount(1);
     await expect(
       page.getByRole("dialog", { name: "Local recovery available" }),
     ).toBeVisible();
@@ -144,9 +147,7 @@ test("Studio shell: offline reload with the IndexedDB project, explicit update k
     const notice = page.locator("#shell-update");
     await expect(notice).toBeVisible({ timeout: 15000 });
     expect(
-      (await shellCaches(page)).filter((k) =>
-        k.startsWith("spatialdeck-studio-"),
-      ),
+      (await shellCaches(page)).filter((k) => k.startsWith("xcursus-studio-")),
     ).toHaveLength(2);
     // Nothing changes until the user asks: still the first version.
     await page.waitForTimeout(500);
@@ -157,12 +158,15 @@ test("Studio shell: offline reload with the IndexedDB project, explicit update k
       page.waitForEvent("load"),
       notice.getByRole("button", { name: "Update and reload" }).click(),
     ]);
-    await expect(page.locator(".preview-player .sd-player")).toHaveCount(1);
+    await expect(page.locator(".preview-player .xc-player")).toHaveCount(1);
     const after = await shellCaches(page);
-    const own = after.filter((k) => k.startsWith("spatialdeck-studio-"));
+    const own = after.filter((k) => k.startsWith("xcursus-studio-"));
     expect(own).toHaveLength(1);
     expect(own[0]).toMatch(/-next$/);
     expect(after).toContain("another-app");
+    expect(after.filter((k) => k.startsWith("spatialdeck-studio-"))).toEqual(
+      [],
+    );
     // Data survive the update.
     const heads = await page.evaluate(
       async () => (await window.studio!.repository.heads()).length,
@@ -178,7 +182,7 @@ test("the player playground does not use the Studio worker", async ({
   page,
 }) => {
   await page.goto("/core");
-  await expect(page.locator(".sd-player")).toHaveCount(2);
+  await expect(page.locator(".xc-player")).toHaveCount(2);
   expect(
     await page.evaluate(
       async () => (await navigator.serviceWorker.getRegistrations()).length,

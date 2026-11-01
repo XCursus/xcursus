@@ -121,7 +121,7 @@ export function sanitizeContent(
   for (const [i, node] of nodes.entries()) {
     const id = node.getAttribute("id");
     if (id) {
-      const next = `sd-${prefix}-${i}`;
+      const next = `xc-${prefix}-${i}`;
       if (!ids.has(id)) ids.set(id, next);
       node.setAttribute("id", next);
     }

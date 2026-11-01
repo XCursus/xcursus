@@ -1,11 +1,11 @@
-import { AssetError, defaultMessages } from "@spatialdeck/player";
+import { AssetError, defaultMessages } from "@xcursus/player";
 import type {
   AssetLease,
   ContentContext,
   ContentRenderer,
   PlayerMessages,
   RendererRegistry,
-} from "@spatialdeck/player";
+} from "@xcursus/player";
 import { sanitizeContent } from "./security.js";
 /** Resolver failures become replaceable texts; unknown errors keep their detail. */
 function assetMessage(

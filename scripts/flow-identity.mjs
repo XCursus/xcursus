@@ -8,8 +8,8 @@ import { release } from "node:os";
  *
  *   git worktree add --detach <dir> <baseline-commit>
  *   (cd <dir> && pnpm install --frozen-lockfile --offline && pnpm build)
- *   pnpm --dir <dir> --filter @spatialdeck/playground exec vite preview --port 4191
- *   pnpm --filter @spatialdeck/playground exec vite preview --port 4192
+ *   pnpm --dir <dir> --filter @xcursus/playground exec vite preview --port 4191
+ *   pnpm --filter @xcursus/playground exec vite preview --port 4192
  *   node scripts/flow-identity.mjs --baseline=http://127.0.0.1:4191 --current=http://127.0.0.1:4192
  *
  * Every node of the default path of /core, /structure and /content is shown
@@ -43,7 +43,7 @@ const only = args.engines?.split(",") ?? Object.keys(engines);
 async function capture(page, base, route) {
   await page.goto(base + route);
   await page.waitForFunction(
-    () => document.querySelectorAll(".sd-player").length === 2,
+    () => document.querySelectorAll(".xc-player").length === 2,
   );
   const nodes = await page.evaluate(() => {
     const d = window.demoDocument;
@@ -55,7 +55,7 @@ async function capture(page, base, route) {
       await window.demoPlayers[0].goTo({ nodeId }, { durationMs: 0 });
       await document.fonts.ready;
       const settled = () =>
-        [...document.querySelectorAll("#player-1 .sd-block")].every(
+        [...document.querySelectorAll("#player-1 .xc-block")].every(
           (b) =>
             !/Caricamento/.test(b.textContent ?? "") &&
             [...b.querySelectorAll("video")].every((v) => v.readyState >= 2) &&
@@ -75,10 +75,10 @@ async function capture(page, base, route) {
         );
       };
       const scene = document.querySelector(
-        '#player-1 .sd-scene[data-active="true"]',
+        '#player-1 .xc-scene[data-active="true"]',
       );
       return {
-        content: r(scene.querySelector(".sd-content")),
+        content: r(scene.querySelector(".xc-content")),
         title: r(scene.querySelector("h2")),
         blocks: [...scene.querySelectorAll("[data-block-id]")].map((b) => [
           b.dataset.blockId,

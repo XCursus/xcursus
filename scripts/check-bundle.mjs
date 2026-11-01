@@ -28,7 +28,7 @@ for (const name of await readdir(`${out}/consumer`)) {
   if (name.endsWith(".js")) {
     js += size;
     if (
-      /react-dom|react\/jsx|new Function|eval\(|@spatialdeck\/editor|DOMPurify|marked|KaTeX|fflate/.test(
+      /react-dom|react\/jsx|new Function|eval\(|@xcursus\/editor|DOMPurify|marked|KaTeX|fflate/.test(
         data.toString(),
       )
     )

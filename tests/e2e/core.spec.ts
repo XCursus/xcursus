@@ -11,7 +11,7 @@ declare global {
 }
 test.beforeEach(async ({ page }) => {
   await page.goto("/core");
-  await expect(page.locator(".sd-player")).toHaveCount(2);
+  await expect(page.locator(".xc-player")).toHaveCount(2);
 });
 test("three scenes project independent corner landmarks and fit in the viewport", async ({
   page,
@@ -39,7 +39,7 @@ test("three scenes project independent corner landmarks and fit in the viewport"
         `#player-1 [data-scene-id="${sceneId}"]`,
       )!;
       const stage = document
-        .querySelector("#player-1 .sd-stage")!
+        .querySelector("#player-1 .xc-stage")!
         .getBoundingClientRect();
       const fit = Math.min(stage.width / 1280, stage.height / 720);
       const zoom = 0.9 * Math.min(1280 / scene.size[0], 720 / scene.size[1]);
@@ -67,7 +67,7 @@ test("three scenes project independent corner landmarks and fit in the viewport"
       expect(Math.abs(p.y - p.expectedY)).toBeLessThan(1);
     }
     if (info.project.name === "chromium")
-      await page.locator("#player-1 .sd-player").screenshot({
+      await page.locator("#player-1 .xc-player").screenshot({
         path: evidencePath(`regressions/scene-${sceneId}.png`),
       });
   }
@@ -107,10 +107,10 @@ test("outline reads all text in path order and navigates with reduced motion", a
     .locator("#player-1")
     .getByRole("button", { name: "Text view" })
     .click();
-  const outline = page.locator("#player-1 .sd-outline");
+  const outline = page.locator("#player-1 .xc-outline");
   await expect(outline).toBeVisible();
   await expect(outline.locator("p")).toHaveText([
-    "SpatialDeck",
+    "XCursus",
     "A different perspective",
     "Connecting ideas",
   ]);
@@ -123,13 +123,13 @@ test("outline reads all text in path order and navigates with reduced motion", a
   ).toBe("n3");
   expect(
     await page
-      .locator("#player-1 .sd-content")
+      .locator("#player-1 .xc-content")
       .evaluateAll((els) =>
         els.every((el) => el.getAttribute("aria-hidden") === "true"),
       ),
   ).toBe(true);
   if (info.project.name === "chromium")
-    await page.locator("#player-1 .sd-player").screenshot({
+    await page.locator("#player-1 .xc-player").screenshot({
       path: evidencePath("regressions/outline.png"),
     });
 });
@@ -358,7 +358,7 @@ test("text is rendered inertly and player does not steal focus on mount", async 
     const result = {
       focused: document.activeElement === input,
       images: host.querySelectorAll("img").length,
-      text: host.querySelector(".sd-content p")!.textContent,
+      text: host.querySelector(".xc-content p")!.textContent,
     };
     p.destroy();
     host.remove();
@@ -392,7 +392,7 @@ test("CSP without unsafe-eval and no required remote requests", async ({
       remote.push(request.url());
   });
   await page.goto("/core");
-  await expect(page.locator(".sd-player")).toHaveCount(2);
+  await expect(page.locator(".xc-player")).toHaveCount(2);
   expect(
     await page.evaluate(
       async () =>
@@ -416,13 +416,13 @@ test("CSS 3D unavailable falls back to a navigable outline", async ({
           : original(property, value)) as typeof CSS.supports;
   });
   await page.reload();
-  const outline = page.locator("#player-1 .sd-outline");
+  const outline = page.locator("#player-1 .xc-outline");
   await expect(outline).toBeVisible();
   await outline.getByRole("button", { name: "Detail" }).click();
   expect(
     await page.evaluate(() => window.demoPlayers[0]!.getState().nodeId),
   ).toBe("n2");
-  await expect(page.locator("#player-1 .sd-stage")).toBeHidden();
+  await expect(page.locator("#player-1 .xc-stage")).toBeHidden();
 });
 test("continued keyboard navigation preserves focus, while editing during animation keeps input focus", async ({
   page,

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { getWorldMatrix, isSceneVisible } from "@spatialdeck/core";
+import { getWorldMatrix, isSceneVisible } from "@xcursus/core";
 import type { EditorSession, EditorStore } from "../store/index.js";
 import { Icon } from "./icons.js";
 /** Text that fits a width measured in average characters, with an ellipsis. */

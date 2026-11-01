@@ -1,5 +1,5 @@
 {
-  "name": "@spatialdeck/playground",
+  "name": "@xcursus/playground",
   "version": "0.6.0",
   "private": true,
   "type": "module",
@@ -7,8 +7,8 @@
     "build": "vite build --config vite.config.ts"
   },
   "dependencies": {
-    "@spatialdeck/core": "workspace:*",
-    "@spatialdeck/player": "workspace:*",
-    "@spatialdeck/plugins": "workspace:*"
+    "@xcursus/core": "workspace:*",
+    "@xcursus/player": "workspace:*",
+    "@xcursus/plugins": "workspace:*"
   }
 }

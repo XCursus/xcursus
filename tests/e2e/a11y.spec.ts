@@ -89,10 +89,10 @@ for (const route of ["/core", "/structure", "/content", "/layout"])
     page,
   }, info) => {
     await page.goto(route);
-    await expect(page.locator(".sd-player")).toHaveCount(2);
+    await expect(page.locator(".xc-player")).toHaveCount(2);
     await expect(
       page
-        .locator('.sd-block [role="status"]')
+        .locator('.xc-block [role="status"]')
         .filter({ hasText: "Loading local resource" }),
     ).toHaveCount(0);
     await audit(page, route.slice(1), info);
@@ -103,11 +103,11 @@ test("axe: Studio empty, with content and dialogs has no serious or critical vio
   page,
 }, info) => {
   await page.goto(studioURL);
-  await expect(page.locator(".preview-player .sd-player")).toHaveCount(1);
+  await expect(page.locator(".preview-player .xc-player")).toHaveCount(1);
   await audit(page, "studio-empty", info);
   await page
     .getByLabel("JSON project file")
-    .setInputFiles("examples/content-gallery/content-gallery.spatialdeck");
+    .setInputFiles("examples/content-gallery/content-gallery.xcursus");
   await expect(
     page.getByRole("list", { name: "Scene list" }).locator("li"),
   ).toHaveCount(11);
@@ -125,17 +125,17 @@ test("axe: Studio empty, with content and dialogs has no serious or critical vio
     .getByRole("button", { name: "Cancel" })
     .click();
   await page.getByRole("button", { name: "Present", exact: true }).click();
-  await expect(page.locator(".presentation-player .sd-player")).toHaveCount(1);
+  await expect(page.locator(".presentation-player .xc-player")).toHaveCount(1);
   await audit(page, "studio-presentation", info);
 });
 test("axe: Studio scene editor, its panels and the theme have no serious or critical violations", async ({
   page,
 }, info) => {
   await page.goto(studioURL);
-  await expect(page.locator(".preview-player .sd-player")).toHaveCount(1);
+  await expect(page.locator(".preview-player .xc-player")).toHaveCount(1);
   await page
     .getByLabel("JSON project file")
-    .setInputFiles("examples/layout-canvas/layout-canvas.spatialdeck");
+    .setInputFiles("examples/layout-canvas/layout-canvas.xcursus");
   await expect(page.getByLabel("Project title")).toHaveValue(
     "Layout inside the scene",
   );

@@ -1,7 +1,7 @@
-import { createPlayer } from "@spatialdeck/player";
-import "@spatialdeck/player/fonts.css";
+import { createPlayer } from "@xcursus/player";
+import "@xcursus/player/fonts.css";
 // KaTeX styles with local woff2 fonts, fetched only when a formula uses them.
-import "@spatialdeck/plugins/style.css";
+import "@xcursus/plugins/style.css";
 import legacy from "../../examples/core-three-scenes/project.json";
 import structure from "../../examples/structure-branching/project.json";
 import "./style.css";

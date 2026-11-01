@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import fixture from "../../../examples/core-three-scenes/project.json";
-import { validateDocument } from "@spatialdeck/core";
+import { validateDocument } from "@xcursus/core";
 import {
   createScene,
   deleteScene,

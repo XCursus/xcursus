@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { contrastIssues } from "@spatialdeck/core";
-import type { FontId, ProjectDocument, Result, Theme } from "@spatialdeck/core";
+import { contrastIssues } from "@xcursus/core";
+import type { FontId, ProjectDocument, Result, Theme } from "@xcursus/core";
 import { editTheme } from "../commands/index.js";
 import type { EditorStore } from "../store/index.js";
 import { Numeric } from "./Inspector.js";

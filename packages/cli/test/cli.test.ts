@@ -27,7 +27,7 @@ afterEach(async () => {
   }
 });
 async function temp() {
-  const dir = await mkdtemp(join(tmpdir(), "spatialdeck-cli-test-"));
+  const dir = await mkdtemp(join(tmpdir(), "xcursus-cli-test-"));
   dirs.push(dir);
   return dir;
 }
@@ -83,7 +83,7 @@ describe("arguments and exit codes", () => {
     for (const args of [[], ["--help"], ["-h"]]) {
       const r = await cli(...args);
       expect(r.code).toBe(0);
-      expect(r.out).toContain("spatialdeck validate <project>");
+      expect(r.out).toContain("xcursus validate <project>");
       expect(r.out).toContain("Exit codes: 0 success");
     }
     expect((await cli("--version")).out).toMatch(/^\d+\.\d+\.\d+$/);
@@ -149,12 +149,8 @@ describe("validate", () => {
       (await cli("validate", join(root, "layout-canvas/project.json"))).code,
     ).toBe(0);
     expect(
-      (
-        await cli(
-          "validate",
-          join(root, "layout-canvas/layout-canvas.spatialdeck"),
-        )
-      ).code,
+      (await cli("validate", join(root, "layout-canvas/layout-canvas.xcursus")))
+        .code,
     ).toBe(0);
     const json = await cli(
       "validate",
@@ -211,7 +207,7 @@ describe("validate", () => {
     const report = JSON.parse(r.out);
     expect(report).toMatchObject({
       ok: false,
-      error: "The project is not a valid SpatialDeck document",
+      error: "The project is not a valid XCursus document",
       resources: [],
     });
     expect(report.diagnostics[0].code).toBe("UNSUPPORTED_VERSION");
@@ -310,7 +306,7 @@ describe("outputs", () => {
     await writeFile(join(target, "precious.txt"), "user data");
     const r = await cli("build", project, "--out", target, "--overwrite");
     expect(r.code).toBe(3);
-    expect(r.err).toContain("not a previous SpatialDeck build");
+    expect(r.err).toContain("not a previous XCursus build");
     expect(await readFile(join(target, "precious.txt"), "utf8")).toBe(
       "user data",
     );
@@ -361,7 +357,7 @@ describe("profiles and capture inputs (before any browser starts)", () => {
             id: "badge",
             type: "plugin",
             data: {
-              pluginId: "org.spatialdeck.badge",
+              pluginId: "org.xcursus.badge",
               apiVersion: "1.0.0",
               dataVersion: "1.0.0",
               payload: { label: "x" },
@@ -517,8 +513,8 @@ describe("profiles and capture inputs (before any browser starts)", () => {
   });
   it("a missing FFmpeg is an environment error (exit 2), never installed", async () => {
     const { dir, project } = await fixture();
-    const previous = process.env.SPATIALDECK_FFMPEG;
-    process.env.SPATIALDECK_FFMPEG = join(dir, "no-ffmpeg");
+    const previous = process.env.XCURSUS_FFMPEG;
+    process.env.XCURSUS_FFMPEG = join(dir, "no-ffmpeg");
     try {
       const r = await cli(
         "export",
@@ -533,8 +529,152 @@ describe("profiles and capture inputs (before any browser starts)", () => {
       expect(r.err).toContain("ffmpeg not found");
       expect(await readdir(dir)).not.toContain("v.webm");
     } finally {
-      if (previous === undefined) delete process.env.SPATIALDECK_FFMPEG;
-      else process.env.SPATIALDECK_FFMPEG = previous;
+      if (previous === undefined) delete process.env.XCURSUS_FFMPEG;
+      else process.env.XCURSUS_FFMPEG = previous;
+    }
+  });
+});
+
+describe("pack and legacy archives", () => {
+  const legacy = new URL(
+    "../../../tests/fixtures/legacy/layout-canvas.spatialdeck",
+    import.meta.url,
+  ).pathname;
+  it("validates a legacy .spatialdeck archive and says how to convert it", async () => {
+    const human = await cli("validate", legacy);
+    expect(human.code).toBe(0);
+    expect(human.out).toContain("legacy .spatialdeck archive");
+    const report = JSON.parse((await cli("validate", legacy, "--json")).out);
+    expect(report).toMatchObject({
+      ok: true,
+      kind: "archive",
+      archiveFormat: "legacy",
+      schemaVersion: "1.3.0",
+      sourceSchemaVersion: "1.3.0",
+    });
+    const current = JSON.parse(
+      (
+        await cli(
+          "validate",
+          join(root, "layout-canvas/layout-canvas.xcursus"),
+          "--json",
+        )
+      ).out,
+    );
+    expect(current).toMatchObject({
+      kind: "archive",
+      archiveFormat: "current",
+    });
+  });
+  it("converts a legacy archive to .xcursus and leaves the original untouched", async () => {
+    const dir = await temp();
+    const before = sha(await readFile(legacy));
+    const out = join(dir, "converted.xcursus");
+    const r = await cli("pack", legacy, "--out", out);
+    expect(r.code, r.err).toBe(0);
+    expect(r.out).toContain("from a legacy .spatialdeck archive");
+    expect(sha(await readFile(legacy))).toBe(before);
+    const a = JSON.parse((await cli("validate", legacy, "--json")).out);
+    const b = JSON.parse((await cli("validate", out, "--json")).out);
+    expect(b).toMatchObject({ ok: true, archiveFormat: "current" });
+    expect(b.resources).toEqual(a.resources);
+    // The converted archive packs again to the same resources.
+    const again = join(dir, "again.xcursus");
+    expect((await cli("pack", out, "--out", again)).code).toBe(0);
+    expect(
+      JSON.parse((await cli("validate", again, "--json")).out).resources,
+    ).toEqual(a.resources);
+  });
+  it("packs a JSON project with its assets, migrating a historical schema and keeping notes", async () => {
+    const { dir, project, doc } = await fixture();
+    const out = join(dir, "deck.xcursus");
+    const r = await cli("pack", project, "--out", out);
+    expect(r.code, r.err).toBe(0);
+    const report = JSON.parse((await cli("validate", out, "--json")).out);
+    expect(report.resources).toEqual([
+      expect.objectContaining({
+        id: "orbit",
+        status: "verified",
+        sha256: doc.assets[0]!.sha256,
+      }),
+    ]);
+    const old = await cli(
+      "pack",
+      join(root, "core-three-scenes/project.json"),
+      "--out",
+      join(dir, "three.xcursus"),
+    );
+    expect(old.code, old.err).toBe(0);
+    expect(old.out).toContain("migrated from 1.0.0");
+    // Private notes are authoring data: pack keeps them (exports drop them).
+    const { readArchive } = await import("@xcursus/plugins/archive");
+    const packed = await readArchive(
+      new Blob([await readFile(join(dir, "three.xcursus"))]),
+    );
+    expect(packed.document.scenes[0]!.notes).toBe("Open the talk");
+    expect(packed.sourceSchemaVersion).toBe("1.3.0");
+  });
+  it("refuses other extensions, existing outputs, the input itself and missing assets", async () => {
+    const { dir, project } = await fixture();
+    const wrong = await cli("pack", project, "--out", join(dir, "deck.zip"));
+    expect(wrong.code).toBe(1);
+    expect(wrong.err).toContain("must name a .xcursus file");
+    expect(
+      (await cli("pack", project, "--out", join(dir, "deck.spatialdeck"))).code,
+    ).toBe(1);
+    const out = join(dir, "deck.xcursus");
+    expect((await cli("pack", project, "--out", out)).code).toBe(0);
+    const first = sha(await readFile(out));
+    const again = await cli("pack", project, "--out", out);
+    expect(again.code).toBe(3);
+    expect(sha(await readFile(out))).toBe(first);
+    expect((await cli("pack", project, "--out", out, "--overwrite")).code).toBe(
+      0,
+    );
+    const self = await cli("pack", out, "--out", out, "--overwrite");
+    expect(self.code).toBe(3);
+    expect(self.err).toContain("Refusing to replace the input project");
+    await rm(join(dir, "assets/orbit.svg"));
+    const missing = await cli(
+      "pack",
+      project,
+      "--out",
+      join(dir, "missing.xcursus"),
+    );
+    expect(missing.code).toBe(1);
+    expect(missing.err).toContain("ASSET_MISSING");
+    expect(await readdir(dir)).not.toContain("missing.xcursus");
+    expect(
+      (await cli("pack", project, "--out", out, "--allow-partial")).code,
+    ).toBe(1);
+  });
+  it("still honours the SPATIALDECK_FFMPEG variable of earlier releases", async () => {
+    const { dir, project } = await fixture();
+    const saved = {
+      current: process.env.XCURSUS_FFMPEG,
+      legacy: process.env.SPATIALDECK_FFMPEG,
+    };
+    delete process.env.XCURSUS_FFMPEG;
+    process.env.SPATIALDECK_FFMPEG = join(dir, "no-ffmpeg");
+    try {
+      const r = await cli(
+        "export",
+        "video",
+        project,
+        "--itinerary",
+        await itinerary(dir, { pathId: "main", visits: [{ nodeId: "n1" }] }),
+        "--out",
+        join(dir, "v.webm"),
+      );
+      expect(r.code).toBe(2);
+      expect(r.err).toContain("ffmpeg not found");
+    } finally {
+      for (const [key, value] of [
+        ["XCURSUS_FFMPEG", saved.current],
+        ["SPATIALDECK_FFMPEG", saved.legacy],
+      ] as const)
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
     }
   });
 });

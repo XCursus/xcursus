@@ -1,4 +1,4 @@
-import type { Asset, ProjectDocument } from "@spatialdeck/core";
+import type { Asset, ProjectDocument } from "@xcursus/core";
 export function assetKey(asset: Asset) {
   return `${asset.id}:${asset.sha256 ?? `${asset.path}:${asset.byteLength}`}`;
 }

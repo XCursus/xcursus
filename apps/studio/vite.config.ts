@@ -6,12 +6,13 @@ const source = (path: string) => new URL(path, import.meta.url).pathname;
 /**
  * Versioned offline shell: the worker precaches every built file under a cache
  * named after a digest of the build. Activation waits for the user (no
- * skipWaiting on install); on activation only older `spatialdeck-studio-`
- * caches are deleted. Navigations are served from the cache first.
+ * skipWaiting on install); on activation only older `xcursus-studio-`
+ * caches, and the `spatialdeck-studio-` caches of releases made before the
+ * rename, are deleted. Navigations are served from the cache first.
  */
 function offlineShell(): Plugin {
   return {
-    name: "spatialdeck-offline-shell",
+    name: "xcursus-offline-shell",
     apply: "build",
     // After Vite has emitted the HTML pages, so they are precached too.
     enforce: "post",
@@ -29,8 +30,10 @@ function offlineShell(): Plugin {
       this.emitFile({
         type: "asset",
         fileName: "sw.js",
-        source: `// SpatialDeck Studio offline shell, generated at build time.
-const PREFIX = "spatialdeck-studio-";
+        source: `// XCursus Studio offline shell, generated at build time.
+const PREFIX = "xcursus-studio-";
+// Caches and activation message of the releases published as SpatialDeck Studio.
+const LEGACY_PREFIX = "spatialdeck-studio-";
 const CACHE = PREFIX + ${JSON.stringify(version)};
 const SHELL = ${JSON.stringify(["./", ...files])};
 self.addEventListener("install", (event) => {
@@ -40,12 +43,13 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k.startsWith(PREFIX) && k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => (k.startsWith(PREFIX) || k.startsWith(LEGACY_PREFIX)) && k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
 self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "spatialdeck-sw-activate") self.skipWaiting();
+  const type = event.data && event.data.type;
+  if (type === "xcursus-sw-activate" || type === "spatialdeck-sw-activate") self.skipWaiting();
 });
 self.addEventListener("fetch", (event) => {
   const request = event.request;
@@ -76,7 +80,7 @@ export default defineConfig({
     offlineShell(),
     {
       // The dev server needs its HMR websocket; production keeps connect-src 'self'.
-      name: "spatialdeck-dev-csp",
+      name: "xcursus-dev-csp",
       apply: "serve",
       transformIndexHtml: (html) =>
         html.replace("connect-src 'self';", "connect-src 'self' ws:;"),
@@ -85,35 +89,35 @@ export default defineConfig({
   resolve: {
     alias: [
       {
-        find: "@spatialdeck/plugins/style.css",
+        find: "@xcursus/plugins/style.css",
         replacement: source("../../packages/plugins/src/katex.css"),
       },
       {
-        find: "@spatialdeck/plugins",
+        find: "@xcursus/plugins",
         replacement: source("../../packages/plugins/src"),
       },
       {
-        find: /^@spatialdeck\/editor$/,
+        find: /^@xcursus\/editor$/,
         replacement: source("../../packages/editor/src/browser.ts"),
       },
       {
-        find: /^@spatialdeck\/core$/,
+        find: /^@xcursus\/core$/,
         replacement: source("../../packages/core/src/index.ts"),
       },
       {
-        find: "@spatialdeck/player/presenter",
+        find: "@xcursus/player/presenter",
         replacement: source("../../packages/player/src/presenter.ts"),
       },
       {
-        find: /^@spatialdeck\/player$/,
+        find: /^@xcursus\/player$/,
         replacement: source("../../packages/player/src/index.ts"),
       },
       {
-        find: "@spatialdeck/player/style.css",
+        find: "@xcursus/player/style.css",
         replacement: source("../../packages/player/src/style.css"),
       },
       {
-        find: "@spatialdeck/player/fonts.css",
+        find: "@xcursus/player/fonts.css",
         replacement: source("../../packages/player/src/fonts.css"),
       },
     ],

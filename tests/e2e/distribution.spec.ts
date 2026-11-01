@@ -42,7 +42,7 @@ const root = fileURLToPath(new URL("../..", import.meta.url)).replace(
   "",
 );
 const consumer = join(root, "test-results/packages/consumer");
-const cli = join(consumer, "node_modules/.bin/spatialdeck");
+const cli = join(consumer, "node_modules/.bin/xcursus");
 const fixtureDir = join(root, "examples/distribution-static");
 const project = join(fixtureDir, "project.json");
 declare global {
@@ -52,7 +52,7 @@ declare global {
     pwned?: number;
   }
 }
-async function spatialdeck(args: string[], env: Record<string, string> = {}) {
+async function xcursus(args: string[], env: Record<string, string> = {}) {
   try {
     const r = await run(cli, args, {
       cwd: root,
@@ -89,7 +89,7 @@ const types: Record<string, string> = {
   ".json": "application/json",
   ".svg": "image/svg+xml",
   ".woff2": "font/woff2",
-  ".spatialdeck": "application/zip",
+  ".xcursus": "application/zip",
   ".txt": "text/plain",
 };
 /** Minimal static server for built outputs; only files inside `dir`. */
@@ -179,12 +179,12 @@ async function landmarks(
   );
   const actual = await page.evaluate(
     ({ sceneId, blocks }) => {
-      const viewport = document.querySelector<HTMLElement>(".sd-viewport")!;
+      const viewport = document.querySelector<HTMLElement>(".xc-viewport")!;
       const rect = viewport.getBoundingClientRect(),
         fit = rect.width / parseFloat(viewport.style.width);
       return blocks.map(({ id, points }) => {
         const host = document.querySelector<HTMLElement>(
-          `.sd-scene[data-scene-id="${sceneId}"] [data-block-id="${id}"]`,
+          `.xc-scene[data-scene-id="${sceneId}"] [data-block-id="${id}"]`,
         )!;
         return points.map(([x, y]) => {
           const marker = document.createElement("i");
@@ -246,12 +246,12 @@ test("minimal ESM consumer built from the tarballs: two players, destroy, no Rea
       true,
       true,
     ]);
-    await expect(page.locator(".sd-player")).toHaveCount(2);
+    await expect(page.locator(".xc-player")).toHaveCount(2);
     await page.locator("#a").focus();
     await page.keyboard.press("ArrowRight");
-    await expect(page.locator("#a .sd-live")).not.toHaveText("");
+    await expect(page.locator("#a .xc-live")).not.toHaveText("");
     await page.getByRole("button", { name: "Destroy" }).click();
-    await expect(page.locator(".sd-player")).toHaveCount(0);
+    await expect(page.locator(".xc-player")).toHaveCount(0);
     expect(errors).toEqual([]);
     // Only the minimal entry: no lazy rich/media chunk, nothing from React or the editor.
     expect(requests.filter((u) => /rich-|media-|react|editor/.test(u))).toEqual(
@@ -301,7 +301,7 @@ test("standalone HTML from the packaged CLI opens from file:// offline, under it
 }) => {
   const dir = await outDir("html", browserName);
   const out = join(dir, "fixture.html");
-  const r = await spatialdeck(["export", "html", project, "--out", out]);
+  const r = await xcursus(["export", "html", project, "--out", out]);
   expect(r.code, r.stderr).toBe(0);
   const manifest = JSON.parse(await readFile(`${out}.manifest.json`, "utf8"));
   expect(manifest).toMatchObject({
@@ -334,13 +334,13 @@ test("standalone HTML from the packaged CLI opens from file:// offline, under it
   expect(csp).toMatch(/script-src 'sha256-[A-Za-z0-9+/=]+'/);
   expect(csp).not.toMatch(/unsafe-eval|unsafe-inline/);
   expect(html).toContain("<noscript>");
-  expect(html).toContain('id="spatialdeck-notices"');
+  expect(html).toContain('id="xcursus-notices"');
   await offline(page, browserName);
   const network = await guard(page);
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto(pathToFileURL(out).href);
   await page.waitForFunction(
-    () => document.documentElement.dataset.spatialdeck === "ready",
+    () => document.documentElement.dataset.xcursus === "ready",
   );
   await expect(page.locator('[data-block-id="formula"] .katex')).toHaveCount(1);
   await expect(page.locator('[data-block-id="picture"] img')).toHaveJSProperty(
@@ -359,14 +359,14 @@ test("standalone HTML from the packaged CLI opens from file:// offline, under it
   await page.evaluate(() => document.fonts.ready);
   expect(
     await page.evaluate(() =>
-      document.fonts.check('28px "SpatialDeck Atkinson Hyperlegible"'),
+      document.fonts.check('28px "XCursus Atkinson Hyperlegible"'),
     ),
   ).toBe(true);
   expect(
     await page
       .locator('[data-block-id="headline"]')
       .evaluate((e) => getComputedStyle(e).fontFamily),
-  ).toContain("SpatialDeck Atkinson Hyperlegible");
+  ).toContain("XCursus Atkinson Hyperlegible");
   // Canvas frames: the same core projection as the player, within 1 px.
   const d = await doc();
   const camera = resolveSceneCamera(d, "cover");
@@ -377,15 +377,15 @@ test("standalone HTML from the packaged CLI opens from file:// offline, under it
   // Clipping on the content wrapper of a canvas scene.
   expect(
     await page
-      .locator('.sd-scene[data-scene-id="cover"] .sd-content')
+      .locator('.xc-scene[data-scene-id="cover"] .xc-content')
       .evaluate((e) => getComputedStyle(e).overflow),
   ).toBe("hidden");
   // Navigation with the keyboard inside the presentation.
-  await page.locator("#spatialdeck-stage").focus();
+  await page.locator("#xcursus-stage").focus();
   await page.keyboard.press("ArrowRight");
-  await expect(page.locator(".sd-live")).toHaveText("Flow scene with Markdown");
+  await expect(page.locator(".xc-live")).toHaveText("Flow scene with Markdown");
   await expect(
-    page.locator('.sd-scene[data-scene-id="context"]'),
+    page.locator('.xc-scene[data-scene-id="context"]'),
   ).toHaveAttribute("data-active", "true");
   expect(await page.content()).not.toContain("PRIVATE-NOTE");
   expect(network()).toEqual([]);
@@ -414,7 +414,7 @@ test("strict export refuses iframe, plugin and remote font; --allow-partial writ
       id: "badge",
       type: "plugin",
       data: {
-        pluginId: "org.spatialdeck.badge",
+        pluginId: "org.xcursus.badge",
         apiVersion: "1.0.0",
         dataVersion: "1.0.0",
         payload: { label: "Badge" },
@@ -432,12 +432,12 @@ test("strict export refuses iframe, plugin and remote font; --allow-partial writ
   const input = join(dir, "project.json");
   await writeFile(input, JSON.stringify(d));
   const out = join(dir, "partial.html");
-  const strict = await spatialdeck(["export", "html", input, "--out", out]);
+  const strict = await xcursus(["export", "html", input, "--out", out]);
   expect(strict.code).toBe(1);
   for (const code of ["EMBED_REMOTE", "PLUGIN_UNAVAILABLE", "REMOTE_RESOURCE"])
     expect(strict.stderr).toContain(code);
   await expect(stat(out)).rejects.toThrow();
-  const partial = await spatialdeck([
+  const partial = await xcursus([
     "export",
     "html",
     input,
@@ -471,13 +471,13 @@ test("strict export refuses iframe, plugin and remote font; --allow-partial writ
   const network = await guard(page);
   await page.goto(pathToFileURL(out).href);
   await page.waitForFunction(
-    () => document.documentElement.dataset.spatialdeck === "ready",
+    () => document.documentElement.dataset.xcursus === "ready",
   );
   await expect(
-    page.locator('[data-block-id="web"] .sd-export-placeholder'),
+    page.locator('[data-block-id="web"] .xc-export-placeholder'),
   ).toHaveText("Content unavailable (embed)");
   await expect(
-    page.locator('[data-block-id="badge"] .sd-export-placeholder'),
+    page.locator('[data-block-id="badge"] .xc-export-placeholder'),
   ).toHaveText("Content unavailable (plugin)");
   await expect(page.locator('[data-block-id="font"]')).toHaveText(
     "Remote font",
@@ -510,7 +510,7 @@ test("PDF of pasted HTML with style and on* attributes: blocked by the CSP, coun
   const input = join(dir, "project.json");
   await writeFile(input, JSON.stringify(d));
   const out = join(dir, "pasted.pdf");
-  const r = await spatialdeck([
+  const r = await xcursus([
     "export",
     "pdf",
     input,
@@ -549,7 +549,7 @@ test("PDF of a flow scene taller than itself: the cut is reported as CONTENT_OVE
   const input = join(dir, "project.json");
   await writeFile(input, JSON.stringify(d));
   const out = join(dir, "overflow.pdf");
-  const r = await spatialdeck([
+  const r = await xcursus([
     "export",
     "pdf",
     input,
@@ -612,7 +612,7 @@ test("video with an animated GIF: captured as its first frame, the same frames o
     const frames = join(dir, `frames-${run}`);
     await mkdir(frames);
     const out = join(dir, `${run}.webm`);
-    const r = await spatialdeck([
+    const r = await xcursus([
       "export",
       "video",
       input,
@@ -653,14 +653,14 @@ test("static build from the packaged CLI serves runtime, JSON and verified asset
 }) => {
   const dir = await outDir("build", browserName);
   const out = join(dir, "site");
-  const r = await spatialdeck(["build", project, "--out", out]);
+  const r = await xcursus(["build", project, "--out", out]);
   expect(r.code, r.stderr).toBe(0);
   const files = await readdir(out);
   expect(files).toEqual(
     expect.arrayContaining([
       "index.html",
       "project.json",
-      "spatialdeck-runtime.js",
+      "xcursus-runtime.js",
       "THIRD_PARTY_NOTICES.txt",
       "export-manifest.json",
       "player.css",
@@ -674,9 +674,9 @@ test("static build from the packaged CLI serves runtime, JSON and verified asset
     "PRIVATE-NOTE",
   );
   // A second build without --overwrite is refused; with it, the owned directory is replaced.
-  expect((await spatialdeck(["build", project, "--out", out])).code).toBe(3);
+  expect((await xcursus(["build", project, "--out", out])).code).toBe(3);
   expect(
-    (await spatialdeck(["build", project, "--out", out, "--overwrite"])).code,
+    (await xcursus(["build", project, "--out", out, "--overwrite"])).code,
   ).toBe(0);
   const server = await serve(out);
   try {
@@ -690,7 +690,7 @@ test("static build from the packaged CLI serves runtime, JSON and verified asset
     });
     await page.goto(`${server.url}/index.html`);
     await page.waitForFunction(
-      () => document.documentElement.dataset.spatialdeck === "ready",
+      () => document.documentElement.dataset.xcursus === "ready",
     );
     await expect(page.locator('[data-block-id="picture"] img')).toHaveCount(1);
     await expect(page.locator('[data-block-id="formula"] .katex')).toHaveCount(
@@ -730,7 +730,7 @@ test("PDF: three visits give three pages in order, a repeated visit a distinct p
     ["itinerary-repeat", [cover, context, detail, cover]],
   ] as const) {
     const out = join(dir, `${name}.pdf`);
-    const r = await spatialdeck([
+    const r = await xcursus([
       "export",
       "pdf",
       project,
@@ -834,7 +834,7 @@ test("video: WebM frame count and duration within one frame, poses equal to the 
     const frames = join(dir, `frames-${attempt}`);
     await mkdir(frames);
     const out = join(dir, `fixture-${attempt}.webm`);
-    const r = await spatialdeck([
+    const r = await xcursus([
       "export",
       "video",
       project,
@@ -968,7 +968,7 @@ test("capture environment errors: failing FFmpeg exits 3, missing Chromium exits
   );
   await chmod(fake, 0o755);
   const out = join(dir, "broken.webm");
-  const failed = await spatialdeck(
+  const failed = await xcursus(
     [
       "export",
       "video",
@@ -978,12 +978,12 @@ test("capture environment errors: failing FFmpeg exits 3, missing Chromium exits
       "--out",
       out,
     ],
-    { SPATIALDECK_FFMPEG: fake, SPATIALDECK_FFPROBE: fake },
+    { XCURSUS_FFMPEG: fake, XCURSUS_FFPROBE: fake },
   );
   expect(failed.code).toBe(3);
   expect(failed.stderr).toContain("simulated encoder failure");
   expect((await readdir(dir)).filter((f) => f.includes("broken"))).toEqual([]);
-  const noBrowser = await spatialdeck(
+  const noBrowser = await xcursus(
     [
       "export",
       "pdf",

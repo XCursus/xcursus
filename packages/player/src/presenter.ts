@@ -1,5 +1,5 @@
-import { validateDocument } from "@spatialdeck/core";
-import type { ProjectDocument, Result } from "@spatialdeck/core";
+import { validateDocument } from "@xcursus/core";
+import type { ProjectDocument, Result } from "@xcursus/core";
 import type { NavigationRequest, Player } from "./index.js";
 
 /**
@@ -15,7 +15,7 @@ import type { NavigationRequest, Player } from "./index.js";
  * feedback loop; after a reload it resynchronizes from a snapshot, not by
  * replaying messages.
  */
-export const PRESENTER_PROTOCOL = "spatialdeck-presenter/1";
+export const PRESENTER_PROTOCOL = "xcursus-presenter/1";
 export type PresenterCommand =
   | { kind: "next"; edgeId?: string }
   | { kind: "prev" }
@@ -366,7 +366,7 @@ export interface PresenterSession {
   dispose(): void;
 }
 export const publicWindowName = (sessionId: string) =>
-  `spatialdeck-public-${sessionId}`;
+  `xcursus-public-${sessionId}`;
 /**
  * Presenter side. Accepts hello and requests from the popup it holds, by
  * identity or by the nonce it probed through that popup reference; without a

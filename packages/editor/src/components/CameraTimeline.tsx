@@ -7,14 +7,14 @@ import {
   resolveSceneCamera,
   resolveEdgePlan,
   success,
-} from "@spatialdeck/core";
+} from "@xcursus/core";
 import type {
   AuthoredCameraPose,
   CameraTrack,
   ProjectDocument,
   Result,
   TransitionPlan,
-} from "@spatialdeck/core";
+} from "@xcursus/core";
 import { randomId } from "../commands/index.js";
 import type { DocumentEdit } from "../commands/index.js";
 import type { EditorStore } from "../store/index.js";

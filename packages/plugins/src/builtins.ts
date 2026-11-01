@@ -1,10 +1,10 @@
-import { RendererRegistry, defaultMessages } from "@spatialdeck/player";
+import { RendererRegistry, defaultMessages } from "@xcursus/player";
 import type {
   ContentContext,
   ContentRenderer,
   RendererFactory,
-} from "@spatialdeck/player";
-import type { Block } from "@spatialdeck/core";
+} from "@xcursus/player";
+import type { Block } from "@xcursus/core";
 import { registerNavigation } from "./navigation.js";
 import type { EmbedPolicy } from "./navigation.js";
 import { PluginHost } from "./sdk/index.js";

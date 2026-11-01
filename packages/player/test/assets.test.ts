@@ -5,7 +5,7 @@ import {
   verifyAsset,
   sha256,
 } from "../src/assets/index.js";
-import type { Asset } from "@spatialdeck/core";
+import type { Asset } from "@xcursus/core";
 async function resource() {
   const blob = new Blob(
     [

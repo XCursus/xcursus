@@ -1,10 +1,10 @@
-import type { JsonValue } from "@spatialdeck/core";
-import { defaultMessages } from "@spatialdeck/player";
+import type { JsonValue } from "@xcursus/core";
+import { defaultMessages } from "@xcursus/player";
 import type {
   ContentContext,
   ContentRenderer,
   RendererRegistry,
-} from "@spatialdeck/player";
+} from "@xcursus/player";
 export const PLUGIN_API_VERSION = "1.0.0" as const;
 export interface DataSchema {
   schema: JsonValue;

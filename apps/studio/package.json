@@ -1,5 +1,5 @@
 {
-  "name": "@spatialdeck/studio",
+  "name": "@xcursus/studio",
   "version": "0.6.0",
   "private": true,
   "type": "module",
@@ -7,10 +7,10 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@spatialdeck/core": "workspace:*",
-    "@spatialdeck/editor": "workspace:*",
-    "@spatialdeck/player": "workspace:*",
-    "@spatialdeck/plugins": "workspace:*",
+    "@xcursus/core": "workspace:*",
+    "@xcursus/editor": "workspace:*",
+    "@xcursus/player": "workspace:*",
+    "@xcursus/plugins": "workspace:*",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   }

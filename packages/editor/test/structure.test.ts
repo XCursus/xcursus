@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import fixture from "../../../examples/structure-branching/project.json";
-import { getWorldMatrix, success } from "@spatialdeck/core";
+import { getWorldMatrix, success } from "@xcursus/core";
 import {
   connectNodes,
   createNode,

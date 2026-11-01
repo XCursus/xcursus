@@ -1,5 +1,5 @@
 {
-  "name": "@spatialdeck/webkit-macos14",
+  "name": "@xcursus/webkit-macos14",
   "version": "0.1.0",
   "private": true,
   "type": "module",

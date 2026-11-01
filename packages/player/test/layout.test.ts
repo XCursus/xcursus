@@ -4,8 +4,8 @@ import {
   frameMatrix,
   updateCapabilities,
   validateDocument,
-} from "@spatialdeck/core";
-import type { Block, ProjectDocument } from "@spatialdeck/core";
+} from "@xcursus/core";
+import type { Block, ProjectDocument } from "@xcursus/core";
 import fixture from "../../../examples/content-gallery/project.json";
 import legacy from "../../../examples/core-three-scenes/project.json";
 import { RendererRegistry, createPlayer } from "../src/index.js";
@@ -104,9 +104,9 @@ describe("canvas scenes", () => {
     const doc = canvas();
     const { host } = await mount(doc, recording().registry);
     const content = host.querySelector<HTMLElement>(
-      '.sd-scene[data-scene-id="text"] .sd-content',
+      '.xc-scene[data-scene-id="text"] .xc-content',
     )!;
-    expect(content.classList.contains("sd-layout-canvas")).toBe(true);
+    expect(content.classList.contains("xc-layout-canvas")).toBe(true);
     expect(
       [...content.querySelectorAll<HTMLElement>("[data-block-id]")].map(
         (e) => e.dataset.blockId,
@@ -114,7 +114,7 @@ describe("canvas scenes", () => {
     ).toEqual(["first", "second"]);
     for (const b of doc.scenes[0]!.blocks) {
       const el = block(host, b.id);
-      expect(el.classList.contains("sd-framed")).toBe(true);
+      expect(el.classList.contains("xc-framed")).toBe(true);
       expect(el.style.width).toBe(`${b.frame!.width}px`);
       expect(el.style.height).toBe(`${b.frame!.height}px`);
       expect(el.style.zIndex).toBe(String(b.frame!.z));
@@ -129,11 +129,11 @@ describe("canvas scenes", () => {
     const first = block(host, "first");
     expect([...first.classList].sort()).toEqual(
       [
-        "sd-align-end",
-        "sd-block",
-        "sd-framed",
-        "sd-size-xl",
-        "sd-valign-center",
+        "xc-align-end",
+        "xc-block",
+        "xc-framed",
+        "xc-size-xl",
+        "xc-valign-center",
       ].sort(),
     );
     expect(first.style.color).toMatch(/#215baf|rgb\(33, 91, 175\)/);
@@ -141,29 +141,29 @@ describe("canvas scenes", () => {
   it("hides the title from view but keeps it as the scene name", async () => {
     const { host } = await mount(canvas());
     const content = host.querySelector<HTMLElement>(
-      '.sd-scene[data-scene-id="text"] .sd-content',
+      '.xc-scene[data-scene-id="text"] .xc-content',
     )!;
     const title = content.querySelector("h2")!;
-    expect(title.classList.contains("sd-title-hidden")).toBe(true);
+    expect(title.classList.contains("xc-title-hidden")).toBe(true);
     expect(title.textContent).toBe("TEXT");
     expect(content.getAttribute("aria-labelledby")).toBe(title.id);
     expect(content.tabIndex).toBe(-1);
-    expect(content.style.getPropertyValue("--sd-scene-background")).toBe(
+    expect(content.style.getPropertyValue("--xc-scene-background")).toBe(
       "#e8edf4",
     );
-    expect(host.querySelector(".sd-outline")!.textContent).toContain("TEXT");
+    expect(host.querySelector(".xc-outline")!.textContent).toContain("TEXT");
   });
   it("applies theme tokens as validated custom properties and allowlisted fonts", async () => {
     const { host } = await mount(canvas());
-    const root = host.querySelector<HTMLElement>(".sd-player")!;
-    expect(root.style.getPropertyValue("--sd-text")).toBe("#0a0b0c");
-    expect(root.style.getPropertyValue("--sd-accent")).toBe("#215baf");
-    expect(root.style.getPropertyValue("--sd-size-body")).toBe("30px");
-    expect(root.style.getPropertyValue("--sd-size-title")).toBe("50px");
-    expect(root.style.getPropertyValue("--sd-font-body")).toContain(
-      "SpatialDeck Atkinson Hyperlegible",
+    const root = host.querySelector<HTMLElement>(".xc-player")!;
+    expect(root.style.getPropertyValue("--xc-text")).toBe("#0a0b0c");
+    expect(root.style.getPropertyValue("--xc-accent")).toBe("#215baf");
+    expect(root.style.getPropertyValue("--xc-size-body")).toBe("30px");
+    expect(root.style.getPropertyValue("--xc-size-title")).toBe("50px");
+    expect(root.style.getPropertyValue("--xc-font-body")).toContain(
+      "XCursus Atkinson Hyperlegible",
     );
-    expect(root.style.getPropertyValue("--sd-font-heading")).toContain("serif");
+    expect(root.style.getPropertyValue("--xc-font-heading")).toContain("serif");
   });
   it("moves, resizes, rotates and restyles without remounting renderers", async () => {
     const rec = recording();
@@ -195,7 +195,7 @@ describe("canvas scenes", () => {
     expect(rec.mounts()).toBe(mounts);
     expect(element.style.width).toBe("300px");
     expect(element.style.zIndex).toBe("9");
-    expect(element.classList.contains("sd-size-xs")).toBe(true);
+    expect(element.classList.contains("xc-size-xs")).toBe(true);
     // Renderers only see content: no frame, no style.
     for (const context of rec.contexts) {
       expect(context.block).not.toHaveProperty("frame");
@@ -225,33 +225,33 @@ describe("canvas scenes", () => {
     updateCapabilities(doc);
     expect((await player.updateDocument(doc)).ok).toBe(true);
     const content = host.querySelector<HTMLElement>(
-      '.sd-scene[data-scene-id="text"] .sd-content',
+      '.xc-scene[data-scene-id="text"] .xc-content',
     )!;
-    expect(content.classList.contains("sd-layout-canvas")).toBe(false);
-    expect(content.classList.contains("sd-variant-plain")).toBe(true);
+    expect(content.classList.contains("xc-layout-canvas")).toBe(false);
+    expect(content.classList.contains("xc-variant-plain")).toBe(true);
     expect(content.hasAttribute("tabindex")).toBe(false);
-    expect(content.style.getPropertyValue("--sd-scene-background")).toBe("");
+    expect(content.style.getPropertyValue("--xc-scene-background")).toBe("");
     for (const id of ["first", "second"]) {
       const el = block(host, id);
-      expect(el.className).toBe("sd-block");
+      expect(el.className).toBe("xc-block");
       expect(el.getAttribute("style") ?? "").toBe("");
     }
   });
   it("leaves migrated flow documents without frame or token markup", async () => {
     const { host } = await mount(valid(legacy));
     for (const el of host.querySelectorAll<HTMLElement>("[data-block-id]")) {
-      expect(el.className).toBe("sd-block");
+      expect(el.className).toBe("xc-block");
       expect(el.hasAttribute("style")).toBe(false);
     }
-    for (const content of host.querySelectorAll<HTMLElement>(".sd-content")) {
-      expect(content.className).toBe("sd-content");
-      expect(content.style.getPropertyValue("--sd-scene-background")).toBe("");
+    for (const content of host.querySelectorAll<HTMLElement>(".xc-content")) {
+      expect(content.className).toBe("xc-content");
+      expect(content.style.getPropertyValue("--xc-scene-background")).toBe("");
     }
-    const root = host.querySelector<HTMLElement>(".sd-player")!;
-    expect(root.style.getPropertyValue("--sd-text")).toBe("#172035");
-    expect(root.style.getPropertyValue("--sd-font-body")).toBe(
+    const root = host.querySelector<HTMLElement>(".xc-player")!;
+    expect(root.style.getPropertyValue("--xc-text")).toBe("#172035");
+    expect(root.style.getPropertyValue("--xc-font-body")).toBe(
       "system-ui, sans-serif",
     );
-    expect(root.style.getPropertyValue("--sd-size-body")).toBe("28px");
+    expect(root.style.getPropertyValue("--xc-size-body")).toBe("28px");
   });
 });

@@ -16,7 +16,7 @@ import {
   rotateFrame,
   snapToGrid,
   unprojectScenePoint,
-} from "@spatialdeck/core";
+} from "@xcursus/core";
 import type {
   Block,
   Frame,
@@ -24,7 +24,7 @@ import type {
   Point,
   ProjectDocument,
   Scene,
-} from "@spatialdeck/core";
+} from "@xcursus/core";
 import { setFrames } from "../commands/index.js";
 import type { EditorStore } from "../store/index.js";
 
@@ -44,7 +44,7 @@ function measure(
   document: ProjectDocument,
 ): Viewport | null {
   const rect = host
-    ?.querySelector<HTMLElement>(".sd-viewport")
+    ?.querySelector<HTMLElement>(".xc-viewport")
     ?.getBoundingClientRect();
   if (!rect || !rect.width) return null;
   return {
@@ -76,7 +76,7 @@ export function blockElement(
 ) {
   return (
     host?.querySelector<HTMLElement>(
-      `.sd-scene[data-scene-id="${sceneId}"] [data-block-id="${blockId}"]`,
+      `.xc-scene[data-scene-id="${sceneId}"] [data-block-id="${blockId}"]`,
     ) ?? null
   );
 }
@@ -89,7 +89,7 @@ export function measureFlowFrames(
   // The preview must already frame this scene where the core projection puts
   // it; a stale camera (the preview updates on the next frame) gives no frames.
   const content = host
-    ?.querySelector(`.sd-scene[data-scene-id="${scene.id}"] .sd-content`)
+    ?.querySelector(`.xc-scene[data-scene-id="${scene.id}"] .xc-content`)
     ?.getBoundingClientRect();
   const origin =
     content &&

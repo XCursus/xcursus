@@ -1,6 +1,6 @@
 /*
- * SpatialDeck Studio, dark "Grafite" interface. Element rules are scoped with
- * :where(... :not(.sd-player *)) so they never restyle content rendered by the
+ * XCursus Studio, dark "Grafite" interface. Element rules are scoped with
+ * :where(... :not(.xc-player *)) so they never restyle content rendered by the
  * shared player: the preview stays faithful to the presentation. :where keeps
  * their specificity at zero.
  *
@@ -53,14 +53,14 @@ body {
   margin: 0;
 }
 /* The player keeps its own light rendering, native controls included. */
-.studio .sd-player {
+.studio .xc-player {
   color-scheme: light;
 }
-:where(.studio :is(button, input, textarea, select):not(.sd-player *)) {
+:where(.studio :is(button, input, textarea, select):not(.xc-player *)) {
   font: inherit;
   color: inherit;
 }
-:where(.studio button:not(.sd-player *)) {
+:where(.studio button:not(.xc-player *)) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -75,11 +75,11 @@ body {
   white-space: nowrap;
   cursor: pointer;
 }
-:where(.studio button:not(.sd-player *)):hover:not(:disabled) {
+:where(.studio button:not(.xc-player *)):hover:not(:disabled) {
   background: var(--surface-3);
   border-color: var(--field-line);
 }
-:where(.studio button:not(.sd-player *)):disabled {
+:where(.studio button:not(.xc-player *)):disabled {
   opacity: 0.4;
   cursor: default;
 }
@@ -89,7 +89,7 @@ body {
       input:not([type="checkbox"], [type="color"], [type="range"]),
       textarea,
       select
-    ):not(.sd-player *)
+    ):not(.xc-player *)
 ) {
   width: 100%;
   min-width: 0;
@@ -101,7 +101,7 @@ body {
   color: var(--text);
   font-size: 12.5px;
 }
-:where(.studio textarea:not(.sd-player *)) {
+:where(.studio textarea:not(.xc-player *)) {
   height: auto;
   min-height: 64px;
   padding: 7px 9px;
@@ -109,25 +109,25 @@ body {
   line-height: 1.5;
   font-size: 13px;
 }
-:where(.studio .code textarea:not(.sd-player *)),
-:where(.studio .code input:not(.sd-player *)) {
+:where(.studio .code textarea:not(.xc-player *)),
+:where(.studio .code input:not(.xc-player *)) {
   font-family: var(--ui-mono);
   font-size: 12px;
 }
-:where(.studio select:not(.sd-player *)) {
+:where(.studio select:not(.xc-player *)) {
   padding-right: 4px;
 }
-:where(.studio input[type="range"]:not(.sd-player *)) {
+:where(.studio input[type="range"]:not(.xc-player *)) {
   width: 100%;
   accent-color: var(--accent);
 }
-:where(.studio input[aria-invalid="true"]:not(.sd-player *)) {
+:where(.studio input[aria-invalid="true"]:not(.xc-player *)) {
   border-color: var(--danger);
 }
 :where(
   .studio
     :is(button, input, textarea, select, summary, svg, [tabindex]):not(
-      .sd-player *
+      .xc-player *
     )
 ):focus-visible {
   outline: 2px solid var(--accent);
@@ -377,7 +377,7 @@ body {
   border-left: 1px solid var(--line);
 }
 /* Section headers: panels and collapsible groups share one quiet style. */
-:where(.studio summary:not(.sd-player *)) {
+:where(.studio summary:not(.xc-player *)) {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -390,10 +390,10 @@ body {
   cursor: pointer;
   user-select: none;
 }
-:where(.studio summary:not(.sd-player *))::-webkit-details-marker {
+:where(.studio summary:not(.xc-player *))::-webkit-details-marker {
   display: none;
 }
-:where(.studio summary:not(.sd-player *))::before {
+:where(.studio summary:not(.xc-player *))::before {
   content: "";
   flex: none;
   width: 5px;
@@ -404,10 +404,10 @@ body {
   transform: rotate(-45deg);
   transition: transform 0.12s;
 }
-:where(.studio details[open] > summary:not(.sd-player *))::before {
+:where(.studio details[open] > summary:not(.xc-player *))::before {
   transform: rotate(45deg);
 }
-:where(.studio summary:not(.sd-player *)) > span,
+:where(.studio summary:not(.xc-player *)) > span,
 .count {
   color: var(--text-3);
   font-size: 11.5px;
@@ -415,7 +415,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 .count.has-issues,
-:where(.studio summary:not(.sd-player *)) > span.has-issues {
+:where(.studio summary:not(.xc-player *)) > span.has-issues {
   padding: 0 6px;
   border-radius: 9px;
   background: var(--warning-soft);
@@ -749,22 +749,22 @@ body {
   inset: 0;
   background: var(--surface-2);
 }
-.preview-player .sd-player {
+.preview-player .xc-player {
   height: 100%;
   min-height: 0;
   /* Shows only behind the empty message and the text view: Studio's surface. */
   background: var(--surface-2);
   color: var(--text);
 }
-.preview-player .sd-empty {
+.preview-player .xc-empty {
   color: var(--text-3);
 }
 /* The choice bar keeps the player's own light rendering. */
-.preview-player .sd-choices {
+.preview-player .xc-choices {
   color: #172035;
 }
 /* The player's own controls, quiet in the preview; scene content is untouched. */
-:is(.preview-player, .presenter-current) .sd-access {
+:is(.preview-player, .presenter-current) .xc-access {
   gap: 2px;
   padding: 4px 6px;
   border-bottom: 1px solid var(--line);
@@ -774,10 +774,10 @@ body {
   font-size: 12px;
 }
 :is(.preview-player, .presenter-current, .presentation-player)
-  .sd-access
+  .xc-access
   button,
 :is(.preview-player, .presenter-current, .presentation-player)
-  .sd-inspection
+  .xc-inspection
   summary {
   display: inline-flex;
   align-items: center;
@@ -790,31 +790,31 @@ body {
   font: 500 12px/1 var(--ui-font);
 }
 :is(.preview-player, .presenter-current, .presentation-player)
-  .sd-access
+  .xc-access
   button:hover:not(:disabled),
 :is(.preview-player, .presenter-current, .presentation-player)
-  .sd-inspection
+  .xc-inspection
   summary:hover {
   background: rgb(255 255 255 / 0.08);
   color: var(--text);
 }
 :is(.preview-player, .presenter-current, .presentation-player)
-  .sd-access
+  .xc-access
   :is([aria-pressed="true"], [aria-expanded="true"]),
 :is(.preview-player, .presenter-current, .presentation-player)
-  .sd-inspection[open]
+  .xc-inspection[open]
   > summary {
   background: rgb(255 255 255 / 0.12);
   color: var(--text);
 }
 :is(.preview-player, .presenter-current, .presentation-player)
-  .sd-access
+  .xc-access
   :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 :is(.preview-player, .presenter-current, .presentation-player)
-  .sd-camera-tools {
+  .xc-camera-tools {
   z-index: 6;
   top: calc(100% + 6px);
   width: 188px;
@@ -825,7 +825,7 @@ body {
   box-shadow: 0 10px 30px rgb(0 0 0 / 0.45);
 }
 :is(.preview-player, .presenter-current, .presentation-player)
-  .sd-camera-tools
+  .xc-camera-tools
   button {
   justify-content: flex-start;
   width: 100%;
@@ -985,14 +985,14 @@ body {
   color: var(--text-3);
   line-height: 1.6;
 }
-:where(.studio fieldset:not(.sd-player *)) {
+:where(.studio fieldset:not(.xc-player *)) {
   min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
 }
 /* Group titles: sentence case, one weight below the panel tabs. */
-:where(.studio legend:not(.sd-player *)),
+:where(.studio legend:not(.xc-player *)),
 .inspector-group h3 {
   display: flex;
   align-items: center;
@@ -1004,7 +1004,7 @@ body {
   font-size: 12px;
   font-weight: 600;
 }
-:where(.studio legend:not(.sd-player *)) > span:not(.block-index, .chip),
+:where(.studio legend:not(.xc-player *)) > span:not(.block-index, .chip),
 .inspector-group h3 > span:not(.count, .chip) {
   margin-left: auto;
   color: var(--text-3);
@@ -1808,14 +1808,14 @@ dialog label {
   position: absolute;
   inset: 0;
 }
-.presentation-player .sd-player {
+.presentation-player .xc-player {
   height: 100%;
 }
 /* The player's controls float over the stage instead of pushing it down. */
-.presentation-player .sd-stage {
+.presentation-player .xc-stage {
   top: 0 !important;
 }
-.presentation-player .sd-access {
+.presentation-player .xc-access {
   position: absolute;
   z-index: 3;
   top: 16px;
@@ -1835,7 +1835,7 @@ dialog label {
   cursor: none;
 }
 .presentation.is-idle
-  :is(.present-controls, .presentation-player .sd-access):not(
+  :is(.present-controls, .presentation-player .xc-access):not(
     :focus-within,
     :hover
   ) {
@@ -2081,7 +2081,7 @@ dialog label {
   .present-hint {
     display: none;
   }
-  .presentation-player .sd-access {
+  .presentation-player .xc-access {
     top: auto;
     bottom: 16px;
     left: 16px;
@@ -2098,7 +2098,7 @@ dialog label {
   .switch input,
   .switch input::after,
   .present-controls,
-  .presentation-player .sd-access {
+  .presentation-player .xc-access {
     animation: none !important;
     transition: none !important;
   }
@@ -2265,7 +2265,7 @@ dialog label {
   border-radius: 8px;
 }
 /* Previews fill their frame: the player's own minimum height would spill over the notes. */
-:where(.studio) .presenter-player .sd-player {
+:where(.studio) .presenter-player .xc-player {
   height: 100%;
   min-height: 0;
 }

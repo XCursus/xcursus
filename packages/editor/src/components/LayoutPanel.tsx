@@ -6,7 +6,7 @@ import {
   failure,
   framesIntersect,
   stackFrames,
-} from "@spatialdeck/core";
+} from "@xcursus/core";
 import type {
   Alignment,
   Block,
@@ -16,7 +16,7 @@ import type {
   Result,
   Scene,
   StackOrder,
-} from "@spatialdeck/core";
+} from "@xcursus/core";
 import {
   convertToCanvas,
   moveInReadingOrder,
@@ -84,11 +84,11 @@ export function layoutDiagnostics(
       warnings.push(`Clipped content: block ${i + 1} overflows its frame.`);
   });
   const content = host?.querySelector<HTMLElement>(
-    `.sd-scene[data-scene-id="${scene.id}"] .sd-content`,
+    `.xc-scene[data-scene-id="${scene.id}"] .xc-content`,
   );
   // A visible canvas title is laid out above the frames; a long one wraps into them.
   const title = content?.querySelector<HTMLElement>(
-    ":scope > h2:not(.sd-title-hidden)",
+    ":scope > h2:not(.xc-title-hidden)",
   );
   if (scene.layout === "canvas" && title) {
     const band = {

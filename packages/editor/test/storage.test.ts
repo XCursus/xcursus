@@ -7,7 +7,7 @@ import {
 } from "../src/storage/index.js";
 import { emptyProject, randomId } from "../src/commands/index.js";
 import type { Revision } from "../src/storage/index.js";
-import type { ProjectDocument } from "@spatialdeck/core";
+import type { ProjectDocument } from "@xcursus/core";
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
@@ -75,7 +75,11 @@ it("open limits name the file kind that exceeded them", () => {
   expect(openLimitError({ name: "a.json", size: 10 * MiB + 1 })).toBe(
     "The JSON file exceeds 10 MiB.",
   );
-  expect(openLimitError({ name: "a.spatialdeck", size: 220 * MiB })).toBeNull();
+  expect(openLimitError({ name: "a.xcursus", size: 220 * MiB })).toBeNull();
+  expect(openLimitError({ name: "a.xcursus", size: 220 * MiB + 1 })).toBe(
+    "The .xcursus archive exceeds 220 MiB.",
+  );
+  expect(openLimitError({ name: "a.SpatialDeck", size: 220 * MiB })).toBeNull();
   expect(openLimitError({ name: "a.spatialdeck", size: 220 * MiB + 1 })).toBe(
     "The .spatialdeck archive exceeds 220 MiB.",
   );

@@ -8,11 +8,11 @@ const { version } = (await import("./package.json", { with: { type: "json" } }))
 export default defineConfig({
   plugins: [
     licenseBanner(
-      `/*! SpatialDeck player ${version} | GPL-3.0-or-later | source: https://github.com/fv-c/SpatialDeck | bundled third-party code: THIRD_PARTY_NOTICES.txt */`,
+      `/*! XCursus player ${version} | GPL-3.0-or-later | source: https://github.com/XCursus/xcursus | bundled third-party code: THIRD_PARTY_NOTICES.txt */`,
     ),
     licenseNotices({
       fileName: "THIRD_PARTY_NOTICES.txt",
-      title: `SpatialDeck player ${version}, IIFE build (spatialdeck-player.iife.js)`,
+      title: `XCursus player ${version}, IIFE build (xcursus-player.iife.js)`,
     }),
   ],
   build: {
@@ -22,8 +22,8 @@ export default defineConfig({
     lib: {
       entry: "src/iife.ts",
       formats: ["iife"],
-      name: "SpatialDeck",
-      fileName: () => "spatialdeck-player.iife.js",
+      name: "XCursus",
+      fileName: () => "xcursus-player.iife.js",
       cssFileName: "player",
     },
   },

@@ -1,3 +1,3 @@
-import "@spatialdeck/player/style.css";
+import "@xcursus/player/style.css";
 import "./style.css";
 export * from "./index.js";

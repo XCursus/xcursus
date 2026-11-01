@@ -1,20 +1,20 @@
 {
-  "name": "@spatialdeck/plugins",
+  "name": "@xcursus/plugins",
   "version": "0.6.0",
-  "description": "Optional SpatialDeck renderers (Markdown, HTML, SVG, LaTeX, media, links, embeds), the plugin SDK and the .spatialdeck archive format.",
+  "description": "Optional XCursus renderers (Markdown, HTML, SVG, LaTeX, media, links, embeds), the plugin SDK and the .xcursus archive format.",
   "license": "GPL-3.0-or-later",
   "author": "Francesco Vitucci",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fv-c/SpatialDeck.git",
+    "url": "git+https://github.com/XCursus/xcursus.git",
     "directory": "packages/plugins"
   },
-  "homepage": "https://github.com/fv-c/SpatialDeck/tree/main/packages/plugins#readme",
+  "homepage": "https://github.com/XCursus/xcursus/tree/main/packages/plugins#readme",
   "bugs": {
-    "url": "https://github.com/fv-c/SpatialDeck/issues"
+    "url": "https://github.com/XCursus/xcursus/issues"
   },
   "keywords": [
-    "spatialdeck",
+    "xcursus",
     "presentation",
     "plugins",
     "katex",
@@ -71,8 +71,8 @@
     "prepack": "node ../../scripts/package-license.mjs"
   },
   "dependencies": {
-    "@spatialdeck/core": "workspace:*",
-    "@spatialdeck/player": "workspace:*",
+    "@xcursus/core": "workspace:*",
+    "@xcursus/player": "workspace:*",
     "dompurify": "^3.4.17",
     "fflate": "^0.8.3",
     "katex": "^0.19.0",

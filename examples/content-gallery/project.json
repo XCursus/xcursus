@@ -2,9 +2,9 @@
   "schemaVersion": "1.2.0",
   "id": "content-gallery",
   "metadata": {
-    "title": "SpatialDeck · Local content",
+    "title": "XCursus · Local content",
     "language": "en",
-    "author": "SpatialDeck contributors"
+    "author": "XCursus contributors"
   },
   "settings": {
     "viewport": {
@@ -267,7 +267,7 @@
           "id": "plugin-block",
           "type": "plugin",
           "data": {
-            "pluginId": "org.spatialdeck.badge",
+            "pluginId": "org.xcursus.badge",
             "apiVersion": "1.0.0",
             "dataVersion": "1.0.0",
             "payload": {

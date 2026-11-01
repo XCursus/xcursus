@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:spatialdeck:project:1.3.0",
+  "$id": "urn:xcursus:project:1.3.0",
   "type": "object",
   "additionalProperties": false,
   "required": [

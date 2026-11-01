@@ -15,10 +15,10 @@ body {
  * The audience sees the scene only: the player's own controls float over the
  * stage and appear on pointer hover or keyboard focus.
  */
-#stage .sd-stage {
+#stage .xc-stage {
   top: 0 !important;
 }
-#stage .sd-access {
+#stage .xc-access {
   position: absolute;
   z-index: 3;
   top: 16px;
@@ -34,12 +34,12 @@ body {
   opacity: 0;
   transition: opacity 0.25s;
 }
-#stage .sd-access:hover,
-#stage .sd-access:focus-within {
+#stage .xc-access:hover,
+#stage .xc-access:focus-within {
   opacity: 1;
 }
-#stage .sd-access button,
-#stage .sd-inspection summary {
+#stage .xc-access button,
+#stage .xc-inspection summary {
   display: inline-flex;
   align-items: center;
   min-height: 30px;
@@ -52,12 +52,12 @@ body {
     500 13px/1 system-ui,
     sans-serif;
 }
-#stage .sd-access button:hover:not(:disabled),
-#stage .sd-access [aria-pressed="true"],
-#stage .sd-inspection[open] > summary {
+#stage .xc-access button:hover:not(:disabled),
+#stage .xc-access [aria-pressed="true"],
+#stage .xc-inspection[open] > summary {
   background: rgb(255 255 255 / 0.12);
 }
-#stage .sd-camera-tools {
+#stage .xc-camera-tools {
   top: calc(100% + 6px);
   left: 0;
   right: auto;
@@ -66,7 +66,7 @@ body {
   border-radius: 8px;
   background: #1d1e22;
 }
-#stage .sd-camera-tools button {
+#stage .xc-camera-tools button {
   justify-content: flex-start;
   width: 100%;
 }
@@ -103,7 +103,7 @@ body {
   background: rgb(255 255 255 / 0.2);
 }
 .public-bar button:focus-visible,
-#stage .sd-access :focus-visible {
+#stage .xc-access :focus-visible {
   outline: 2px solid #5b8cff;
   outline-offset: 2px;
 }
@@ -115,7 +115,7 @@ body {
   opacity: 1;
 }
 @media (prefers-reduced-motion: reduce) {
-  #stage .sd-access,
+  #stage .xc-access,
   .public-bar {
     transition: none;
   }

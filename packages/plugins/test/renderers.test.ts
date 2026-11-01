@@ -8,19 +8,15 @@ import {
   it,
   vi,
 } from "vitest";
-import { validateDocument } from "@spatialdeck/core";
-import type { Block, ProjectDocument } from "@spatialdeck/core";
+import { validateDocument } from "@xcursus/core";
+import type { Block, ProjectDocument } from "@xcursus/core";
 import fixture from "../../../examples/content-gallery/project.json";
-import {
-  AssetError,
-  RendererRegistry,
-  defaultMessages,
-} from "@spatialdeck/player";
+import { AssetError, RendererRegistry, defaultMessages } from "@xcursus/player";
 import type {
   AssetResolver,
   ContentContext,
   PlayerMessages,
-} from "@spatialdeck/player";
+} from "@xcursus/player";
 import { registerMedia } from "../src/media.js";
 import { registerRich } from "../src/rich.js";
 import { registerNavigation } from "../src/navigation.js";
@@ -278,7 +274,7 @@ describe("sanitization pipeline", () => {
       ),
     );
     const ids = [...host.querySelectorAll("[id]")].map((e) => e.id);
-    expect(ids.every((id) => id.startsWith("sd-inst-"))).toBe(true);
+    expect(ids.every((id) => id.startsWith("xc-inst-"))).toBe(true);
     const rect = host.querySelector("rect")!;
     expect(rect.getAttribute("fill")).toBe(`url(#${ids[0]})`);
     expect(rect.getAttribute("stroke")).toBeNull();

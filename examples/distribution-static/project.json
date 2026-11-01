@@ -4,7 +4,7 @@
   "metadata": {
     "title": "Distribution fixture",
     "language": "en",
-    "author": "SpatialDeck example",
+    "author": "XCursus example",
     "description": "0.6 fixture: canvas scene, theme font, formula, local image, camera track, explicit loop and private notes, exported to HTML, PDF and WebM."
   },
   "settings": {
@@ -272,8 +272,8 @@
       "id": "orbit",
       "path": "assets/orbit.svg",
       "mime": "image/svg+xml",
-      "byteLength": 615,
-      "sha256": "55d01a21425696eb9333b33d83f20424f60616f251a18b4f6f8e20c1e5e87c1f"
+      "byteLength": 611,
+      "sha256": "5f58b84a1f8aaf645c29c35d35c64bda338097a17df509d3c3f7cea3b39cc929"
     }
   ],
   "paths": [

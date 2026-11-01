@@ -4,11 +4,11 @@ import {
   RecoveryRepository,
   Studio,
   emptyProject,
-} from "@spatialdeck/editor";
-import type { Player } from "@spatialdeck/player";
-import { samplePlugin } from "@spatialdeck/plugins/sample";
-import "@spatialdeck/player/fonts.css";
-import "@spatialdeck/plugins/style.css";
+} from "@xcursus/editor";
+import type { Player } from "@xcursus/player";
+import { LEGACY_SAMPLE_PLUGIN_ID, samplePlugin } from "@xcursus/plugins/sample";
+import "@xcursus/player/fonts.css";
+import "@xcursus/plugins/style.css";
 import { registerShell } from "./shell.js";
 const store = new EditorStore(emptyProject()),
   repository = new RecoveryRepository();
@@ -35,7 +35,7 @@ createRoot(document.getElementById("root")!).render(
     store={store}
     repository={repository}
     // The demo badge stays available in this app as an explicitly approved plugin.
-    plugins={[samplePlugin()]}
+    plugins={[samplePlugin(), samplePlugin(LEGACY_SAMPLE_PLUGIN_ID)]}
     onPlayer={(player, present) => {
       if (present) studio.presentation = player;
       else studio.preview = player;

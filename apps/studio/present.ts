@@ -1,11 +1,11 @@
-import { createAssetResolver, createPlayer } from "@spatialdeck/player";
-import type { AssetResolver, Player } from "@spatialdeck/player";
-import { connectPublic } from "@spatialdeck/player/presenter";
-import { createBuiltinRegistry } from "@spatialdeck/plugins/builtins";
-import { samplePlugin } from "@spatialdeck/plugins/sample";
-import "@spatialdeck/player/style.css";
-import "@spatialdeck/player/fonts.css";
-import "@spatialdeck/plugins/style.css";
+import { createAssetResolver, createPlayer } from "@xcursus/player";
+import type { AssetResolver, Player } from "@xcursus/player";
+import { connectPublic } from "@xcursus/player/presenter";
+import { createBuiltinRegistry } from "@xcursus/plugins/builtins";
+import { LEGACY_SAMPLE_PLUGIN_ID, samplePlugin } from "@xcursus/plugins/sample";
+import "@xcursus/player/style.css";
+import "@xcursus/player/fonts.css";
+import "@xcursus/plugins/style.css";
 import "./present.css";
 // Public window of the presenter view: a display that never navigates on its
 // own. Keys, outline and choices become requests to the presenter window,
@@ -31,7 +31,9 @@ if (!session || !/^[0-9a-f]{32}$/.test(session))
   status.textContent = texts["no-opener"];
 else {
   let resolver: AssetResolver | undefined;
-  const builtins = createBuiltinRegistry({ plugins: [samplePlugin()] });
+  const builtins = createBuiltinRegistry({
+    plugins: [samplePlugin(), samplePlugin(LEGACY_SAMPLE_PLUGIN_ID)],
+  });
   const player: Player = createPlayer({
     registry: builtins.registry,
     // Audio plays only here; the presenter previews are muted.

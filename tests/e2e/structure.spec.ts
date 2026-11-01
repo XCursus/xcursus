@@ -36,7 +36,7 @@ async function number(page: Page, label: string, text: string) {
 }
 async function studio(page: Page) {
   await page.goto(studioURL);
-  await expect(page.locator(".preview-player .sd-player")).toHaveCount(1);
+  await expect(page.locator(".preview-player .xc-player")).toHaveCount(1);
   await upload(page);
   await expect(page.getByLabel("Project title")).toHaveValue(
     "Branches, hierarchy and camera",
@@ -47,9 +47,9 @@ async function points(page: Page, host: string, sceneId: string) {
     ({ host, sceneId }) => {
       const player = document.querySelector(host)!,
         wrapper = player.querySelector<HTMLElement>(
-          `.sd-scene[data-scene-id="${sceneId}"]`,
+          `.xc-scene[data-scene-id="${sceneId}"]`,
         )!,
-        stage = player.querySelector(".sd-stage")!.getBoundingClientRect(),
+        stage = player.querySelector(".xc-stage")!.getBoundingClientRect(),
         fit = Math.min(stage.width / 1280, stage.height / 720);
       return [
         [-150, -80],
@@ -156,7 +156,7 @@ test("vanilla branch choices, actual prev poses, manual loop limits and keyboard
     await page.evaluate(() => window.demoPlayers[1]!.getState().nodeId),
   ).toBe("A");
   await host.getByRole("button", { name: "Text view", exact: true }).click();
-  expect(await host.locator(".sd-outline button").count()).toBe(4);
+  expect(await host.locator(".xc-outline button").count()).toBe(4);
 });
 test("nested world landmarks and independent track endpoint render within 1 CSS pixel", async ({
   page,

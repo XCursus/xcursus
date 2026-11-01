@@ -1,4 +1,4 @@
-import type { Block } from "@spatialdeck/core";
+import type { Block } from "@xcursus/core";
 /** Data block read by the export runtime; written by the CLI into every page. */
 export interface RuntimeConfig {
   mode: "present" | "capture";

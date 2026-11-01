@@ -29,7 +29,7 @@ export function externalDependencies(manifestPath) {
 /** Fails a library build if a chunk contains a module from node_modules. */
 export function noBundledDependencies() {
   return {
-    name: "spatialdeck-no-bundled-dependencies",
+    name: "xcursus-no-bundled-dependencies",
     generateBundle(_options, bundle) {
       const bundled = [];
       for (const output of Object.values(bundle))
@@ -107,8 +107,8 @@ export function thirdPartyNotices({ title, moduleIds, extra = [] }) {
     text: [
       title,
       "",
-      "SpatialDeck is free software: GPL-3.0-or-later. Corresponding source:",
-      "https://github.com/fv-c/SpatialDeck",
+      "XCursus is free software: GPL-3.0-or-later. Corresponding source:",
+      "https://github.com/XCursus/xcursus",
       "",
       `This artefact embeds the following ${packages.length} third-party packages,`,
       "each under its own licence reproduced below.",
@@ -124,7 +124,7 @@ export function thirdPartyNotices({ title, moduleIds, extra = [] }) {
  */
 export function licenseNotices({ fileName, title, extra = [] }) {
   return {
-    name: "spatialdeck-license-notices",
+    name: "xcursus-license-notices",
     generateBundle(_options, bundle) {
       const ids = Object.values(bundle).flatMap((o) =>
         o.type === "chunk" ? o.moduleIds : [],
@@ -157,7 +157,7 @@ export function installedPackage(name, from) {
  */
 export function licenseBanner(text) {
   return {
-    name: "spatialdeck-license-banner",
+    name: "xcursus-license-banner",
     enforce: "post",
     generateBundle(_options, bundle) {
       for (const output of Object.values(bundle))

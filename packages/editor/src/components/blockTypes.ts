@@ -1,4 +1,4 @@
-import type { Block } from "@spatialdeck/core";
+import type { Block } from "@xcursus/core";
 import type { IconName } from "./icons.js";
 
 /** Visible names and icons of the block types; the document keeps the type ids. */

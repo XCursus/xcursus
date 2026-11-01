@@ -1,4 +1,4 @@
-.sd-player {
+.xc-player {
   position: relative;
   height: 100%;
   min-height: 280px;
@@ -6,7 +6,7 @@
   background: #e8edf4;
   font-family: system-ui, sans-serif;
 }
-.sd-access {
+.xc-access {
   position: relative;
   z-index: 1;
   display: flex;
@@ -14,7 +14,7 @@
   gap: 8px;
   padding: 8px;
 }
-.sd-player button {
+.xc-player button {
   min-height: 40px;
   padding: 8px 12px;
   border: 1px solid #53637b;
@@ -24,122 +24,122 @@
   font: inherit;
   cursor: pointer;
 }
-.sd-player :focus-visible {
+.xc-player :focus-visible {
   outline: 3px solid #1169d4;
   outline-offset: 3px;
 }
 /* Headings and scenes take focus after navigation only to move the reading
    point; they are not controls, so the audience never sees a ring on them. */
-.sd-player [tabindex="-1"]:focus-visible {
+.xc-player [tabindex="-1"]:focus-visible {
   outline: none;
 }
-.sd-stage {
+.xc-stage {
   position: absolute;
   inset: 60px 0 0;
   overflow: hidden;
-  background: var(--sd-backdrop, #e8edf4);
+  background: var(--xc-backdrop, #e8edf4);
 }
-.sd-viewport {
+.xc-viewport {
   position: absolute;
   left: 50%;
   top: 50%;
   transform-origin: 50% 50%;
   perspective-origin: 50% 50%;
 }
-.sd-world {
+.xc-world {
   position: absolute;
   left: 50%;
   top: 50%;
   transform-style: preserve-3d;
   transform-origin: 0 0;
 }
-.sd-scene {
+.xc-scene {
   position: absolute;
   transform-origin: 0 0;
   transform-style: preserve-3d;
 }
 /* Theme tokens arrive as custom properties set through CSSOM; the fallbacks are the 1.2.0 rendering. */
-.sd-content {
+.xc-content {
   box-sizing: border-box;
   position: absolute;
   transform: translate(-50%, -50%);
   padding: 48px;
-  color: var(--sd-text, #172035);
-  background: var(--sd-scene-background, var(--sd-background, #fff));
-  border: 3px solid var(--sd-accent, #215baf);
+  color: var(--xc-text, #172035);
+  background: var(--xc-scene-background, var(--xc-background, #fff));
+  border: 3px solid var(--xc-accent, #215baf);
   border-radius: 8px;
   box-shadow: 0 6px 24px #17203526;
   overflow-wrap: anywhere;
-  font-family: var(--sd-font-body, system-ui, sans-serif);
-  font-size: var(--sd-size-body, 28px);
+  font-family: var(--xc-font-body, system-ui, sans-serif);
+  font-size: var(--xc-size-body, 28px);
   overflow: auto;
 }
-.sd-block {
+.xc-block {
   max-width: 100%;
   overflow-wrap: anywhere;
 }
-.sd-block img,
-.sd-block svg,
-.sd-block video {
+.xc-block img,
+.xc-block svg,
+.xc-block video {
   display: block;
   max-width: 100%;
   max-height: 320px;
 }
-.sd-block audio {
+.xc-block audio {
   max-width: 100%;
 }
-.sd-block pre {
+.xc-block pre {
   overflow: auto;
   white-space: pre-wrap;
 }
-.sd-block table {
+.xc-block table {
   border-collapse: collapse;
 }
-.sd-block th,
-.sd-block td {
+.xc-block th,
+.xc-block td {
   border: 1px solid #53637b;
   padding: 6px;
 }
-.sd-block iframe {
+.xc-block iframe {
   width: 100%;
   min-height: 240px;
   border: 1px solid #53637b;
 }
-.sd-plugin-badge {
+.xc-plugin-badge {
   padding: 16px;
   border: 2px solid #215baf;
   border-radius: 8px;
 }
-.sd-content h2 {
+.xc-content h2 {
   margin: 0 0 32px;
-  font-family: var(--sd-font-heading, system-ui, sans-serif);
-  font-size: var(--sd-size-title, 46px);
+  font-family: var(--xc-font-heading, system-ui, sans-serif);
+  font-size: var(--xc-size-title, 46px);
 }
-.sd-variant-plain {
-  background: var(--sd-scene-background, transparent);
+.xc-variant-plain {
+  background: var(--xc-scene-background, transparent);
   border-color: transparent;
   box-shadow: none;
 }
 /* Canvas: frames are in border-box pixels and clipping happens here, never on preserve-3d wrappers. */
-.sd-layout-canvas {
+.xc-layout-canvas {
   padding: 0;
   border-width: 0;
   overflow: hidden;
   box-shadow:
-    inset 0 0 0 3px var(--sd-accent, #215baf),
+    inset 0 0 0 3px var(--xc-accent, #215baf),
     0 6px 24px #17203526;
 }
-.sd-layout-canvas.sd-variant-plain {
+.xc-layout-canvas.xc-variant-plain {
   box-shadow: none;
 }
-.sd-layout-canvas > h2 {
+.xc-layout-canvas > h2 {
   position: absolute;
   top: 51px;
   left: 51px;
   right: 51px;
   margin: 0;
 }
-.sd-content > h2.sd-title-hidden {
+.xc-content > h2.xc-title-hidden {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -148,7 +148,7 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
-.sd-framed {
+.xc-framed {
   position: absolute;
   top: 0;
   left: 0;
@@ -161,96 +161,96 @@
   flex-direction: column;
   justify-content: flex-start;
 }
-.sd-framed > img,
-.sd-framed > svg,
-.sd-framed > video,
-.sd-framed > iframe {
+.xc-framed > img,
+.xc-framed > svg,
+.xc-framed > video,
+.xc-framed > iframe {
   flex: 1 1 0;
   width: 100%;
   height: auto;
   min-height: 0;
   max-height: none;
 }
-.sd-valign-center {
+.xc-valign-center {
   justify-content: center;
 }
-.sd-valign-end {
+.xc-valign-end {
   justify-content: flex-end;
 }
-.sd-align-start {
+.xc-align-start {
   text-align: start;
 }
-.sd-align-center {
+.xc-align-center {
   text-align: center;
 }
-.sd-align-end {
+.xc-align-end {
   text-align: end;
 }
-.sd-align-justify {
+.xc-align-justify {
   text-align: justify;
 }
-.sd-size-xs {
+.xc-size-xs {
   font-size: 0.6em;
 }
-.sd-size-s {
+.xc-size-s {
   font-size: 0.8em;
 }
-.sd-size-m {
+.xc-size-m {
   font-size: 1em;
 }
-.sd-size-l {
+.xc-size-l {
   font-size: 1.25em;
 }
-.sd-size-xl {
+.xc-size-xl {
   font-size: 1.6em;
 }
-.sd-size-xxl {
+.xc-size-xxl {
   font-size: 2.2em;
 }
-.sd-content p {
+.xc-content p {
   white-space: pre-wrap;
 }
-.sd-outline {
+.xc-outline {
   margin: 0;
   padding: 20px 24px 20px 52px;
   max-height: calc(100% - 100px);
   overflow: auto;
 }
-.sd-outline li {
+.xc-outline li {
   padding: 12px 0;
 }
-.sd-outline p {
+.xc-outline p {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.sd-outline [aria-current="true"] {
+.xc-outline [aria-current="true"] {
   border: 3px solid #1169d4;
   font-weight: 700;
 }
-.sd-live {
+.xc-live {
   position: absolute;
   width: 1px;
   height: 1px;
   overflow: hidden;
   clip-path: inset(50%);
 }
-.sd-player [hidden] {
+.xc-player [hidden] {
   display: none;
 }
 
-.sd-empty {
+.xc-empty {
   padding: 24px;
 }
 
-.sd-inspection {
+.xc-inspection {
   position: relative;
   align-self: center;
 }
-.sd-inspection summary {
+.xc-inspection summary {
   cursor: pointer;
   padding: 8px;
 }
-.sd-camera-tools {
+.xc-camera-tools {
   position: absolute;
   right: 0;
   top: 100%;
@@ -261,7 +261,7 @@
   display: grid;
   gap: 4px;
 }
-.sd-choices {
+.xc-choices {
   position: absolute;
   z-index: 2;
   bottom: 0;
@@ -275,12 +275,12 @@
   max-height: 30%;
   overflow: auto;
 }
-.sd-choices p {
+.xc-choices p {
   width: 100%;
   margin: 0;
   font-size: 14px;
 }
-.sd-player button:disabled {
+.xc-player button:disabled {
   opacity: 0.65;
   cursor: default;
 }

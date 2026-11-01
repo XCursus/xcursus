@@ -46,7 +46,7 @@ for (const name of names) {
   );
   manifests[name] = manifest;
   run("pnpm", ["pack", "--pack-destination", tarballs], dir);
-  const file = `spatialdeck-${name}-${manifest.version}.tgz`;
+  const file = `xcursus-${name}-${manifest.version}.tgz`;
   const listing = run("tar", ["tzf", join(tarballs, file)], root)
     .split("\n")
     .filter(Boolean);
@@ -86,7 +86,7 @@ for (const name of names) {
   check(
     `${name}: internal dependencies pinned to the same version`,
     Object.entries(packed.dependencies ?? {})
-      .filter(([dep]) => dep.startsWith("@spatialdeck/"))
+      .filter(([dep]) => dep.startsWith("@xcursus/"))
       .every(([, range]) => range === manifest.version),
   );
   if (name === "editor")
@@ -127,7 +127,7 @@ for (const [name, notices] of [
   check(
     `${name}: notices start with the GPL notice and the source`,
     text.includes("GPL-3.0-or-later") &&
-      text.includes("https://github.com/fv-c/SpatialDeck"),
+      text.includes("https://github.com/XCursus/xcursus"),
   );
   const expected =
     name === "player"
@@ -153,7 +153,7 @@ for (const [name, notices] of [
 // 3. External consumer: tarballs only, installed from the local store without network.
 await mkdir(join(consumer, "src"), { recursive: true });
 const tgz = (name) =>
-  `file:../tarballs/spatialdeck-${name}-${manifests[name].version}.tgz`;
+  `file:../tarballs/xcursus-${name}-${manifests[name].version}.tgz`;
 const rootManifest = JSON.parse(
   await readFile(join(root, "package.json"), "utf8"),
 );
@@ -161,11 +161,11 @@ await writeFile(
   join(consumer, "package.json"),
   JSON.stringify(
     {
-      name: "spatialdeck-tarball-consumer",
+      name: "xcursus-tarball-consumer",
       private: true,
       type: "module",
       dependencies: Object.fromEntries(
-        names.map((n) => [`@spatialdeck/${n}`, tgz(n)]),
+        names.map((n) => [`@xcursus/${n}`, tgz(n)]),
       ),
       devDependencies: {
         typescript: rootManifest.devDependencies.typescript,
@@ -214,7 +214,7 @@ report.consumer.pinned = pinned;
 await writeFile(
   join(consumer, "pnpm-workspace.yaml"),
   `strictPeerDependencies: true\n${releaseAge.trimEnd()}\noverrides:\n${[
-    ...names.map((n) => `  "@spatialdeck/${n}": "${tgz(n)}"`),
+    ...names.map((n) => `  "@xcursus/${n}": "${tgz(n)}"`),
     ...Object.entries(pinned).map(
       ([dep, version]) => `  "${dep}": "${version}"`,
     ),
@@ -222,8 +222,8 @@ await writeFile(
 );
 const examples = join(root, "examples");
 await copyFile(
-  join(examples, "content-gallery/content-gallery.spatialdeck"),
-  join(consumer, "src/gallery.spatialdeck"),
+  join(examples, "content-gallery/content-gallery.xcursus"),
+  join(consumer, "src/gallery.xcursus"),
 );
 await copyFile(
   join(examples, "layout-canvas/project.json"),
@@ -258,10 +258,10 @@ await writeFile(
 );
 await writeFile(
   join(consumer, "src/minimal.ts"),
-  `import { createPlayer } from "@spatialdeck/player";
-import type { Player } from "@spatialdeck/player";
-import "@spatialdeck/player/style.css";
-import "@spatialdeck/player/fonts.css";
+  `import { createPlayer } from "@xcursus/player";
+import type { Player } from "@xcursus/player";
+import "@xcursus/player/style.css";
+import "@xcursus/player/fonts.css";
 import project from "./layout.json";
 const players: Player[] = [createPlayer(), createPlayer()];
 const results = await Promise.all(
@@ -278,13 +278,13 @@ await writeFile(
 );
 await writeFile(
   join(consumer, "src/realistic.ts"),
-  `import { createAssetResolver, createPlayer } from "@spatialdeck/player";
-import { createBuiltinRegistry } from "@spatialdeck/plugins/builtins";
-import { readArchive } from "@spatialdeck/plugins/archive";
-import "@spatialdeck/player/style.css";
-import "@spatialdeck/player/fonts.css";
-import "@spatialdeck/plugins/style.css";
-import archive from "./gallery.spatialdeck?url";
+  `import { createAssetResolver, createPlayer } from "@xcursus/player";
+import { createBuiltinRegistry } from "@xcursus/plugins/builtins";
+import { readArchive } from "@xcursus/plugins/archive";
+import "@xcursus/player/style.css";
+import "@xcursus/player/fonts.css";
+import "@xcursus/plugins/style.css";
+import archive from "./gallery.xcursus?url";
 const { document: project, blobs } = await readArchive(await (await fetch(archive)).blob());
 const { registry } = createBuiltinRegistry();
 const player = createPlayer({ registry, assets: createAssetResolver(project.assets, blobs) });
@@ -295,18 +295,18 @@ Object.assign(window, { consumer: { player, ok: result.ok } });
 // Type surface of every package, including the editor and the CLI API.
 await writeFile(
   join(consumer, "src/types.ts"),
-  `import { validateDocument, planCapture, sampleCapture, publicDocument } from "@spatialdeck/core";
-import type { CapturePlan, ProjectDocument, Itinerary } from "@spatialdeck/core";
-import { createPlayer, italianMessages, defaultMessages } from "@spatialdeck/player";
-import type { Player, PlayerOptions, ContentRenderer } from "@spatialdeck/player";
-import { createBuiltinRegistry, lazyRenderer } from "@spatialdeck/plugins/builtins";
-import { writeArchive } from "@spatialdeck/plugins/archive";
-import { PluginHost } from "@spatialdeck/plugins";
-import { samplePlugin } from "@spatialdeck/plugins/sample";
-import { Studio, EditorStore, emptyProject, RecoveryRepository } from "@spatialdeck/editor";
-import type { StudioProps, DocumentEdit } from "@spatialdeck/editor";
-import { run, EXIT } from "@spatialdeck/cli";
-import type { ExportManifest } from "@spatialdeck/cli";
+  `import { validateDocument, planCapture, sampleCapture, publicDocument } from "@xcursus/core";
+import type { CapturePlan, ProjectDocument, Itinerary } from "@xcursus/core";
+import { createPlayer, italianMessages, defaultMessages } from "@xcursus/player";
+import type { Player, PlayerOptions, ContentRenderer } from "@xcursus/player";
+import { createBuiltinRegistry, lazyRenderer } from "@xcursus/plugins/builtins";
+import { writeArchive } from "@xcursus/plugins/archive";
+import { PluginHost } from "@xcursus/plugins";
+import { samplePlugin } from "@xcursus/plugins/sample";
+import { Studio, EditorStore, emptyProject, RecoveryRepository } from "@xcursus/editor";
+import type { StudioProps, DocumentEdit } from "@xcursus/editor";
+import { run, EXIT } from "@xcursus/cli";
+import type { ExportManifest } from "@xcursus/cli";
 export const surface = { validateDocument, planCapture, sampleCapture, publicDocument, createPlayer, italianMessages, defaultMessages, createBuiltinRegistry, lazyRenderer, writeArchive, PluginHost, samplePlugin, Studio, EditorStore, emptyProject, RecoveryRepository, run, EXIT };
 export type Surface = [CapturePlan, ProjectDocument, Itinerary, Player, PlayerOptions, ContentRenderer, StudioProps, DocumentEdit, ExportManifest];
 const options: PlayerOptions = { messages: italianMessages, controls: false };
@@ -346,8 +346,7 @@ report.consumer.typecheck = typecheck.trim() || "no diagnostics";
 run(bin("vite"), ["build", "--logLevel", "error"], consumer);
 check(
   "consumer: CLI from tarball runs",
-  run(bin("spatialdeck"), ["--version"], consumer).trim() ===
-    manifests.cli.version,
+  run(bin("xcursus"), ["--version"], consumer).trim() === manifests.cli.version,
 );
 
 // 4. Budgets measured on the built consumers (gzip level 9).

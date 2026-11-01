@@ -3,7 +3,7 @@ import { PluginHost } from "../src/sdk/index.js";
 import { RendererRegistry } from "../../player/src/content/index.js";
 import { samplePlugin } from "../src/sample.js";
 import type { ContentContext } from "../../player/src/content/index.js";
-import { validateDocument } from "@spatialdeck/core";
+import { validateDocument } from "@xcursus/core";
 import fixture from "../../../examples/content-gallery/project.json";
 it.each([
   { id: "unqualified" },

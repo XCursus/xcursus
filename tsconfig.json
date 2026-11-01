@@ -5,12 +5,12 @@
     "types": ["node"],
     "noEmit": true,
     "paths": {
-      "@spatialdeck/core": ["./packages/core/src/index.ts"],
-      "@spatialdeck/player/presenter": ["./packages/player/src/presenter.ts"],
-      "@spatialdeck/player": ["./packages/player/src/index.ts"],
-      "@spatialdeck/editor": ["./packages/editor/src/index.ts"],
-      "@spatialdeck/plugins": ["./packages/plugins/src/sdk/index.ts"],
-      "@spatialdeck/plugins/*": ["./packages/plugins/src/*"]
+      "@xcursus/core": ["./packages/core/src/index.ts"],
+      "@xcursus/player/presenter": ["./packages/player/src/presenter.ts"],
+      "@xcursus/player": ["./packages/player/src/index.ts"],
+      "@xcursus/editor": ["./packages/editor/src/index.ts"],
+      "@xcursus/plugins": ["./packages/plugins/src/sdk/index.ts"],
+      "@xcursus/plugins/*": ["./packages/plugins/src/*"]
     },
     "jsx": "react-jsx"
   },

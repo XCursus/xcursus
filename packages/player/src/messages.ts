@@ -57,7 +57,7 @@ export interface PlayerMessages {
 /** English defaults (G0 decision 3, from 0.6). */
 export const defaultMessages: Readonly<PlayerMessages> = Object.freeze({
   lang: "en",
-  presentation: "SpatialDeck",
+  presentation: "XCursus",
   outline: "Text view",
   reduceMotion: "Reduce motion",
   overview: "Overview",
@@ -114,7 +114,7 @@ export const defaultMessages: Readonly<PlayerMessages> = Object.freeze({
 /** The Italian set that was the default until 0.5; hosts with an Italian interface pass it as `messages`. */
 export const italianMessages: Readonly<PlayerMessages> = Object.freeze({
   lang: "it",
-  presentation: "SpatialDeck",
+  presentation: "XCursus",
   outline: "Vista testuale",
   reduceMotion: "Riduci movimento",
   overview: "Panoramica",

@@ -1,4 +1,4 @@
-import type { Asset } from "@spatialdeck/core";
+import type { Asset } from "@xcursus/core";
 import { Sha256 } from "./sha256.js";
 export interface AssetLease {
   url: string;

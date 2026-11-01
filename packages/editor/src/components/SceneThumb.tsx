@@ -1,4 +1,4 @@
-import type { ProjectDocument, Scene } from "@spatialdeck/core";
+import type { ProjectDocument, Scene } from "@xcursus/core";
 
 /**
  * Schematic thumbnail of a scene drawn from the document alone: theme colors,

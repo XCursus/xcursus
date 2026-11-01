@@ -5,7 +5,7 @@ import type {
   NavigationResult,
   PlayerEvents,
   Diagnostic,
-} from "@spatialdeck/core";
+} from "@xcursus/core";
 import type { AssetResolver } from "../assets/index.js";
 import { defaultMessages } from "../messages.js";
 import type { PlayerMessages } from "../messages.js";

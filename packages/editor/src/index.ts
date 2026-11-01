@@ -1,4 +1,4 @@
-// Public API of @spatialdeck/editor, delimited since 0.6: the Studio component,
+// Public API of @xcursus/editor, delimited since 0.6: the Studio component,
 // the command store and the commands an integrator applies through it, local
 // recovery storage. Components, helpers and storage internals stay private.
 export { Studio } from "./components/Studio.js";

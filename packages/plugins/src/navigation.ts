@@ -1,9 +1,9 @@
-import { defaultMessages } from "@spatialdeck/player";
+import { defaultMessages } from "@xcursus/player";
 import type {
   ContentContext,
   ContentRenderer,
   RendererRegistry,
-} from "@spatialdeck/player";
+} from "@xcursus/player";
 export interface EmbedPolicy {
   allowedOrigins: readonly string[];
 }

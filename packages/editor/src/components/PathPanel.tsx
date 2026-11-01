@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { success } from "@spatialdeck/core";
-import type { PathEdge, ProjectDocument, Result } from "@spatialdeck/core";
+import { success } from "@xcursus/core";
+import type { PathEdge, ProjectDocument, Result } from "@xcursus/core";
 import {
   createPath,
   deletePath,

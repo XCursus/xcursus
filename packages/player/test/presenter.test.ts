@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { publicDocument, validateDocument } from "@spatialdeck/core";
-import type { ProjectDocument } from "@spatialdeck/core";
+import { publicDocument, validateDocument } from "@xcursus/core";
+import type { ProjectDocument } from "@xcursus/core";
 import fixture from "../../../examples/structure-branching/project.json";
 import {
   PRESENTER_PROTOCOL,

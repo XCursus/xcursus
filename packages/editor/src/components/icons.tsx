@@ -202,7 +202,7 @@ const paths = {
   ),
 } satisfies Record<string, ReactNode>;
 export type IconName = keyof typeof paths;
-/** Product mark: three planes in depth, the spatial deck. Decorative. */
+/** Product mark: three planes in depth. Decorative. */
 export function BrandMark() {
   return (
     <svg

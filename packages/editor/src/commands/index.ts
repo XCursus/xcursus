@@ -6,7 +6,7 @@ import {
   success,
   reparentScene,
   updateCapabilities,
-} from "@spatialdeck/core";
+} from "@xcursus/core";
 import type {
   Block,
   BlockStyle,
@@ -17,7 +17,7 @@ import type {
   SceneAppearance,
   ScenePath,
   Theme,
-} from "@spatialdeck/core";
+} from "@xcursus/core";
 export type DocumentEdit = (
   document: ProjectDocument,
 ) => Result<ProjectDocument>;

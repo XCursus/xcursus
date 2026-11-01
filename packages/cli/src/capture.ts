@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import type { Browser, BrowserContext, Page } from "playwright-core";
-import type { ProjectDocument } from "@spatialdeck/core";
+import type { ProjectDocument } from "@xcursus/core";
 import { CliError, EXIT } from "./io.js";
 
 const run = promisify(execFile);
@@ -22,7 +22,7 @@ export async function launchChromium(): Promise<Chromium> {
   } catch {
     throw new CliError(
       EXIT.environment,
-      "playwright-core is not installed; reinstall @spatialdeck/cli with its dependencies.",
+      "playwright-core is not installed; reinstall @xcursus/cli with its dependencies.",
     );
   }
   const version = (
@@ -79,8 +79,8 @@ export function classifyViolations(violations: readonly Violation[]): {
 export async function captureViolations(page: Page): Promise<Violation[]> {
   return page.evaluate(
     () =>
-      (window as unknown as { spatialdeckViolations?: Violation[] })
-        .spatialdeckViolations ?? [],
+      (window as unknown as { xcursusViolations?: Violation[] })
+        .xcursusViolations ?? [],
   );
 }
 /**
@@ -108,7 +108,7 @@ export async function openCapturePage(
   // CSP violations are judged from the standard event, not from console text.
   await page.addInitScript(() => {
     const seen: Violation[] = [];
-    Object.assign(window, { spatialdeckViolations: seen });
+    Object.assign(window, { xcursusViolations: seen });
     document.addEventListener("securitypolicyviolation", (event) =>
       seen.push({
         directive: event.effectiveDirective,
@@ -128,12 +128,12 @@ export async function openCapturePage(
   await writeFile(file, html);
   await page.goto(pathToFileURL(file).href);
   await page.waitForFunction(
-    () => document.documentElement.dataset.spatialdeck !== undefined,
+    () => document.documentElement.dataset.xcursus !== undefined,
     undefined,
     { timeout: 60000 },
   );
   const state = await page.evaluate(
-    () => document.documentElement.dataset.spatialdeck,
+    () => document.documentElement.dataset.xcursus,
   );
   if (state !== "ready") {
     const blocked = classifyViolations(await captureViolations(page)).errors;
@@ -149,8 +149,10 @@ export interface Tool {
   path: string;
   version: string;
 }
+/** `XCURSUS_<TOOL>`, then the deprecated `SPATIALDECK_<TOOL>` of earlier releases, then PATH. */
 async function tool(name: string, variable: string): Promise<Tool | null> {
-  const path = process.env[variable] || name;
+  const legacy = variable.replace(/^XCURSUS_/, "SPATIALDECK_");
+  const path = process.env[variable] || process.env[legacy] || name;
   try {
     const { stdout } = await run(path, ["-version"], { timeout: 30000 });
     return { path, version: stdout.split("\n")[0]!.trim() };
@@ -207,12 +209,12 @@ const candidates = [
   },
 ];
 export async function findEncoder(): Promise<Encoder> {
-  const ffmpeg = await tool("ffmpeg", "SPATIALDECK_FFMPEG");
-  const ffprobe = await tool("ffprobe", "SPATIALDECK_FFPROBE");
+  const ffmpeg = await tool("ffmpeg", "XCURSUS_FFMPEG");
+  const ffprobe = await tool("ffprobe", "XCURSUS_FFPROBE");
   if (!ffmpeg || !ffprobe)
     throw new CliError(
       EXIT.environment,
-      `${!ffmpeg ? "ffmpeg" : "ffprobe"} not found. Install FFmpeg (with ffprobe) yourself or set SPATIALDECK_FFMPEG and SPATIALDECK_FFPROBE; the CLI never downloads it.`,
+      `${!ffmpeg ? "ffmpeg" : "ffprobe"} not found. Install FFmpeg (with ffprobe) yourself or set XCURSUS_FFMPEG and XCURSUS_FFPROBE; the CLI never downloads it.`,
     );
   let list: string;
   try {

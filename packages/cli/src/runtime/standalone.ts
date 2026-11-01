@@ -9,16 +9,16 @@ import {
   createPlayer,
   defaultMessages,
   italianMessages,
-} from "@spatialdeck/player";
+} from "@xcursus/player";
 import type {
   AssetResolver,
   ContentRenderer,
   Player,
   RendererFactory,
-} from "@spatialdeck/player";
-import { validateDocument } from "@spatialdeck/core";
-import type { CapturePlan, ProjectDocument } from "@spatialdeck/core";
-import { createBuiltinRegistry } from "@spatialdeck/plugins/builtins";
+} from "@xcursus/player";
+import { validateDocument } from "@xcursus/core";
+import type { CapturePlan, ProjectDocument } from "@xcursus/core";
+import { createBuiltinRegistry } from "@xcursus/plugins/builtins";
 import { isAnimatedImage } from "../animation.js";
 import type { RuntimeConfig } from "../config.js";
 
@@ -42,7 +42,7 @@ function placeholder(kind: "excluded" | "poster"): RendererFactory {
         const messages = context.messages ?? defaultMessages;
         const note = () => {
           const p = host.ownerDocument.createElement("p");
-          p.className = "sd-export-placeholder";
+          p.className = "xc-export-placeholder";
           p.lang = messages.lang;
           p.textContent = messages.contentUnavailable(context.block.type);
           host.append(p);
@@ -107,12 +107,12 @@ async function freezeAnimations(
 }
 
 async function start() {
-  const config = read("spatialdeck-config") as RuntimeConfig;
-  const stage = document.getElementById("spatialdeck-stage")!;
+  const config = read("xcursus-config") as RuntimeConfig;
+  const stage = document.getElementById("xcursus-stage")!;
   let input: unknown, blobs: Map<string, Blob>;
   if (config.assets === "inline") {
-    input = read("spatialdeck-project");
-    const data = read("spatialdeck-assets") as Record<string, string>;
+    input = read("xcursus-project");
+    const data = read("xcursus-assets") as Record<string, string>;
     const checked = validateDocument(input);
     if (!checked.ok) throw new Error(checked.diagnostics[0]!.message);
     blobs = new Map(
@@ -127,7 +127,7 @@ async function start() {
     input = await response.json();
     const checked = validateDocument(input);
     if (!checked.ok) throw new Error(checked.diagnostics[0]!.message);
-    const files = (read("spatialdeck-files") as Record<string, string>) ?? {};
+    const files = (read("xcursus-files") as Record<string, string>) ?? {};
     blobs = new Map();
     await Promise.all(
       checked.value.assets.map(async (a) => {
@@ -164,21 +164,21 @@ async function start() {
   if (!mounted.ok) throw new Error(mounted.diagnostics[0]!.message);
   if (capture)
     Object.assign(window, {
-      spatialdeckCapture: {
+      xcursusCapture: {
         renderAt: (plan: CapturePlan, elapsedMs: number) =>
           player.renderAt(plan, elapsedMs),
       },
     });
-  document.documentElement.dataset.spatialdeck = "ready";
+  document.documentElement.dataset.xcursus = "ready";
 }
 
 start().catch((error: unknown) => {
-  document.documentElement.dataset.spatialdeck = "error";
-  const stage = document.getElementById("spatialdeck-stage");
+  document.documentElement.dataset.xcursus = "error";
+  const stage = document.getElementById("xcursus-stage");
   if (stage) {
     const p = document.createElement("p");
     p.setAttribute("role", "alert");
-    p.textContent = `SpatialDeck: ${String(error)}`;
+    p.textContent = `XCursus: ${String(error)}`;
     stage.replaceChildren(p);
   }
 });

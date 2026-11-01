@@ -1,4 +1,4 @@
-// Entry of the classic-script build: global `SpatialDeck`, same source as the ESM build.
+// Entry of the classic-script build: global `XCursus`, same source as the ESM build.
 import "./style.css";
 export * from "./index.js";
 export {
@@ -7,4 +7,4 @@ export {
   planCapture,
   validateItinerary,
   sampleCapture,
-} from "@spatialdeck/core";
+} from "@xcursus/core";

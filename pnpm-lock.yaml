@@ -223,28 +223,28 @@ importers:
 
   apps/playground:
     dependencies:
-      '@spatialdeck/core':
+      '@xcursus/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@spatialdeck/player':
+      '@xcursus/player':
         specifier: workspace:*
         version: link:../../packages/player
-      '@spatialdeck/plugins':
+      '@xcursus/plugins':
         specifier: workspace:*
         version: link:../../packages/plugins
 
   apps/studio:
     dependencies:
-      '@spatialdeck/core':
+      '@xcursus/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@spatialdeck/editor':
+      '@xcursus/editor':
         specifier: workspace:*
         version: link:../../packages/editor
-      '@spatialdeck/player':
+      '@xcursus/player':
         specifier: workspace:*
         version: link:../../packages/player
-      '@spatialdeck/plugins':
+      '@xcursus/plugins':
         specifier: workspace:*
         version: link:../../packages/plugins
       react:
@@ -256,13 +256,13 @@ importers:
 
   packages/cli:
     dependencies:
-      '@spatialdeck/core':
+      '@xcursus/core':
         specifier: workspace:*
         version: link:../core
-      '@spatialdeck/player':
+      '@xcursus/player':
         specifier: workspace:*
         version: link:../player
-      '@spatialdeck/plugins':
+      '@xcursus/plugins':
         specifier: workspace:*
         version: link:../plugins
       pdf-lib:
@@ -283,13 +283,13 @@ importers:
 
   packages/editor:
     dependencies:
-      '@spatialdeck/core':
+      '@xcursus/core':
         specifier: workspace:*
         version: link:../core
-      '@spatialdeck/player':
+      '@xcursus/player':
         specifier: workspace:*
         version: link:../player
-      '@spatialdeck/plugins':
+      '@xcursus/plugins':
         specifier: workspace:*
         version: link:../plugins
     devDependencies:
@@ -305,16 +305,16 @@ importers:
       '@fontsource/atkinson-hyperlegible':
         specifier: 5.3.0
         version: 5.3.0
-      '@spatialdeck/core':
+      '@xcursus/core':
         specifier: workspace:*
         version: link:../core
 
   packages/plugins:
     dependencies:
-      '@spatialdeck/core':
+      '@xcursus/core':
         specifier: workspace:*
         version: link:../core
-      '@spatialdeck/player':
+      '@xcursus/player':
         specifier: workspace:*
         version: link:../player
       dompurify:

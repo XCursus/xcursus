@@ -4,6 +4,7 @@ import {
   exportHtml,
   exportPdf,
   exportVideo,
+  pack,
   validate,
 } from "./commands.js";
 import type { Report } from "./commands.js";
@@ -12,17 +13,21 @@ import { profiles } from "./profile.js";
 export { CliError, EXIT } from "./io.js";
 export type { ExportManifest } from "./commands.js";
 
-export const help = `spatialdeck ${toolVersion} — validate, build and export SpatialDeck projects
+export const help = `xcursus ${toolVersion} — validate, build and export XCursus projects
 
 Usage:
-  spatialdeck validate <project> [--json]
-  spatialdeck build <project> --out <directory> [--overwrite] [--allow-partial]
-  spatialdeck export html <project> --out <file.html> [--overwrite] [--allow-partial]
-  spatialdeck export pdf <project> --itinerary <file.json> --out <file.pdf>
-  spatialdeck export video <project> --itinerary <file.json> --fps 30 --out <file.webm>
+  xcursus validate <project> [--json]
+  xcursus pack <project> --out <file.xcursus> [--overwrite]
+  xcursus build <project> --out <directory> [--overwrite] [--allow-partial]
+  xcursus export html <project> --out <file.html> [--overwrite] [--allow-partial]
+  xcursus export pdf <project> --itinerary <file.json> --out <file.pdf>
+  xcursus export video <project> --itinerary <file.json> --fps 30 --out <file.webm>
 
-<project> is a project JSON (assets resolved inside its directory) or a
-.spatialdeck archive. Exports are strict: content outside the format profile
+<project> is a project JSON (assets resolved inside its directory), a
+.xcursus archive or a legacy .spatialdeck archive (read only). Documents of
+earlier schema versions are migrated in memory; the input is never modified.
+pack writes the migrated project, notes and assets included, as a .xcursus
+archive. Exports are strict: content outside the format profile
 fails with exit 1; --allow-partial writes placeholders and a manifest with
 status "partial". Every output gets a manifest (<out>.manifest.json, or
 export-manifest.json inside a build). Private notes are never exported.
@@ -189,6 +194,9 @@ export async function run(argv: string[], io: Io): Promise<number> {
                 schemaVersion: project.document.schemaVersion,
                 sourceSchemaVersion: project.sourceSchemaVersion,
                 kind: project.kind,
+                ...(project.archiveFormat
+                  ? { archiveFormat: project.archiveFormat }
+                  : {}),
                 diagnostics,
                 resources: project.resources.map(
                   ({ id, path, mime, byteLength, sha256, status }) => ({
@@ -213,8 +221,21 @@ export async function run(argv: string[], io: Io): Promise<number> {
               ? `valid ${project.document.schemaVersion} (${project.resources.length} resources verified)`
               : "invalid",
           );
+          if (project.archiveFormat === "legacy")
+            io.out(
+              "note: legacy .spatialdeck archive; `xcursus pack` writes it as .xcursus",
+            );
         }
         return ok ? EXIT.ok : EXIT.data;
+      }
+      case "pack": {
+        only(p, ["--out", "--overwrite"]);
+        await pack(
+          one(rest),
+          { out: required(p, "--out"), overwrite: p.flags.has("--overwrite") },
+          io,
+        );
+        return EXIT.ok;
       }
       case "build": {
         only(p, ["--out", "--overwrite", "--allow-partial", "--lang"]);
@@ -284,7 +305,7 @@ export async function run(argv: string[], io: Io): Promise<number> {
       default:
         throw new CliError(
           EXIT.data,
-          `Unknown command: ${command}. See spatialdeck --help.`,
+          `Unknown command: ${command}. See xcursus --help.`,
         );
     }
   } catch (error) {

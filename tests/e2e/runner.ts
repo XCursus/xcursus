@@ -2,7 +2,7 @@ import { createRequire } from "node:module";
 
 // Only this test adapter selects a runner. The suite is shared without copies,
 // skips or runtime changes to core/player. Both pinned APIs run the same tests.
-const compatible = process.env.SPATIALDECK_E2E_RUNNER === "webkit-macos14";
+const compatible = process.env.XCURSUS_E2E_RUNNER === "webkit-macos14";
 const require = createRequire(
   compatible
     ? new URL("../../tools/webkit-macos14/package.json", import.meta.url)
