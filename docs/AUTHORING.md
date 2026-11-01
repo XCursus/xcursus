@@ -1,6 +1,8 @@
-# Creating a presentation with Studio 0.6
+# Using XCursus Studio
 
-Run `pnpm dev:studio` from the repository root after the installation described in the README. Open the local address printed by Vite, usually `http://127.0.0.1:5174`. All the work happens in the browser, with no account or backend.
+XCursus Studio is the visual editor of XCursus. It runs entirely in the browser, with no account or backend, and previews every change with the same player used for presenting and exporting.
+
+Run `pnpm dev:studio` from the repository root after the installation described in the [README](../README.md#install-and-run), then open the address printed by Vite, usually `http://127.0.0.1:5174`. A production build (`pnpm build`, then `apps/studio/dist`) can be served from any static host and works offline after the first load.
 
 ## Scenes and space
 
@@ -20,7 +22,12 @@ The preview uses the real player and frames the selected scene. Rotations come o
 
 ## Files and recovery
 
-**Save JSON** downloads a copy in the current schema 1.3.0, including texts, blocks, notes, parents, paths, camera, tracks and cues, layout, theme and opaque extensions. **Open** reads a JSON file or a `.spatialdeck` archive as an in-memory copy. It validates the candidate first; invalid JSON leaves your work untouched. If there are unsaved changes, you can cancel the replacement. A historical 1.0.0, 1.1.0 or 1.2.0 file is validated and migrated in memory, with identical rendering; Save JSON downloads a new 1.3.0 copy. No operation ever writes to the opened file on disk.
+Studio saves two kinds of file, described in detail in [Project files and the `.xcursus` format](FILE_FORMAT.md):
+
+- **Save JSON** downloads `<title>.json`, the document alone, in the current schema 1.3.0: texts, blocks, notes, parents, paths, camera, tracks and cues, layout, theme and opaque extensions. Assets stay as references to files next to it.
+- **Save archive** downloads `<title>.xcursus`, the portable native format: the same document with every asset and a digest manifest in one file.
+
+**Open** (Ctrl/Cmd+O) reads a JSON file, a `.xcursus` archive or a legacy `.spatialdeck` archive saved by SpatialDeck, the former name of XCursus, as an in-memory copy. It validates the candidate first; invalid JSON leaves your work untouched. If there are unsaved changes, you can cancel the replacement. A historical 1.0.0, 1.1.0 or 1.2.0 file is validated and migrated in memory, with identical rendering; Save JSON downloads a new 1.3.0 copy. No operation ever writes to the opened file on disk. A legacy `.spatialdeck` archive opens with a notice: its content is imported unchanged and **Save archive** writes it as `.xcursus`; the original file is left as it was.
 
 The local autosave writes to IndexedDB after 750 ms and keeps the last ten revisions per project. On reload it offers recovery, with title, revision, date and scene count, only if the latest revision holds changes not saved to a file: after **Save JSON** or **Save archive** it is no longer offered. The **Recovery** button always lets you pick an earlier revision too. Save the result as JSON to keep it outside the browser.
 
@@ -36,7 +43,7 @@ Every button and field is reachable with Tab; activate it with Enter or Space. T
 - Ctrl/Cmd+O: open the file picker.
 - Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z: undo and redo outside text fields.
 - Delete/Backspace outside fields: confirm deletion of the selected scene.
-- **Present**: opens an instance of the same player and, since 0.6, requests browser full screen (if the browser refuses, the presentation stays in the tab); arrows, Page Up, Page Down and Space navigate while the player has focus. Escape or **Back to the editor** restore focus, leave full screen and keep the model. The controls (Back to the editor, previous and next scene, and the player controls) float above the scene and fade when the pointer rests; keyboard focus keeps them visible.
+- **Present**: opens an instance of the same player and requests browser full screen (if the browser refuses, the presentation stays in the tab); arrows, Page Up, Page Down and Space navigate while the player has focus. Escape or **Back to the editor** restore focus, leave full screen and keep the model. The controls (Back to the editor, previous and next scene, and the player controls) float above the scene and fade when the pointer rests; keyboard focus keeps them visible.
 
 The system preference for reduced motion is honoured. Text view and Reduce motion are available in the player. Tablets and phones keep files, scenes, inspector and presenting; the precision map is designed mainly for desktop. Automated checks at 768, 390 and 320 px are not equivalent to testing on physical devices.
 
@@ -56,7 +63,7 @@ For a cycle, first use **Enable manual loop (3 visits)**: it adds the policy and
 
 To try the complete document, open `examples/structure-branching/project.json` in Studio, or `/structure` in the playground. From A choose B or C, then D; Back returns along the branch actually taken. B is a child of A and branch B uses a track with an independent endpoint. D allows a limited return, and the alternative path shows the same scene in a separate itinerary.
 
-## Blocks and resources (0.4)
+## Blocks and resources
 
 The current document is schema 1.3.0. Opening 1.0.0, 1.1.0 or 1.2.0 migrates a copy, keeping scenes, paths, notes, text and extensions; saving a new copy preserves the predecessor.
 
@@ -66,13 +73,13 @@ In **flow** scenes, blocks are stacked vertically in reading order; position, si
 
 In **Resources**, first add a file with **Add resource**, then the image, audio or video block (SVG with an XML prologue, comments or a DOCTYPE, and UTF-8 text files of any length are accepted; this also works when Studio is served over HTTP from an address other than localhost): the block uses the first asset of the matching type, editable in its data. The panel shows name, ID, MIME type and size; the JSON exposes the full registry. **Link missing file** checks the original size, signature and digest. **Replace** updates the metadata keeping the ID; undo brings back the previous bytes kept in memory. Files are never written into the document as blob URLs.
 
-**Save JSON** keeps the references and needs the files alongside, or linking them by hand after opening. **Save archive** produces a portable `.spatialdeck` with every verified asset; if a file is missing, it says which one to link. **Open** accepts both formats; an invalid archive leaves the current work untouched. The limits are 10 MiB for a JSON file and 220 MiB for an archive; the message says which one was exceeded. Autosave and recovery include the resources of the kept revisions and remain distinct from an exported backup.
+**Save JSON** keeps the references and needs the files alongside, or linking them by hand after opening. **Save archive** produces a portable `.xcursus` file with every verified asset; if a file is missing, it says which one to link. **Open** accepts both formats; an invalid archive leaves the current work untouched. The limits are 10 MiB for a JSON file and 220 MiB for an archive; the message says which one was exceeded. Autosave and recovery include the resources of the kept revisions and remain distinct from an exported backup.
 
 Audio and video have native controls and a **Play _label_** button; videos stay inline on phones too (`playsinline`); **Enable media** authorizes autoplaying blocks in the current player. No audible autoplay is guaranteed. On exit, `pause` keeps the time and `stop` resets it; destroy stops and releases everything. The Studio preview is muted; the presentation can play audio. Editing a block updates only that block in the preview: a playing video is not interrupted when you edit something else. Set a label, an alt text and a VTT asset as the video's captions. Unavailable codecs or files show messages and a recovery action in the Resources panel. Cues and media do not guarantee sample-accurate sync.
 
-To try every block type, open `/content` in the playground and download the gallery archive, or open `examples/content-gallery/content-gallery.spatialdeck` in Studio. Local content works without Internet once the app has loaded; embeds are off and missing plugins keep their data and show a placeholder. See the [policy and SDK](PLUGINS.md).
+To try every block type, open `/content` in the playground and download the gallery archive, or open `examples/content-gallery/content-gallery.xcursus` in Studio. Local content works without Internet once the app has loaded; embeds are off and missing plugins keep their data and show a placeholder. See the [policy and SDK](PLUGINS.md).
 
-## Layout (0.5)
+## Layout
 
 Select a scene and press **Layout** in the preview header. The preview is always the shared player: the scene is framed head-on and only outlines and handles appear on top, never a copy of the blocks. The map shrinks to make room; press **Layout** again to return to the normal preview.
 
@@ -94,12 +101,12 @@ Select a scene and press **Layout** in the preview header. The preview is always
 
 **Diagnostics.** The Layout panel reports palette contrast below 4.5:1 for text or 3:1 for the border, blocks clipped by their own frame, frames covering the interactive controls (links, buttons, media) of a block underneath, blocks inside the band of a visible canvas title (a long title wraps over the frames) and flow scenes whose content is taller than the scene (it scrolls in the spatial view and is cut in PDF and video). Studio neither corrects colours nor resizes text: the decision is yours.
 
-**Saving and presenting.** JSON, archive, autosave and recovery keep frames, style, appearance and theme; the presentation and the vanilla player render the same result. To try it, open `examples/layout-canvas/layout-canvas.spatialdeck` in Studio, or `/layout` in the playground, which also opens projects saved by Studio with **Open local project**: a hidden title, image and text side by side, an overlapping rotated stamp, a rotated note, a plain flow scene and a rotated child scene with columns and a link. In canvas scenes, reading at 320 px relies on the text view, not on the spatial view.
+**Saving and presenting.** JSON, archive, autosave and recovery keep frames, style, appearance and theme; the presentation and the vanilla player render the same result. To try it, open `examples/layout-canvas/layout-canvas.xcursus` in Studio, or `/layout` in the playground, which also opens projects saved by Studio with **Open local project**: a hidden title, image and text side by side, an overlapping rotated stamp, a rotated note, a plain flow scene and a rotated child scene with columns and a link. In canvas scenes, reading at 320 px relies on the text view, not on the spatial view.
 
-## Presenter, export and offline use (0.6)
+## Presenter, export and offline use
 
 **Presenter** opens, with the same click, the audience window of the presentation and turns Studio into the presenter console: current scene, a preview of the next one or the buttons of the branch choices (also when the only exit is a manual connection, which always needs an explicit choice), the scene's **private notes**, a timer (Start, Pause, Reset) and Back/Next; the arrows work on the console. The console is the only one in charge: keys, the text view and choices in the audience window become requests to the console. Notes never reach the audience window; the previews are muted and audio plays only in the audience window. In the audience window the audience sees only the scene: the player controls appear when the pointer moves or with keyboard focus. **Full screen** requests browser full screen (move the window to the audience screen first: choosing the monitor is up to the browser and the system). If the browser blocks the pop-up, the console explains how to allow it and offers **Try opening again** or **Present in this tab**. If the audience window reloads, it resyncs on its own; if Studio reloads, reopen the presented project and press **Resume presenter view**. **End** closes the session. The presenter view needs Studio served from a local host or over HTTPS.
 
-**Export.** Standalone HTML, PDF and video are produced with the `spatialdeck` command (see [DISTRIBUTION](DISTRIBUTION.md)) from the saved JSON with its resources alongside, or from the `.spatialdeck` archive. The PDF has one page per visit of an explicit itinerary; the video has no audio and accepts only text, Markdown, HTML, SVG, formulas, images and camera moves. Embeds, plugins and remote resources are not exported in strict mode. Private notes never enter any export.
+**Export.** Standalone HTML, a static web build, PDF and video are produced with the `xcursus` command (see [DISTRIBUTION](DISTRIBUTION.md)) from the saved JSON with its resources alongside, or from the `.xcursus` archive. The PDF has one page per visit of an explicit itinerary; the video has no audio and accepts only text, Markdown, HTML, SVG, formulas, images and camera moves. Embeds, plugins and remote resources are not exported in strict mode. Private notes never enter any export.
 
 **Offline.** Production Studio registers an offline shell after the first load: it reopens without a network and local projects come back from recovery. A new version shows **Update and reload**: it first saves the work to local recovery and never deletes projects; **Later** keeps the current version. IndexedDB remains a recovery store, not a backup: save JSON or an archive.

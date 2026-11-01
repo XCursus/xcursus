@@ -1,38 +1,18 @@
-# Development and API 0.6
+# Development
 
-## Verified layout
-
-| Path                                      | Responsibility                                                                                                  |
-| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `packages/core/schema`                    | Current schema 1.3.0 and historical 1.0.0/1.1.0/1.2.0; `@spatialdeck/core/schema` export and versioned subpaths |
-| `packages/core/src/document`              | Derived types, standalone validator, parser and semantics, diagnostics, serializer                              |
-| `packages/core/src/math`                  | Matrices, quaternions, auto-fit and camera view                                                                 |
-| `packages/core/src/layout`                | Frame↔scene, projection of scene points, align/distribute/layers, contrast (since 0.5)                          |
-| `packages/core/src/capture`               | Itinerary, capture plan and sampler, frame scheduling, public document (since 0.6)                              |
-| `packages/core/src/navigation`            | Linear machine, visits, interruption and active clock                                                           |
-| `packages/core/src/timing`                | Pure sampler and easing                                                                                         |
-| `packages/core/src/events`                | Typed event payloads                                                                                            |
-| `packages/player/src/index.ts`            | Factory, DOM, input, accessibility and per-instance resources                                                   |
-| `packages/player/src/browser.ts`          | Build entry point that also collects the CSS                                                                    |
-| `packages/player/src/presenter.ts`        | Presenter view protocol, `@spatialdeck/player/presenter` subpath (since 0.6)                                    |
-| `packages/player/src/iife.ts`             | Entry point of the classic IIFE build (global `SpatialDeck`, since 0.6)                                         |
-| `packages/cli`                            | `@spatialdeck/cli`: the `spatialdeck` command, confined IO, profiles, manifests, export runtime (since 0.6)     |
-| `packages/editor`                         | Immutable store, atomic commands, React UI, files and IndexedDB                                                 |
-| `apps/studio`                             | Local React/Vite app on port 5174                                                                               |
-| `apps/playground`                         | Vanilla Vite demo with two players on `/core`                                                                   |
-| `examples/core-three-scenes/project.json` | Normative three-scene example, kept at 1.0.0                                                                    |
-| `scripts`                                 | Generation, boundary and bundle-budget checks; since 0.6 `library.mjs` (packaging) and `check-packages.mjs`     |
-| `tests/e2e`                               | Geometry, lifecycle, content, Studio, performance and axe in real browsers                                      |
-
-The core depends on no DOM, player, filesystem or React. Type checking of the core declarations uses only the ES2022 library and the types of the standard Node APIs, without the DOM lib. The player depends on the core. The standalone bundle includes only the small Ajv helpers it needs and gl-matrix; the Ajv compiler is used exclusively by the Node generator.
-
-The `tools/webkit-macos14` runner is a private workspace whose only development dependency is `@playwright/test@1.61.1`. It is not a product library and never enters the bundle. The root package keeps `@playwright/test@1.64.1`.
+How to set up the repository, run the applications, build, test and contribute. The structure of the code is described in [ARCHITECTURE](ARCHITECTURE.md), the public API in [API](API.md) and the test suites in [VERIFICATION](VERIFICATION.md).
 
 ## Toolchain and installation
 
-All baseline pins are kept, with no forced peers. The approved exception for the macOS 14 WebKit runner alone has been added: Playwright 1.61.1 in a separate workspace, also pinned in the lockfile. [Verified metadata and environment](verification/environment.json). The local pnpm added the one-off release-age exception `vite@8.3.5` to its policy. `strictPeerDependencies` stays enabled.
+XCursus pins **Node 24.22.0** and **pnpm 12.14.0** (`engines` and `packageManager` in `package.json`). With matching global tools:
 
-If the global Node or pnpm do not match the pins (on the machine used for local verification: Node 25.8.1 without pnpm), install local tools ignored by Git, without changing the global ones:
+```sh
+git clone https://github.com/XCursus/xcursus.git
+cd xcursus
+pnpm install --frozen-lockfile
+```
+
+If the global Node or pnpm differ, install the pinned versions locally in `.tools/` (ignored by Git) without touching the global ones:
 
 ```sh
 npm install --prefix .tools --no-package-lock --no-save node@24.22.0 pnpm@12.14.0
@@ -40,203 +20,82 @@ export PATH="$PWD/.tools/node_modules/.bin:$PATH"
 pnpm install --frozen-lockfile
 ```
 
-With the right Node and pnpm already installed, use the README commands directly. CI needs no `.tools`. Linux CI installs Chromium, Firefox and WebKit and runs all three with Playwright 1.64.1, without publishing packages.
+`strictPeerDependencies` is enabled; peer errors are fixed, never forced. The workspace holds `packages/*`, `apps/*` and `tools/webkit-macos14`.
 
-## Browser runners and macOS 14 compatibility
+## Running the applications
+
+| Command               | What it starts                                                                |
+| --------------------- | ----------------------------------------------------------------------------- |
+| `pnpm dev:studio`     | XCursus Studio on `http://127.0.0.1:5174`, from the sources (no build needed) |
+| `pnpm dev:playground` | The vanilla player pages `/core`, `/structure`, `/content` and `/layout`      |
+| `pnpm xcursus …`      | The CLI from `packages/cli/dist` (run `pnpm build` first)                     |
+
+The development servers resolve the workspace sources through Vite aliases. The Studio offline shell is registered only in production builds. In development, and in production with `?studio-debug` in the URL, Studio exposes `window.studio` for debugging and tests.
+
+## Scripts
+
+| Script                              | Purpose                                                                                                      |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `pnpm generate`                     | Generates the standalone validators and the TypeScript types from the JSON Schemas, and the KaTeX stylesheet |
+| `pnpm typecheck`                    | `generate`, then `tsc --noEmit` over packages, apps, tests and scripts                                       |
+| `pnpm lint`                         | ESLint (flat config, typescript-eslint, React hooks)                                                         |
+| `pnpm format` / `pnpm format:check` | Prettier                                                                                                     |
+| `pnpm test`                         | Unit and integration tests (Vitest, jsdom and fake-indexeddb where needed)                                   |
+| `pnpm test:coverage`                | The same with V8 coverage and per-area floors                                                                |
+| `pnpm build`                        | Builds core, player, plugins, CLI, editor, playground and Studio in dependency order                         |
+| `pnpm check:boundaries`             | Dependency rules between packages, on sources and built output                                               |
+| `pnpm check:bundle`                 | Builds a minimal consumer from `dist` and checks the gzip budget                                             |
+| `pnpm check:packages`               | Packs the packages and tests the tarballs in an external consumer                                            |
+| `pnpm browsers:install`             | Installs the Playwright browsers for the current platform                                                    |
+| `pnpm test:e2e`                     | Build, package check, then the Playwright suites in Chromium, Firefox and WebKit                             |
+| `pnpm test:e2e:webkit:macos14`      | WebKit only, with the dedicated macOS 14 runner                                                              |
+
+No script modifies tracked files: reports, coverage, bundles, tarballs and test evidence go to `test-results/` (ignored). CI fails if a check leaves a tracked file modified.
+
+## Generated code
+
+`pnpm generate` (`scripts/generate.mjs`) reads `packages/core/schema/project-*.schema.json`, writes the standalone Ajv validators to `packages/core/src/document/validator.js` and derives `packages/core/src/document/types.ts` from the current schema. Never edit those two files by hand: change the schema and regenerate. The same script produces `packages/plugins/src/katex.css` with woff2 sources only.
+
+## Changing the document schema
+
+The schema is a public contract ([FILE_FORMAT](FILE_FORMAT.md#compatibility-policy)). A change requires:
+
+1. a new `project-<version>.schema.json` (published schemas are never edited);
+2. a migration from the previous version in `packages/core/src/document`, returning a copy and never enabling unused capabilities;
+3. updates to the specification, the format guide and the examples that should use the new feature;
+4. tests that open every historical fixture, migrate it and compare the rendering.
+
+## Browser runners
 
 ```sh
 pnpm browsers:install
 pnpm test:e2e
-# WebKit only on macOS 14:
-pnpm test:e2e:webkit:macos14
-# A filter that also works with the automatic selection:
-pnpm test:e2e --project=webkit
+pnpm test:e2e --project=webkit          # a filter works with the automatic runner selection
+pnpm test:e2e:webkit:macos14            # macOS 14 only
 ```
 
-The first command installs Chromium and Firefox from 1.64.1 and WebKit from 1.61.1 on Darwin 23 (macOS 14). On Linux and later macOS it installs all three from 1.64.1. The dedicated command refuses other systems. The runner needs no ad hoc npm installation under `.tools`: `pnpm install --frozen-lockfile` installs both pins in their own workspaces.
+On Linux and on macOS 15 or later every browser runs with Playwright 1.64.1. On macOS 14 (Darwin 23) the current WebKit build is not compatible, so WebKit runs with Playwright 1.61.1 from the private workspace `tools/webkit-macos14`, while Chromium and Firefox keep 1.64.1. `scripts/e2e-plan.mjs` chooses the plan from platform, release and filters; `scripts/run-e2e.mjs` resolves each runner from its own package and checks its version before starting it. Both runners load the same suites through `tests/e2e/runner.ts`; `tests/e2e/config.ts` shares the servers and options.
 
-`scripts/e2e-plan.mjs` decides the plan from platform, release and filters; `scripts/run-e2e.mjs` resolves the CLI from the right package and checks the exact version before starting it. On Linux the plan holds only the current runner for all three browsers. A version other than the expected one, or a failed runner, produces a non-zero exit. The 12 routing tests cover Linux, macOS 14 and later, filters and the guards of the dedicated command.
+Results go to `test-results/current/` and `test-results/webkit-macos14/`, and a summary of runners, versions and counts to `test-results/e2e-summary.json`. Screenshots and JSON evidence written by the suites go to `test-results/evidence/`.
 
-`tests/e2e/core.spec.ts` and `tests/e2e/editor.spec.ts` are the suites shared by both runners. The adapter `tests/e2e/runner.ts` loads test and expect from the selected version; its version check prevents the root package from being resolved by accident in the compatibility runner. `tests/e2e/config.ts` shares servers, workers and options; the two configurations select the browsers. No sources are copied and no tests are removed to run WebKit.
+The E2E suites serve production builds of the playground (port 4173) and Studio (port 4174); PDF checks need `pdftotext` and `pdftoppm` (poppler) or the xpdf tools, video checks need `ffmpeg` and `ffprobe`.
 
-Reports and traces are written to `test-results/current/` and `test-results/webkit-macos14/`; the launcher records versions, projects, exit codes and counts in `test-results/e2e-summary.json`. The dedicated command updates the summary for its own run. Since 0.4.1, test evidence (screenshots, roundtrip/storage/media JSON, performance measurements, axe results, Chromium traces) goes to `test-results/evidence/` through `tests/e2e/evidence.ts`: no command rewrites tracked files. The reports in `docs/verification/` are written by hand from that evidence; the historical ones stay unchanged.
+## Packaging
 
-The WebKit runtime for macOS 14 is frozen. Version 1.61.1 avoids the incompatible protocol command introduced in later versions: [Playwright issue #42964](https://github.com/microsoft/playwright/issues/42964). This local check is not equivalent to the Linux matrix with 1.64.1 nor to an installed Safari.
+The five packages build with Vite library mode and `tsc --emitDeclarationOnly`; `prepack` copies the repository `LICENSE` into each package. Third-party dependencies are external (a build plugin fails if a chunk bundles a module from `node_modules`); artefacts that embed third-party code generate their notices from an allowlist of licences compatible with GPL-3.0-or-later. `pnpm check:packages` verifies the manifests, packs the tarballs into `test-results/packages/`, installs them in an external consumer without source aliases, type-checks it with `skipLibCheck: false` and builds a minimal and a realistic consumer.
 
-## Generation and build
+The packages are `"private": true` and nothing is published from this repository; see [DISTRIBUTION](DISTRIBUTION.md#packages).
 
-`pnpm generate` reads the JSON Schema, produces the standalone ESM Ajv validator and derives the TypeScript types from the same schema. Do not edit `document/types.ts` or `document/validator.js` by hand. Since 0.5 the generator produces four standalone validators (1.0.0, 1.1.0, 1.2.0, 1.3.0) with `inlineRefs: false`, because `frame` and `style` recur in all eleven block types, and derives the types from schema 1.3.0. `validateDocument` and `migrateDocument` accept 1.0.0/1.1.0/1.2.0/1.3.0 and return a current 1.3.0 copy; the dispatcher checks the schema and the historical linear constraints before migrating, then the current semantics. A future version is rejected. Historical fixtures are never rewritten.
+## Contributing
 
-Vite library mode generates ESM JS and separate CSS; tsc generates the `.d.ts` files. Consumers must import the public CSS. After the build, `pnpm check:bundle` creates a minimal consumer from the distributed JS and CSS in `test-results/bundle/consumer`, compresses with gzip level 9, measures both and writes `test-results/bundle/report.json` (ignored). `pnpm check:boundaries` checks dependencies, sources and output. No empty placeholder packages.
+- Work on a branch and open a pull request against `main`. Keep technical changes and documentation changes in separate, focused commits.
+- Before pushing, run at least `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test` and `pnpm build`; changes to the player, Studio, exports or packaging also need `pnpm test:e2e`.
+- Add a failing test with every bug fix, and tests that exercise real behaviour (real files, real browsers) with every feature. Do not update screenshots or expectations to hide a regression.
+- Keep the boundaries: no DOM or React in the core, no plugin or editor import in the player, no code executed from documents, no CSS strings in the document model.
+- Document user-visible behaviour in the relevant guide and record schema or API changes in the specification.
+- New runtime dependencies need a licence compatible with GPL-3.0-or-later and an exact pin.
+- Example and fixture content must be original or under a licence that allows redistribution; record it in the example's `LICENSE.md`.
 
-## Vanilla usage
+## Licence
 
-After the build, in a consumer that resolves the workspace packages:
-
-```ts
-import { createPlayer } from "@spatialdeck/player";
-import "@spatialdeck/player/style.css";
-import project from "./project.json";
-
-const container = document.querySelector<HTMLElement>("#presentation")!;
-const player = createPlayer({ input: true, motion: "system" });
-const unsubscribe = player.on("scenechange", ({ visit }) => {
-  console.log(visit.nodeId);
-});
-const mounted = await player.mount(container, project);
-if (!mounted.ok) console.error(mounted.diagnostics);
-else {
-  await player.next();
-  await player.goTo({ pathId: "main", nodeId: "n3" }, { durationMs: 300 });
-  await player.prev();
-  await player.setPath("main");
-}
-unsubscribe();
-player.destroy();
-```
-
-The container must have positive CSS dimensions; the player fits its viewport with contain and observes resizes. Mounting preserves the host's children and attributes; it adds a tabindex only when missing and restores it on destroy. A destroyed instance cannot be mounted again: create a new one. Mounting an active instance again is an error, not an implicit replacement. Invalid values at mount leave the host untouched.
-
-### Core
-
-- `validateDocument(unknown)` accepts JSON objects or JSON text. It returns a `Result<ProjectDocument>` with an independent copy, or diagnostics with code, severity and JSON Pointer. It never mutates the input.
-- `migrateDocument(unknown)` validates and migrates 1.0.0→1.1.0→1.2.0 as a copy, adding null parents, empty tracks and cues and empty pluginSettings without changing IDs, paths, text or extensions. It is idempotent on 1.2.0.
-- `serializeDocument(document)` returns a `Result<string>`, with sorted keys, arrays preserved and a final newline. It rejects invalid input.
-- `getWorldMatrix(document, sceneId)` returns a `Result<number[]>`, a column-major matrix.
-- `resolveSceneCamera(document, sceneId)` returns a `Result<CameraPose>`; internal rotation as a quaternion `[x,y,z,w]`.
-- `sampleTransition({from,to,durationMs,easing}, elapsedMs)` returns `{camera,progress}`. It is pure, with no events; invalid numeric arguments throw a RangeError. The player's operational API instead returns results, without rejecting on navigation errors.
-
-Validation applies the strict schema, finiteness, IDs and references, target visibility, reachable graphs, cycles only with explicit policies or conditions, byte and depth limits and safe relative assets. There is no alternative schema in the player. Opaque JSON extensions are preserved without execution. `holdMs` is kept and does not trigger autoplay.
-
-### Player
-
-`PlayerOptions`: `input?: boolean`, `keymap?: Record<string,'next'|'prev'>`, `motion?: 'system'|'reduced'`, `clock?: PlayerClock`, `onError?: (diagnostic)=>void`. A provided keymap replaces the default map. Version 0.4 adds registry, assets, muted and onContentEvent, described below; 0.4.1 adds `messages`, described in the Consolidation section.
-
-`PlayerClock` exposes `now()`, `request(callback)` and `cancel(id)`. `NavigationOptions` accepts an integer `durationMs` between 0 and 60000 and an AbortSignal-compatible `signal`. The normal clock uses performance.now and requestAnimationFrame; no timer drives the interpolation.
-
-| Method                             | Result                                                                                                                                                                                                                                           |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `mount(container, document)`       | `Promise<Result<void>>`; first node immediate, ready before resolution                                                                                                                                                                           |
-| `goTo({pathId?,nodeId}, options?)` | `Promise<NavigationResult>`; the node ID identifies a target visit even when several nodes use the same scene                                                                                                                                    |
-| `next({edgeId?}?)`, `prev()`       | Navigation from the completed visit; prev uses the actual history                                                                                                                                                                                |
-| `setPath(pathId)`                  | Selects the start immediately and clears the history; an empty path leads to empty                                                                                                                                                               |
-| `getState()`                       | Independent snapshot: status, pathId/nodeId/sceneId, history, camera, transition, choices, diagnostics                                                                                                                                           |
-| `on(event, handler)`               | Local unsubscribe; throwing handlers are isolated and reported as HANDLER_ERROR                                                                                                                                                                  |
-| `updateDocument(document)`         | Validates first; cancels the transition without phantom visits, keeps node and path when present or else the start, clears the history, updates DOM and camera without focus. Since 0.4.1 it is incremental: it rebuilds only the changed blocks |
-| `destroy()`                        | Idempotent; cancels pending work, emits destroy and removes every owned resource                                                                                                                                                                 |
-
-`NavigationResult.status`: completed, noop, cancelled, choice-required or error. Since 0.3 choice-required exposes labelled choices and reasons for disabling. Codes include UNKNOWN_NODE, UNKNOWN_PATH, UNKNOWN_EDGE, INVALID_DURATION, PLAYER_UNMOUNTED and PLAYER_DESTROYED. Active events: ready, navigationstart, navigationcancel, scenechange, navigationend, diagnostic, documentchange, destroy; choice and cue are operational in 0.3. documentchange follows a successful update; mediaerror is operational in 0.4: `{instanceId,sceneId,blockId,assetId?,diagnostic}` for missing, decode or play failures, with a warning diagnostic.
-
-Order: any previous cancel, the new start, scenechange and end at commit, then the completed Promise. No cancelled visit enters the history. Noops and invalid commands do not interrupt a valid plan; 10 rapid next calls always target the successor of the last completed visit. The current position is sampled before the replacement. AbortSignal keeps the visual pose. Active time freezes while the document is hidden. Switching to reduced motion completes immediately with a single commit.
-
-### Geometry and accessibility
-
-CSS units, X right, Y down, Z towards the viewer; `M=T*Rz*Ry*Rx*S`, central pivot and a separate content wrapper. The camera is a reference plane: `V=S(zoom)*inverse(C)`. A single perspective on the viewport; outer contain scale. Auto-fit: `0.9 * min(viewportWidth/sceneWidth, viewportHeight/sceneHeight) / sceneScale`. Short-arc slerp and logarithmic zoom; no Euler sums or matrix interpolation.
-
-Arrows, Page Up, Page Down and Space act only on the focused container and its content; inputs, textareas, selects, contenteditable, audio and video and interactive controls are not intercepted. Keyboard and outline move focus to the target on completion; mounting never steals focus. A programmatic API call does not move focus while the user is in a text field. Inactive scenes are inert and aria-hidden. The text view exposes the whole path once and navigates without motion; it is also the fallback when CSS 3D is unavailable. The system's reduced-motion preference overrides the authoring settings.
-
-Security: textContent for text, a single DOMPurify pipeline for user markup and a sink reserved for trusted KaTeX markup; no eval and no mandatory network. The demonstrated CSP omits unsafe-eval; it allows the inline styles the CSS matrices need. This is neither a WCAG certification nor a screen reader test.
-
-## Limits and next phase
-
-WebKit is verified locally with the dedicated macOS 14 runner; Linux CI with Playwright 1.64.1 is green up to the 0.4 commit (233 unit, 120 E2E), while 0.4.1 is verified only locally ([report](verification/phase-0.4.1.md)). A test on a real Safari has not been run. Heap after GC, 100-scene benchmarks and p95 timings are not measured: they are later stabilization gates, not claimed performance. Studio 0.2 is implemented with schema 1.0.0 unchanged: [author guide](AUTHORING.md), [verification](verification/phase-0.2.md). Parents, graphs and timeline are now implemented in 0.3, described below. The 0.4 blocks are described below; CLI and export, deployment and publishing remain out of phase.
-
-## Editor and Studio integration — 0.2 baseline
-
-`@spatialdeck/editor` exports `Studio`, `EditorStore`, commands (`createScene`, `editScene`, `deleteScene`), `emptyProject`, `RecoveryRepository`, `Autosave` and public CSS. React and React DOM 19.3.1 are peers; core and player do not depend on React. `Studio` accepts an optional store and repository and `onPlayer(player, present)` for integrations. The app exposes `window.studio` (store, repository and player references) only with the dev server or, in the production build, when the URL contains `?studio-debug`; the E2E tests use this explicit option.
-
-`EditorStore.getSnapshot()` returns a frozen document and session; `subscribe` is compatible with `useSyncExternalStore`. `execute(edit, selectNew?)` clones, applies and validates before committing. Undo and redo use before/after snapshots, evicting the oldest beyond **100 commands or 20 MiB of UTF-8 in total**; a single command over budget is applied but kept out of the history. Selection, map camera, dirty state and history never enter the JSON. `beginDrag/moveDrag/endDrag/cancelDrag` keep a single command and allow Escape. The preview is coalesced through requestAnimationFrame; saving uses the same validated document.
-
-Structural edits update the main path, preserving the nodes and edges not involved. Stitched neighbours receive defaultTransition; undo restores references and transitions exactly. Scenes referenced by other paths cannot be deleted: the message gives names and counts. A main path with repeated visits or an order different from the scenes refuses structural edits; opening, blocks and transforms remain available without losing data.
-
-The IndexedDB database `spatialdeck-studio` (v1 in 0.2, v2 in 0.4, v3 since 0.4.1) holds `documents` (head per projectId) and `recovery` (projectId/revision). A single readwrite transaction compares the expected revision, writes both and removes revisions beyond the last ten. Autosave serializes writes, waits 750 ms and never rewrites identical snapshots. Recovery adopts the chosen revision without claiming a new one. Conflicts, quota and permission errors produce persistent warnings, never a replacement of the active document; the JSON download stays available. Flush on save and on visibilitychange is best effort; unload is not guaranteed. Recovery is an explicit offer, not a backup.
-
-`pnpm dev:studio` and `pnpm dev:playground` resolve the sources with Vite, even without dist. The E2E suite starts two production servers on ports 4173/4174, always without a backend. The editor library produces ESM, declarations and an `editor.css` that includes the player CSS.
-
-## Structure 0.3
-
-Phase 0.3 introduced schema **1.1.0**, now migrated to 1.2.0; `@spatialdeck/core/schema/1.0.0` keeps the historical contract. New fields: `Scene.parentId`, `cameraTracks`, `cues`, `PathNode.camera?`, `PathEdge.cameraTrackId?/condition?`, `ScenePath.loopPolicy?`. Conditions are exclusively `manual` or `visit-limit`. The `structure` capability is mandatory when used; commands update the list from the data, while opening under-declared data fails. Strict schema, keyframe ordering, cumulative JSON limits and references remain mandatory. A cue whose edgeId is ambiguous across paths is rejected; historical IDs are never renamed during migration.
-
-Core geometry: `getWorldMatrix` composes up to 32 levels. `reparentScene(document,sceneId,parentId,preserveWorld=true)` returns an independent, validated document, or an error without mutations. `worldPositionToLocal` serves the world XY drag; no matrix is implemented in React. gl-matrix output is double-precision number[], without changing global configuration. Scenes actually hidden by a parent cannot be targets; automatic target poses beyond the camera ranges are rejected. `inspectCamera` reports points on or behind the perspective plane, without removing the text alternative.
-
-`AuthoredCameraPose` is the JSON format with Euler angles in degrees; **the runtime `CameraPose` keeps a quaternion `[x,y,z,w]`**, as in the earlier APIs. `cameraPose` and `authoredCameraPose` convert between the formats. `setCamera(CameraPose)` validates, normalizes if needed and interrupts motion without new visits. `setView('overview'|'scene')` frames the visible world bounds or restores the recorded pose of the visit. `PlayerState.view` distinguishes scene, overview and inspection; the overview is available even with scenes outside any path. Pan and zoom are local player controls and are never saved.
-
-`next({edgeId})` selects a connection explicitly. Several eligible exits, or the single manual exit, produce choice-required without changing pose or history or interrupting a valid plan. Conditions and policies count the completed visits to the destination node in the current history; prev restores the previous visit and does not consume entries. At the limit: the choice is disabled with a reason, an explicit edge returns VISIT_LIMIT, and no available exit returns noop with a diagnostic. Loops never autoplay. A direct `goTo` checks the path limit and clears the history when changing path; if there are several edges between source and target it never picks a track implicitly. An explicit edge can create a new visit to the same node; goTo to the current node stays a noop.
-
-`resolveCameraTrack` replaces at=0 with the runtime visual pose without mutating the JSON. `resolveEdgePlan`, `sampleTransition` and `sampleCameraTrack` are shared with the timeline. Track easing once, Catmull-Rom with duplicated ends, slerp and log-linear zoom; an analytic check of the cubic extremes, also after the entry has been replaced. The track endpoint is recorded in the visit, without a final fit; prev interpolates towards the recorded pose without replaying the track forwards. A replacement API duration scales the cue thresholds proportionally; reduced motion or zero duration emit the cues in `(atMs,id)` order.
-
-The `cue` event: `{instanceId,transitionId,cue:{id,edgeId,atMs,event,payload}}`. It is emitted once per transition at the threshold, without executing the payload. Hidden freezes active time; cancel suppresses the following cues. Even a cue listener that starts an inspection or destroys the player produces no phantom commit or recursive emission. Capture and scrub only sample poses and call setCamera: no cue or visit.
-
-Studio adds `HierarchyTree`, `PathPanel` and `CameraTimeline`; paths, nodes, edges, start, labels, conditions, world-preserving parent, node camera, duration, easing, interpolation, keyframes and cues are editable. The loop button enables policy 3 and manual conditions in a single command before a cyclic connection is added. The selection preview uses the node camera or the fit, even for scenes not yet in any path; the timeline instead inspects the edge plan and the presentation keeps the actual arrival pose. Edits with no changes do not publish a new snapshot or reset the preview.
-
-Creating scenes keeps automatic sync only for a canonical linear main path without conditions, tracks or cues; with graphs or a different order it creates a standalone scene, to be added to paths explicitly. Deletions show concrete counts of scenes, paths, visits, connections, cues and reparented children; deleting a node or edge also deletes the visits that become unreachable. Deleting a scene reparents its children preserving the world pose; the canonical chain stitches the neighbours. The UI confirmation and a single undo command restore every ID and reference. `deleteScene(id)` keeps the refusal for other referencing paths; `deleteScene(id,true)` is the variant used after the impact preview.
-
-`pnpm test:coverage` uses the V8 provider **5.0.5**, aligned with Vitest, with a core gate of 85% statements / 80% branches; since 0.4.1 it also measures player assets, plugins (security, archive, media) and editor (store, storage) with dedicated thresholds, described in the Consolidation section. Phase results and artefacts are in the [0.3 report](verification/phase-0.3.md). In 0.3 `check:bundle` recorded its measurement in `verification/structure-bundle.json`; the historical artefacts and the 0.1/0.2 reports are kept. The 0.3 browser regressions wrote to `verification/structure-regressions/`.
-
-## Content 0.4
-
-The written document is 1.2.0; `@spatialdeck/core/schema/1.0.0`, `/1.1.0` and `/1.2.0` export the three schemas. The generator derives the types from the current union and three standalone validators. Historical checks and migrations remain cumulative; a future 1.3.0 is not accepted implicitly.
-
-`PlayerOptions` adds `registry`, `assets`, `muted` and `onContentEvent`. `RendererRegistry.register(type,factory)` returns an unregister function; a factory returns a `ContentRenderer` with mount, update and destroy. The player owns abort and teardown of every block. `createAssetResolver(assets,blobs)` verifies the bytes and returns lease URLs with an idempotent release. These contracts never force the player to depend on the concrete renderers.
-
-`packages/plugins` holds SDK 1.0.0, rich, media, navigation and sample, the single pipeline and the archive, with separate entry points. `packages/editor` uses the same renderers, ContentPanel and AssetPanel, a store unchanged at the undo/redo boundaries and IndexedDB v2 for atomic revisions and resources. [Full guide and trust model](PLUGINS.md).
-
-The vanilla gallery is `/content`, with eleven blocks and original assets in `examples/content-gallery`. `content-gallery.spatialdeck` also opens in Studio. The muted preview and the presentation are independent instances. The apps resolve plugin sources in dev too; KaTeX fonts are emitted as local files. The minimal core/player bundle is still measured separately and contains none of the optional dependencies.
-
-For 0.4, the earlier regression reports are redirected to `docs/verification/content-regressions/`; the historical reports and fixtures are kept. Current report, environment, commands and limits: [phase-0.4](verification/phase-0.4.md). CLI, export and presenter remain within the scope of 0.6 Distribution, after 0.5 Layout ([roadmap](ROADMAP.md)).
-
-## Consolidation 0.4.1
-
-Schema 1.2.0, fixtures and navigation and event contracts are unchanged. The additions are additive.
-
-**Assets.** `verifyAsset` accepts SVG with a BOM, an XML declaration, processing instructions, comments and an `svg` DOCTYPE (with an internal subset too) before the `<svg` root: the prologue is skipped without interpreting the DTD or entities. SVG, VTT and `text/plain` are decoded as streaming UTF-8 in chunks, so a character straddling a chunk is valid and genuinely invalid UTF-8 is still rejected. `sha256(blob)` uses `crypto.subtle` when it exists; in an insecure context (HTTP outside localhost) it uses a local SHA-256 implementation (FIPS 180-4, verified with the NIST vectors and against `crypto.subtle`). The digest and the verification outcome are memoized per Blob identity (immutable) and expected metadata: the same resource is not reread on every preview, while a different Blob or digest invalidates the entry. Resolver errors are `AssetError` with `code` `missing | size | signature | digest | aborted`. `AssetResolver.revision?(assetId)` is optional: it identifies the resource behind the ID; `createAssetResolver` implements it and Studio and the playground forward it.
-
-**Player.** `PlayerOptions.messages?: Partial<PlayerMessages>` replaces any text of the player and of the builtin renderers; in 0.4.1 `defaultMessages` held the Italian defaults (English since 0.6). Functions receive plain text and their result is always inserted as text. `messages.lang` is applied as `lang` to the controls and status texts; the `.sd-player` root receives `metadata.language` and updates it with the document. The outline shows derived text: text, alt, label or title, and for Markdown, HTML and plugins the text of the content already rendered and sanitized; never the source. `blockText(block, messages?)` follows the same rule.
-
-`updateDocument` keeps the observable contract (validation first, transition cancelled, history cleared, `documentchange`) but diffs scenes and blocks: matrices, titles, sizes, visibility and order are updated in place; a `ContentMount` is rebuilt only if the block changes, the records of the referenced assets (and their `revision`) change, the language changes for audio and video, the plugin settings change, or the renderer threw or one of its assets did not resolve. Unchanged blocks receive the new document through the renderer's `update()`, without remounting: leases and playing media stay. A test compares the DOM produced by a sequence of updates with a full mount. The per-frame render updates only the camera; block activation, outline, choices and the live region change only when their data change. `NavigationMachine.peek()` and `getChoices()` in the core serve this purpose, without per-frame copies.
-
-**Store.** Snapshot publication is shallow: the document is frozen once when created and `dirty` compares identity with the saved document, so selection and panning neither serialize nor freeze the document. `coalesce(key, edit)` merges the text edits of the same session (project title on every keystroke, scene title, notes, sources, JSON data and block labels) into a single undo command; `endCoalesce()`, on blur, closes the session; any other command, undo, redo or drag closes it too. A session that returns to the initial value leaves no command. Serializing a frozen document is memoized (`documentJSON`).
-
-**Storage.** `RecoveryRepository` opens `spatialdeck-studio` v3 (`DATABASE_VERSION`) and adds the multiEntry `assetKeys` index on `recovery`; v1 and v2 data upgrade without loss. `onWarning(listener)` reports persistent states: `blocked` (another tab with an older version) waits without failing and clears on its own; `versionchange` closes the connection and reopens it on the next request if the database was deleted, or reports a newer version and suspends autosave (`StorageVersionError`); the in-memory document stays and Save JSON works. `save` computes the asset keys from the declared or memoized digest, reads the bytes only for missing keys and never rewrites existing ones; garbage collection considers only the keys of deleted revisions and counts them through the index, without loading other projects' revisions. New methods: `markSaved(projectId, revision)`, `deleteRevision(projectId, revision)` (the head moves to the most recent remaining revision), `deleteProject(projectId)`. `pendingRecovery(heads)` excludes heads marked `saved`; `Autosave.flush(document, saved)` marks or writes the revision matching a file save; `Autosave.rebase` follows a deleted head. `openLimitError(file)` names the file kind (JSON 10 MiB, archive 220 MiB); `ARCHIVE_LIMIT` and `JSON_LIMIT` are exported by the archive module. `randomId()` replaces `crypto.randomUUID`, which is missing in insecure contexts.
-
-**Production.** The CSP of `apps/studio/index.html` has `connect-src 'self'`; a Vite plugin active only with `serve` adds `ws:` for HMR. Videos have `playsinline`.
-
-**Checks.** The DOM unit tests of player and plugins use jsdom (`// @vitest-environment jsdom`), the storage tests `fake-indexeddb`; axe-core is injected in the E2E tests in `tests/e2e/a11y.spec.ts` (serious and critical violations forbidden, justified exceptions listed in the file: none today). They are exact development dependencies and never enter the bundles. `tests/e2e/consolidation.spec.ts` holds the phase checks: assets with digests on a non-localhost HTTP host (routed locally by the test browser), Studio with a video of about 50 MiB and images, texts and `lang`, production dist, IndexedDB across tabs, project deletion and conditional recovery. V8 coverage with per-file thresholds: core 85/80; player assets, plugins (security, archive, media) and editor (store, storage) with the thresholds justified in the [0.4.1 report](verification/phase-0.4.1.md). CI also runs `pnpm test:coverage` and checks with `git diff --exit-code` that no check modifies tracked files; the Actions are pinned by SHA.
-
-## Layout 0.5
-
-**Schema 1.3.0.** `packages/core/schema/project-1.3.0.schema.json`, exported as `@spatialdeck/core/schema` and `@spatialdeck/core/schema/1.3.0`; the historical schemas are unchanged. New derived types: `Theme`, `PaletteId`, `Color` (lowercase `#rrggbb`), `FontId` (`system-sans`, `system-serif`, `system-mono`, `atkinson-hyperlegible`), `SceneAppearance`, `Frame`, `BlockStyle`. Document: `theme` is mandatory. Scene: `layout: "flow"|"canvas"` and `appearance`. Block: `frame?` and `style?` on all eleven types. Frame `x,y >= 0`, `width,height >= 8`, `rotation` −360…360, `z` integer −1000…1000.
-
-**Semantics and migration.** `validateLayout` (internal to `validateDocument`) enforces: no `frame` in flow (`FRAME_IN_FLOW`), a `frame` for every canvas block (`FRAME_REQUIRED`), `x+width <= size[0]` and `y+height <= size[1]` (`FRAME_OUTSIDE`), unique palette IDs (`DUPLICATE_ID`), existing palette references in roles, scene backgrounds and block colours (`UNKNOWN_PALETTE_COLOR`), and the `layout` capability declared when used (`CAPABILITY_REQUIRED`). Non-finite numbers are rejected before Ajv with the code `NON_FINITE_NUMBER` and a JSON Pointer (previously `INVALID_JSON` without a pointer). `usesLayout(doc)` is true with a canvas scene, a `style` on a block, an appearance different from `defaultAppearance()` or a theme different from `defaultTheme()` (a comparison independent of key order); `updateCapabilities` adds `layout` only in those cases. The 1.2.0→1.3.0 migration writes `defaultTheme()` (text `#172035`, background `#ffffff`, accent `#215baf`, backdrop `#e8edf4`, `system-sans`, 28/46) and `layout:"flow"` with `defaultAppearance()` on every scene, as a copy, without enabling `layout`.
-
-**Frame geometry (core).** `frameMatrix(frame)` returns the 2D CSS matrix `[a,b,c,d,e,f]` from the frame's local system (0…width, 0…height) to the scene; the player applies it to the host and the editor uses it for handles and measurements. `frameToScene` and `sceneToFrame` (round trip within 1e-9), `frameCenter`, `frameCorners`, `frameBounds` (rotated bounds), `framesIntersect` (separating axes), `clampFrame`, `moveFrame`, `adjustFrame`/`resizeFrame` (opposite edge fixed; at rotation 0 the moving edge stops at the scene border), `rotateFrame` (relative to the grab point, optional step), `alignFrames`, `distributeFrames`, `stackFrames`, `snapToGrid`. `sceneToWorld`, `projectScenePoint` and `unprojectScenePoint` connect scene points to the viewport with the same camera and the same perspective as the player. `contrastRatio`, `contrastIssues` and `contrastDiagnostics` (`LOW_CONTRAST` warnings) evaluate theme text on background, accent on backdrop, scene backgrounds and block colours against the 4.5:1 and 3:1 thresholds, without correcting anything. None of these functions uses the DOM.
-
-**Player.** The theme becomes custom properties on the `.sd-player` root (`--sd-text`, `--sd-background`, `--sd-accent`, `--sd-backdrop`, `--sd-font-body`, `--sd-font-heading`, `--sd-size-body`, `--sd-size-title`) set through the CSSOM with already validated values; fonts are allowlisted stacks per `FontId`, never document text. The CSS fallbacks are the 1.2.0 values: a migrated document produces the same computed styles and the same block DOM (no `style` attribute or new class). The scene receives `sd-layout-canvas`, `sd-variant-plain`, `--sd-scene-background` and the title `sd-title-hidden`; the `article` has `aria-labelledby` pointing to the title, which remains the accessible name and stays in the outline, and with a hidden title the action focus goes to the `article`. In canvas the content clips (`overflow: hidden`) and the card border is an inset shadow, so the frame coordinates match the scene box; the visible title sits at 51 px as in flow. Each host has `width`, `height`, `transform: matrix(...)` from `frameMatrix` and `z-index` from `z`; the `sd-framed`, `sd-align-*`, `sd-valign-*` and `sd-size-*` classes come from a closed list and the block colour is `style.color` set through the CSSOM. The DOM order remains the array order. The incremental diff of 0.4.1 leaves `frame` and `style` out of the renderer key.
-
-**Theme fonts.** `@spatialdeck/player/fonts.css` is a stylesheet separate from `player.css` with local `@font-face` rules for Atkinson Hyperlegible 5.3.0 (OFL-1.1, exact dependency `@fontsource/atkinson-hyperlegible`), latin and latin-ext subsets, 400 and 700, family `SpatialDeck Atkinson Hyperlegible`. The browser downloads a file only when text uses it. The player build copies the woff2 files and `OFL.txt` to `dist/fonts/` (`scripts/player-fonts.mjs`), never as `data:` URLs. Studio and the playground import it; a consumer that does not import it falls back to the system stack. `pnpm check:bundle` measures these files separately and fails if `@font-face` enters the minimal CSS.
-
-**Editor.** Commands: `setFrames`, `setBlockStyle` (an `undefined` token is removed, an empty style disappears), `setAppearance`, `convertToCanvas`, `convertToFlow`, `moveInReadingOrder`, `editTheme`, `defaultFrame` (used by Add block in canvas). `EditorStore.beginGesture()` and `previewGesture(edit)` extend the 0.2 drag to any data: a validated preview without history from the initial snapshot, one command at `endDrag()`, a restore at `cancelDrag()`, autosave suspended in the meantime. `PlayerSurface` accepts `layout` (frames the scene with `resolveSceneCamera`, ignoring the node camera) and `onHost`. `LayoutEditor` draws outlines and handles from `projectScenePoint` plus the measured position of `.sd-viewport`; `measureFlowFrames` converts the rectangles of the flow blocks and refuses the measurement if the preview does not yet frame the scene. `LayoutPanel` and `ThemePanel` edit tokens only. Block selection, grid and announcements are UI state, never in the JSON.
-
-**Studio interface.** `components/icons.tsx` holds original stroke SVG icons (16 px, `currentColor`), the `BrandMark` logo and `IconButton`: the accessible name equals the description, a CSS tooltip from `data-tip` on hover and keyboard focus, `tabIndex={0}` so that WebKit includes the button in the Tab order. `style.css` defines the dark theme tokens (surfaces, lines, text, accent, radius, 28 px controls and 26 px fields; text at least 4.5:1 and field outlines at least 3:1 on the surfaces) and applies element styles only through `:where(.studio X:not(.sd-player *))`: zero specificity and no effect on the content rendered by the player; `.studio .sd-player` stays in `color-scheme: light`, so the preview is faithful to the presentation. The player controls are restyled through `.sd-access` only: a sober bar in the preview and in the presenter, a floating panel in the presentation and in the audience window (`apps/studio/present.css`), where `.sd-stage` takes all the space. On desktop the window is the workspace and the panels scroll on their own; below 800 px the page scrolls as a column again. Scene list with schematic thumbnails (`SceneThumb`, drawn from theme, appearance and frames without player instances), preview above the map, a tabbed inspector (`role="tablist"`, all tabs mounted because `PathPanel` drives the preview navigation), compact fields with the letter inside the field (`Numeric.short` in `.inline-fields`, `PropRow` rows) and the visible names of the block types in `blockTypes.ts`; code and JSON sources use `TextField code` (monospace), prose uses the interface font. Since 31 October 2026 the Studio interface is in English and uses the player's default English messages; `italianMessages` remains available to hosts.
-
-**Tests.** Unit: `packages/core/test/layout.test.ts` (schema, negative cases with code and pointer, capability, migration chain, fixtures on disk unchanged), `frame.test.ts` (geometry, projection, contrast), `packages/player/test/layout.test.ts` (jsdom). E2E: `tests/e2e/layout.spec.ts` (landmarks within 1 px on rotated and nested scenes, clipping, `z`, DOM and Tab, CSP without `unsafe-inline`, fonts only when used, media in the frame, flow rendering of historical fixtures, Studio with gestures, panels, conversions, saving, recovery, vanilla, keyboard, 1440/768, performance with 30 blocks) and two axe audits in `a11y.spec.ts`. `scripts/flow-identity.mjs` compares pixels and geometry of the historical fixtures between two playground builds (procedure in the file); it is not part of the suites because it needs a second build.
-
-## Distribution 0.6
-
-Schema 1.3.0, fixtures and navigation contracts are unchanged; the APIs are additive except for the player's default texts. User guide, profiles and format limits in [DISTRIBUTION](DISTRIBUTION.md); outcomes in the [0.6 report](verification/phase-0.6.md).
-
-**Core (`capture`).** `validateItinerary(document, input)` validates `{pathId, visits:[{nodeId, edgeIdToNext?}]}` (an object or JSON text, at most 500 visits, unknown fields rejected) and returns a copy with the unique edges filled in; codes `ITINERARY_*`, `UNKNOWN_PATH`, `UNKNOWN_NODE`, `NOT_ADJACENT`, `EDGE_AMBIGUOUS`, `EDGE_MISMATCH`, `EDGE_AFTER_LAST`, `VISIT_LIMIT` with a pointer. `planCapture(document, itinerary, {reducedMotion})` produces a `CapturePlan` (`visits` with `arrivalMs`, `holdMs`, arrival pose and transition to the next visit, `totalMs`): the first visit has no transition, every edge uses `resolveEdgePlan` from the previous arrival pose (tracks included, endpoint as arrival), and reduced motion is fixed in the plan with zero durations. `sampleCapture(plan, t)` is the pure sampler (during a transition the current visit stays the source, as at runtime; `RangeError` outside `[0,totalMs]`). `frameSchedule(plan, fps)` computes `N = ceil(totalMs·fps/1000)`, `frameTime(i) = i·1000/fps`, the encoded duration and whether the final hold contains a frame; `ZERO_DURATION` and `INVALID_FPS` are errors. `publicDocument(document)` returns the copy without private notes.
-
-**Player.** `defaultMessages` is English (`lang: "en"`); the previous Italian set is exported as `italianMessages`. Since 29 October 2026 `visitLimit(limit, target)` receives the title of the destination scene as `target` (the node ID only when the title is empty) and both sets distinguish singular and plural. `PlayerOptions.controls: false` hides controls and choices (capture and print pages only); `PlayerOptions.delegate(request)` receives the navigation requests of the player's own controls (keys, outline, choices) instead of executing them: this is the presenter's audience window. `player.renderAt(plan, elapsedMs)` sets the visit and pose of the sample without touching the machine, history, events, cues or media, then waits for the renderers' `ready()`, the fonts and two paints (20 s timeout); it rejects a plan from another document (`CAPTURE_PLAN_MISMATCH`), a time outside the plan and a player in transition (`CAPTURE_BUSY`); any later command leaves capture. Renderers and plugins receive `publicDocument`: notes are not reachable from public content. `ContentRenderer.ready?()` is optional (plugin API 1.0.0 unchanged).
-
-**Presenter (`@spatialdeck/player/presenter`).** `parsePresenterMessage` validates the `spatialdeck-presenter/1` protocol, the session (128 hexadecimal bits), an epoch per page load, an increasing sequence and the payload (closed commands, snapshots with a valid note-free document and Blobs per asset ID). `connectPublic` (audience window: the only accepted source is `window.opener`, a periodic hello, a snapshot that rebuilds the history with `setPath` + `goTo` at zero duration, requests to the presenter) and `createPresenterSession` (presenter: sends the pop-up a `probe` with a random nonce until it gets an answer; accepts hellos and requests from the pop-up by identity or, where the engine reports a wrong `event.source` as WebKit does after a tab reload, because they echo that nonce; without a pop-up it adopts the first window that greets with the session saved in `sessionStorage`; one snapshot per audience epoch). In Studio `findPublicWindow` finds the audience window again by name (`publicWindowName`) on the resume click. `randomToken()` for sessions, epochs and nonces. Tests: `packages/player/test/presenter.test.ts` with simulated windows.
-
-**Plugins.** `createBuiltinRegistry({embed?, plugins?, replace?})`: rich and media are `lazyRenderer`s with a dynamic import (separate chunks in consumers; after the first load mounting is synchronous again); the sample badge is no longer included and must be approved with `plugins: [samplePlugin()]`; `replace` swaps the renderers of individual types (export profiles). LaTeX uses `katex.render` (DOM nodes and styles through the CSSOM) instead of `renderToString` + `innerHTML`. `style.css` is the KaTeX stylesheet generated by `pnpm generate` (`src/katex.css`) with only the woff2 sources, copied with the licence to `dist/fonts/`. `writeArchive` uses fflate's streaming ZIP in 1 MiB chunks with a `setTimeout(0)` between chunks and stores PNG, JPEG, GIF, WebP, MP3, Ogg, WebM, MP4, woff2 and ZIP without recompression; `readArchive` builds Blobs from the decompressed chunks without a concatenated copy and computes the CRC incrementally.
-
-**Editor.** The public API is delimited in `src/index.ts`: `Studio`/`StudioProps` (with `plugins` approved by the host), `EditorStore`, the commands applicable through the store, `RecoveryRepository`, `Autosave`, storage errors and constants. `PresenterView` and the **Presenter** button; **Present** requests full screen on the gesture. Studio handles `spatialdeck:before-update` (autosave flush before a shell update).
-
-**CLI.** `packages/cli/src`: `io.ts` (JSON and archive loading, confinement, asset checks, output through temp + rename and refusal without `--overwrite`), `profile.ts` (profiles and analysis), `assemble.ts` (published stylesheets with fonts inline or as files, standalone page with a hash-based CSP, build page), `capture.ts` (Chromium from playwright-core 1.64.1, offline context, FFmpeg and ffprobe with argv), `commands.ts` (commands and `ExportManifest`), `index.ts` (`run(argv, io)` without `process.exit`, testable), `cli.ts` (bin). `src/runtime/standalone.ts` is compiled into an IIFE (`dist/runtime/spatialdeck-runtime.js`) from the ESM dists of player and plugins, with generated notices. The CLI depends on `playwright-core` 1.64.1 and `pdf-lib` 1.17.1 (MIT), the latter only to merge PDF pages.
-
-**Packaging.** `scripts/library.mjs`: `externalDependencies(manifest)` for the library Vite configurations, `noBundledDependencies()` (the build fails if a chunk contains a module from `node_modules`), `licenseNotices()`/`thirdPartyNotices()` (notices generated from the modules actually included, with an allowlist of licences compatible with GPL-3.0-or-later), `licenseBanner()` (GPL banner after minification). Manifests with `license`, `description`, `repository`, `homepage`, `bugs`, `keywords`, `sideEffects` (the `src/browser.ts` modules that import CSS are declared, otherwise app bundlers would drop them), `engines` and a README; `prepack` copies `LICENSE`. `pnpm check:packages` (also run inside `pnpm test:e2e`) produces the tarballs and the consumer in `test-results/packages/` and writes `report.json`.
-
-**Tests.** Unit: `packages/core/test/capture.test.ts`, `packages/player/test/player.test.ts` (capture, notes, controls, messages), `packages/plugins/test/{builtins,archive}.test.ts`, `packages/cli/test/cli.test.ts` (arguments, exit codes, confinement, assets, output, profiles, itineraries, missing FFmpeg). E2E: `tests/e2e/distribution.spec.ts` (consumer from tarballs, offline HTML, strict and partial export, static build, PDF, video, environment errors), `presenter.spec.ts`, `pwa.spec.ts`.
+[GPL-3.0-or-later](../LICENSE) for every package, including the embeddable player.

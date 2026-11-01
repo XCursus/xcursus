@@ -1,8 +1,0 @@
-{
-  "initial": 4,
-  "retained": 4,
-  "afterGC": 3,
-  "revisions": 10,
-  "quota": true,
-  "rollback": true
-}

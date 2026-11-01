@@ -1,4 +1,4 @@
-# Renderers and plugins 0.6
+# Renderers and plugins
 
 The core holds only JSON, schema and semantics. The player exposes `RendererRegistry`, `ContentRenderer`, `ContentContext` and `AssetResolver`; it imports no plugins, parsers, React or editor. The app registers renderers explicitly. The minimal bundle does not include DOMPurify, marked, KaTeX or fflate.
 
@@ -7,14 +7,14 @@ import {
   createPlayer,
   createAssetResolver,
   RendererRegistry,
-} from "@spatialdeck/player";
-import { registerRich } from "@spatialdeck/plugins/rich";
-import { registerMedia } from "@spatialdeck/plugins/media";
-import { registerNavigation } from "@spatialdeck/plugins/navigation";
-import { PluginHost } from "@spatialdeck/plugins";
-import { samplePlugin } from "@spatialdeck/plugins/sample";
-import "@spatialdeck/player/style.css";
-import "@spatialdeck/plugins/style.css";
+} from "@xcursus/player";
+import { registerRich } from "@xcursus/plugins/rich";
+import { registerMedia } from "@xcursus/plugins/media";
+import { registerNavigation } from "@xcursus/plugins/navigation";
+import { PluginHost } from "@xcursus/plugins";
+import { samplePlugin } from "@xcursus/plugins/sample";
+import "@xcursus/player/style.css";
+import "@xcursus/plugins/style.css";
 
 const registry = new RendererRegistry();
 registerRich(registry);
@@ -34,7 +34,7 @@ player.destroy();
 plugins.destroy();
 ```
 
-The `rich`, `media`, `navigation`, `sample`, `archive` and SDK entry points are separate. `builtins` provides `createBuiltinRegistry()` for the combination both apps use. Since 0.6 the rich and media renderers load on demand (`lazyRenderer`, a dynamic import: separate chunks in the consumer's bundle, synchronous mounting after the first load) and the sample badge is **no longer** a builtin: a host that wants it approves it with `createBuiltinRegistry({ plugins: [samplePlugin()] })`, as Studio and the playground do. `replace` swaps the renderer of individual types (used by the export profiles). DOMPurify, marked, KaTeX and fflate are imported dependencies, not copied into `dist`: consumers update them in their own lockfile. `@spatialdeck/plugins/style.css` is the KaTeX stylesheet with only the woff2 sources as local files (`dist/fonts/`, with the KaTeX licence alongside); no `data:` URLs and no duplicate formats. Formulas are built with `katex.render`, which sets positioning styles through the CSSOM: they work under a CSP without `'unsafe-inline'` for styles (0.6 decision in [DISTRIBUTION](DISTRIBUTION.md)).
+The `rich`, `media`, `navigation`, `sample`, `archive` and SDK entry points are separate. `builtins` provides `createBuiltinRegistry()` for the combination both apps use. The rich and media renderers load on demand (`lazyRenderer`, a dynamic import: separate chunks in the consumer's bundle, synchronous mounting after the first load) and the sample badge is **not** a builtin: a host that wants it approves it with `createBuiltinRegistry({ plugins: [samplePlugin()] })`. Its ID is `org.xcursus.badge` (`SAMPLE_PLUGIN_ID`); Studio and the playground also register `samplePlugin(LEGACY_SAMPLE_PLUGIN_ID)`, the same plugin under its former ID `org.spatialdeck.badge`, so documents created before the rename keep rendering it. `replace` swaps the renderer of individual types (used by the export profiles). DOMPurify, marked, KaTeX and fflate are imported dependencies, not copied into `dist`: consumers update them in their own lockfile. `@xcursus/plugins/style.css` is the KaTeX stylesheet with only the woff2 sources as local files (`dist/fonts/`, with the KaTeX licence alongside); no `data:` URLs and no duplicate formats. Formulas are built with `katex.render`, which sets positioning styles through the CSSOM: they work under a CSP without `'unsafe-inline'` for styles (0.6 decision in [DISTRIBUTION](DISTRIBUTION.md)).
 
 ## SDK contract 1.0.0
 
@@ -44,11 +44,11 @@ The renderer implements `mount(host,context)`, `update(context)` and `destroy()`
 
 Since 0.4.1 the player does not remount a block on every `updateDocument`: if the block, its referenced assets and the plugin settings do not change, the renderer receives the new document through `update(context)`. A renderer that reads other parts of `context.document` must therefore refresh in `update`, not only in `mount`. The builtins show states and placeholders with `context.messages` and mark those texts with `lang = messages.lang`.
 
-Since 0.5 (schema 1.3.0) a block can have a `frame` and a `style`, but the renderer does not receive them: `context.block` holds only `{id,type,data}`. The player positions and sizes the host from the frame (CSSOM properties computed by the core math) and applies the style tokens as allowlisted classes on the host; a renderer must not set the host's position, size or transforms, nor remove the `sd-*` classes. Moving, resizing, rotating or restyling a block does not remount the renderer: it only receives `update()` with the new document, as for any update in which its block is unchanged. In a canvas scene the host has a fixed size and `overflow: hidden` and is a column flex container (vertical alignment is a token); images, SVG, videos and iframes that are direct children of the host fill it. Plugin API, permissions and trust model are unchanged (API 1.0.0).
+Since 0.5 (schema 1.3.0) a block can have a `frame` and a `style`, but the renderer does not receive them: `context.block` holds only `{id,type,data}`. The player positions and sizes the host from the frame (CSSOM properties computed by the core math) and applies the style tokens as allowlisted classes on the host; a renderer must not set the host's position, size or transforms, nor remove the `xc-*` classes. Moving, resizing, rotating or restyling a block does not remount the renderer: it only receives `update()` with the new document, as for any update in which its block is unchanged. In a canvas scene the host has a fixed size and `overflow: hidden` and is a column flex container (vertical alignment is a token); images, SVG, videos and iframes that are direct children of the host fill it. Plugin API, permissions and trust model are unchanged (API 1.0.0).
 
 Missing plugins, unavailable data versions or invalid payloads or settings produce placeholders with the data intact. A plugin API other than 1.0.0 is instead a document schema error. A project can never choose URLs, imports or scripts. The sample inspector is a separate entry point that returns payloads; the editor store validates them and records the undo/redo command. Other plugins can use the generic JSON editor.
 
-`capture` and `offline` are plugin declarations; the 0.6 CLI registers no plugin, so a plugin block blocks strict exports and becomes a placeholder with `--allow-partial`. The badge declares `offline:true` and `capture:false`; web content declares no offline availability. No MIDI or OSC is registered or requested.
+`capture` and `offline` are plugin declarations; the CLI registers no plugin, so a plugin block blocks strict exports and becomes a placeholder with `--allow-partial`. The badge declares `offline:true` and `capture:false`; web content declares no offline availability. No MIDI or OSC is registered or requested.
 
 ## Trust model and threats
 
@@ -66,7 +66,7 @@ The resolver creates owned URLs per lease; `release()` is idempotent and abort r
 
 Since 0.4.1 an SVG can have a BOM, an XML declaration, processing instructions, comments and an `svg` DOCTYPE (with an internal subset too) before the root; the prologue is skipped without interpreting the DTD or entities, and the markup still goes through the sanitization pipeline. SVG, VTT and text are decoded entirely as streaming UTF-8: a character split across two chunks is valid, invalid UTF-8 bytes are rejected. The digest uses `crypto.subtle` when available, otherwise a local SHA-256: assets with digests also load over HTTP outside localhost. Verification and digests are memoized per Blob and expected metadata. Resolver errors are `AssetError` (`missing`, `size`, `signature`, `digest`, `aborted`), which renderers translate with `messages.assetMissing` and `messages.assetInvalid`. A resolver can implement `revision(assetId)` to signal that the resource behind an ID has changed while its record stays the same (for example a file linked after opening): the player resolves only those blocks again; without `revision`, it still retries the blocks whose asset had not resolved.
 
-`writeArchive` and `readArchive` live in `@spatialdeck/plugins/archive`. The ZIP format holds `project.json`, a version 1.0.0 `manifest.json` and `assets/<id>/<normalized-name>` files. For each asset the manifest holds `id,path,entry,mime,byteLength,sha256`: `path` stays the canonical JSON one, `entry` is the portable name inside the ZIP. Every SHA-256 digest and CRC is checked. An archive missing required resources never replaces the current project. Plain JSON keeps relative paths and allows linking missing files by hand; any authorized host can supply the resolver.
+`writeArchive` and `readArchive` live in `@xcursus/plugins/archive`, together with `ARCHIVE_EXTENSION` (`.xcursus`), `LEGACY_ARCHIVE_EXTENSION` (`.spatialdeck`, read only), `archiveFormat(name)` and the file-input list `PROJECT_ACCEPT`; the format is specified in [FILE_FORMAT](FILE_FORMAT.md). The ZIP format holds `project.json`, a version 1.0.0 `manifest.json` and `assets/<id>/<normalized-name>` files. For each asset the manifest holds `id,path,entry,mime,byteLength,sha256`: `path` stays the canonical JSON one, `entry` is the portable name inside the ZIP. Every SHA-256 digest and CRC is checked. An archive missing required resources never replaces the current project. Plain JSON keeps relative paths and allows linking missing files by hand; any authorized host can supply the resolver.
 
 Limits: 50 MiB per file, 200 MiB decompressed in total including the JSON entries, 10 MiB per JSON, 10,000 entries. Explicit directories, ZIP64, encryption and multi-disk archives are not supported. Local and central headers must match and cover the data without overlaps or hidden files. Traversal, backslashes, absolute paths, percent encoding, non-NFC names, duplicates and symbolic links are rejected. Inflate is incremental with a check of the actual output; no file is ever extracted to the filesystem.
 
@@ -74,7 +74,7 @@ IndexedDB (v3 since 0.4.1) keeps revisions and resource bytes and MIME types in 
 
 Pinned dependencies and licences: [DOMPurify 3.4.17](https://registry.npmjs.org/dompurify/3.4.17) MPL-2.0 OR Apache-2.0; [marked 18.1.1](https://registry.npmjs.org/marked/18.1.1), [KaTeX 0.19.0](https://registry.npmjs.org/katex/0.19.0) and [fflate 0.8.3](https://registry.npmjs.org/fflate/0.8.3) MIT. The original gallery resources carry a [CC0 dedication](../examples/content-gallery/LICENSE.md). The repository licence is unchanged.
 
-## What is new in 0.6 for renderers and plugins
+## Readiness, public document and texts
 
 - `ContentRenderer.ready?(): Promise<void>` is optional (plugin API 1.0.0 unchanged): it resolves when the content is complete, for example after an asset has loaded or failed. `player.renderAt` (PDF and video capture) waits for it; a renderer without `ready` is ready after mount or update. The media builtins wait for the image, the poster or the media metadata to decode.
 - Renderers and plugins receive the public copy of the document in `context.document` (`publicDocument`): private scene notes are empty strings. Notes stay in the authoring project and in the presenter console.

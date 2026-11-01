@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 120" width="560" height="120" role="img" aria-label="SpatialDeck">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 120" width="560" height="120" role="img" aria-label="XCursus">
   <g fill="#3563e9">
     <rect x="44" y="12" width="66" height="48" rx="12" opacity=".3"/>
     <rect x="29" y="33" width="66" height="48" rx="12" opacity=".6"/>
     <rect x="14" y="54" width="66" height="48" rx="12"/>
   </g>
-  <text x="138" y="80" fill="#17181b" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="56" font-weight="650" letter-spacing="-1">SpatialDeck</text>
+  <text x="138" y="80" fill="#17181b" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="56" font-weight="650" letter-spacing="-1">XCursus</text>
 </svg>

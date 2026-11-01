@@ -1,9 +1,0 @@
-{
-  "audioAdvanced": true,
-  "videoAdvanced": true,
-  "videoDimensions": [320, 180],
-  "deniedPlay": true,
-  "exitStopAndPause": true,
-  "secondInstancePaused": true,
-  "auditoryVerification": false
-}

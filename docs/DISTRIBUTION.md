@@ -1,6 +1,6 @@
-# Distribution, exports and presenter (0.6)
+# CLI, export and presentation
 
-SpatialDeck 0.6 adds the `spatialdeck` command line, publishable package layouts, a standalone offline HTML, a static web build, a PDF and a minimal WebM video of an explicit itinerary, the presenter view and an offline Studio shell. Every output is rendered by the same DOM/CSS 3D player; there is no second renderer. Verification, measurements and limits: [phase-0.6 report](verification/phase-0.6.md).
+This guide covers how an XCursus project leaves the editor: the `xcursus` command line, the standalone offline HTML, the static web build, the PDF and the minimal WebM video of an explicit itinerary, the npm packages, the presenter view and the offline Studio shell. Every output is rendered by the same DOM/CSS 3D player; there is no second renderer. How these outputs are tested, and their known limits, is in [VERIFICATION](VERIFICATION.md#exports-and-cli).
 
 ## Running the CLI
 
@@ -9,32 +9,42 @@ From the repository (Node 24.22.0, pnpm 12.14.0):
 ```sh
 pnpm install --frozen-lockfile
 pnpm build
-pnpm spatialdeck --help
-pnpm spatialdeck validate examples/distribution-static/project.json
-pnpm spatialdeck export html examples/distribution-static/project.json --out deck.html
-pnpm spatialdeck build examples/distribution-static/project.json --out site
-pnpm spatialdeck export pdf examples/distribution-static/project.json --itinerary examples/distribution-static/itinerary.json --out deck.pdf
-pnpm spatialdeck export video examples/distribution-static/project.json --itinerary examples/distribution-static/itinerary.json --fps 30 --out deck.webm
+pnpm xcursus --help
+pnpm xcursus validate examples/distribution-static/project.json
+pnpm xcursus pack examples/distribution-static/project.json --out deck.xcursus
+pnpm xcursus export html examples/distribution-static/project.json --out deck.html
+pnpm xcursus build examples/distribution-static/project.json --out site
+pnpm xcursus export pdf examples/distribution-static/project.json --itinerary examples/distribution-static/itinerary.json --out deck.pdf
+pnpm xcursus export video examples/distribution-static/project.json --itinerary examples/distribution-static/itinerary.json --fps 30 --out deck.webm
 ```
 
-`pnpm spatialdeck` runs `packages/cli/dist/cli.js`, so it needs `pnpm build` first. Installed from its tarball the binary is `spatialdeck`.
+`pnpm xcursus` runs `packages/cli/dist/cli.js`, so it needs `pnpm build` first. Installed from its tarball the binary is `xcursus`.
 
 | Command                                                           | Output                                                                                           | Needs                                                |
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `validate <project> [--json]`                                     | Diagnostics on stdout (JSON also for a rejected document), exit 0/1                              | Node                                                 |
+| `pack <project> --out <file.xcursus>`                             | The authoring project as a `.xcursus` archive: current schema, notes and assets included         | Node                                                 |
 | `build <project> --out <dir>`                                     | `index.html`, runtime, styles, fonts, `project.json`, `assets/`, `export-manifest.json`, notices | Node; serve over HTTP(S)                             |
 | `export html <project> --out <file>`                              | One self-contained HTML + `<file>.manifest.json`                                                 | Node                                                 |
 | `export pdf <project> --itinerary <file> --out <file>`            | One page per visit + manifest                                                                    | Chromium for Playwright 1.64.1                       |
 | `export video <project> --itinerary <file> --fps 30 --out <file>` | WebM without audio + manifest                                                                    | Chromium, `ffmpeg` and `ffprobe` with a WebM encoder |
 
-`<project>` is a project JSON, whose assets are resolved inside its own directory, or a `.spatialdeck` archive. Exit codes: **0** success (warnings allowed), **1** invalid project, itinerary or capability, **2** missing environment (Chromium, FFmpeg), **3** write or export failure. An existing output needs `--overwrite`; a build directory is replaced only if it holds a previous `export-manifest.json`. Files are written to a temporary sibling and renamed atomically; a failed export leaves no output. Tools run with an argument vector, never through a shell. Nothing is installed automatically: `npx playwright@1.64.1 install chromium` (or `pnpm exec playwright install chromium` here) and FFmpeg come from the user.
+`<project>` is a project JSON, whose assets are resolved inside its own directory, a `.xcursus` archive or a legacy `.spatialdeck` archive saved by SpatialDeck, the former name of XCursus (read only, see [FILE_FORMAT](FILE_FORMAT.md#legacy-spatialdeck-archives)). Exit codes: **0** success (warnings allowed), **1** invalid project, itinerary or capability, **2** missing environment (Chromium, FFmpeg), **3** write or export failure. An existing output needs `--overwrite`; a build directory is replaced only if it holds a previous `export-manifest.json`. Files are written to a temporary sibling and renamed atomically; a failed export leaves no output. Tools run with an argument vector, never through a shell. Nothing is installed automatically: `npx playwright@1.64.1 install chromium` (or `pnpm exec playwright install chromium` here) and FFmpeg come from the user. `XCURSUS_FFMPEG` and `XCURSUS_FFPROBE` select specific binaries (the former `SPATIALDECK_FFMPEG` and `SPATIALDECK_FFPROBE` are still read as a fallback).
+
+`pack` is the authoring counterpart of the exports: it keeps private notes and extensions, refuses a project with a missing or invalid asset, requires an output ending in `.xcursus` and never replaces its own input. It is the command-line way to convert a JSON project or a legacy archive to the native format:
+
+```sh
+pnpm xcursus pack old-deck.spatialdeck --out deck.xcursus
+```
+
+`validate --json` reports `kind` (`json` or `archive`), `archiveFormat` (`current` or `legacy`) for archives, the current `schemaVersion` and the `sourceSchemaVersion` declared by the file.
 
 Options: `--allow-partial` (placeholders, status `partial`), `--reduced-motion` (PDF/video planned without transitions), `--lang en|it` (player interface texts; default from `metadata.language`), `--frames <empty dir>` (video: keep the captured PNG frames).
 
 ## Inputs and confinement
 
 - Project JSON: validated and migrated in memory to 1.3.0; the file is never rewritten. Asset paths must be safe relative paths (no `..`, absolute, encoded or backslash paths) and may not go through a symbolic link anywhere below the project directory. Each file is checked against the declared size, MIME signature and SHA-256 when declared; the manifest records the computed digest.
-- Archive: the same reader as Studio (`readArchive`): central/local header coherence, CRC, digests, limits after inflation, no traversal, no links.
+- Archive (`.xcursus` or legacy `.spatialdeck`): the same reader as Studio (`readArchive`): central/local header coherence, CRC, digests, limits after inflation, no traversal, no links. The archive is only read.
 - Limits: JSON 10 MiB, 50 MiB per asset, 200 MiB in total, itinerary 1 MiB and 500 visits.
 
 ## Profiles
@@ -59,7 +69,7 @@ PDF and video fail with exit 3 on any error of the capture page and on any Conte
 
 ## Standalone HTML
 
-One file with the export runtime (a classic IIFE script built from the published player and plugins ESM), the player and KaTeX stylesheets with their woff2 fonts as `data:` URLs (one format, only the stylesheets the document needs), the public project JSON and the verified assets as base64 data blocks turned into `Blob` URLs at run time. A `<noscript>` outline lists the titles and accessible texts of the default path. Third-party licences are embedded in `<template id="spatialdeck-notices">`; the header comment states the GPL-3.0-or-later licence of the runtime and the source repository.
+One file with the export runtime (a classic IIFE script built from the published player and plugins ESM), the player and KaTeX stylesheets with their woff2 fonts as `data:` URLs (one format, only the stylesheets the document needs), the public project JSON and the verified assets as base64 data blocks turned into `Blob` URLs at run time. A `<noscript>` outline lists the titles and accessible texts of the default path. Third-party licences are embedded in `<template id="xcursus-notices">`; the header comment states the GPL-3.0-or-later licence of the runtime and the source repository.
 
 Content Security Policy (meta element):
 
@@ -69,7 +79,7 @@ font-src data:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-
 base-uri 'none'; form-action 'none'
 ```
 
-**Decision on KaTeX inline styles (taken at the start of 0.6):** no `'unsafe-inline'` for styles. KaTeX formulas are built with `katex.render`, which creates DOM nodes and assigns its positioning styles through CSSOM properties; CSP governs parsed `style` attributes and `<style>` elements, not CSSOM, and the player already applies transforms and theme tokens through CSSOM. The previous `renderToString` + `innerHTML` sink is gone. Two KaTeX features set a `style` attribute on MathML nodes with `setAttribute` (`\pmb` and `\fcolorbox`); under this CSP those attributes are blocked and reported, with no visual effect because the MathML copy is visually hidden. They are not used by the fixtures.
+**KaTeX inline styles:** no `'unsafe-inline'` for styles. KaTeX formulas are built with `katex.render`, which creates DOM nodes and assigns its positioning styles through CSSOM properties; CSP governs parsed `style` attributes and `<style>` elements, not CSSOM, and the player already applies transforms and theme tokens through CSSOM. The previous `renderToString` + `innerHTML` sink is gone. Two KaTeX features set a `style` attribute on MathML nodes with `setAttribute` (`\pmb` and `\fcolorbox`); under this CSP those attributes are blocked and reported, with no visual effect because the MathML copy is visually hidden. They are not used by the fixtures.
 
 The JSON blocks escape `<`, `>`, `&`, U+2028 and U+2029, so a `</script>` in the content stays text; the inline runtime has every `</script` and `<!--` rewritten to `\x3C…`. The file opens from `file://` with the network disabled. Size target: 25 MiB (warning `HTML_SIZE` above). `file://` has no reliable origin: the presenter view is not available there (single window only).
 
@@ -108,15 +118,15 @@ Only the static profile: text, Markdown, HTML, SVG, LaTeX, images, links as stat
 
 ## Packages
 
-| Package                | Contents                                                                            | Third-party code                                                                                                          |
-| ---------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `@spatialdeck/core`    | ESM, types, JSON Schemas                                                            | imports `gl-matrix`, Ajv runtime helpers                                                                                  |
-| `@spatialdeck/player`  | ESM, types, `style.css`, `fonts.css` + woff2/OFL, `presenter` subpath, `iife` build | IIFE embeds core, gl-matrix, Ajv runtime: `dist/iife/THIRD_PARTY_NOTICES.txt`                                             |
-| `@spatialdeck/plugins` | ESM per entry, lazy rich/media chunks, `style.css` (KaTeX, woff2 files + licence)   | imports DOMPurify, marked, KaTeX, fflate                                                                                  |
-| `@spatialdeck/editor`  | ESM, types, `style.css`; React `^19.3.1` peers                                      | none                                                                                                                      |
-| `@spatialdeck/cli`     | Node ESM, `spatialdeck` bin, export runtime                                         | runtime embeds player, renderers, DOMPurify, marked, KaTeX, Ajv, gl-matrix, fonts: `dist/runtime/THIRD_PARTY_NOTICES.txt` |
+| Package            | Contents                                                                            | Third-party code                                                                                                          |
+| ------------------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `@xcursus/core`    | ESM, types, JSON Schemas                                                            | imports `gl-matrix`, Ajv runtime helpers                                                                                  |
+| `@xcursus/player`  | ESM, types, `style.css`, `fonts.css` + woff2/OFL, `presenter` subpath, `iife` build | IIFE embeds core, gl-matrix, Ajv runtime: `dist/iife/THIRD_PARTY_NOTICES.txt`                                             |
+| `@xcursus/plugins` | ESM per entry, lazy rich/media chunks, `style.css` (KaTeX, woff2 files + licence)   | imports DOMPurify, marked, KaTeX, fflate                                                                                  |
+| `@xcursus/editor`  | ESM, types, `style.css`; React `^19.3.1` peers                                      | none                                                                                                                      |
+| `@xcursus/cli`     | Node ESM, `xcursus` bin, export runtime                                             | runtime embeds player, renderers, DOMPurify, marked, KaTeX, Ajv, gl-matrix, fonts: `dist/runtime/THIRD_PARTY_NOTICES.txt` |
 
-Every manifest has `license: GPL-3.0-or-later`, description, repository, homepage, keywords, `sideEffects`, `engines` and a README; `pnpm pack` adds the repository `LICENSE`. Internal dependencies become the same version in the tarball. A build plugin fails if a library chunk contains a module from `node_modules`; IIFE builds generate their notice file from the bundled modules and fail on a missing or incompatible licence. The packages stay `"private": true`: ownership of the `@spatialdeck` npm scope could not be verified (registry 404 on 26 October 2026), so publishing remains blocked by G0 point 2.
+The npm scope is `@xcursus`. Every manifest has `license: GPL-3.0-or-later`, description, repository, homepage, keywords, `sideEffects`, `engines` and a README; `pnpm pack` adds the repository `LICENSE`. Internal dependencies become the same version in the tarball. A build plugin fails if a library chunk contains a module from `node_modules`; IIFE builds generate their notice file from the bundled modules and fail on a missing or incompatible licence. The packages stay `"private": true` and are not published to npm: publishing waits until ownership of the `@xcursus` npm scope is confirmed. Until then, use them from this workspace or install the tarballs produced by `pnpm pack`.
 
 `pnpm check:packages` packs the five packages, installs the tarballs in `test-results/packages/consumer` (own pnpm workspace, packages from the local store when present and registry metadata only when missing, third-party runtime dependencies pinned to the repository lockfile versions, no source aliases), type-checks without `skipLibCheck`, builds a minimal and a realistic consumer and measures them; the E2E suite serves that consumer and runs the CLI installed from its tarball.
 
@@ -126,4 +136,4 @@ Every manifest has `license: GPL-3.0-or-later`, description, repository, homepag
 
 ## Offline Studio shell
 
-The production Studio registers a versioned service worker (`sw.js`, generated at build time with the list of built files). After the first load the shell works offline and projects reopen from IndexedDB. A new version installs in the background and waits: a notice offers **Update and reload**, which first flushes unsaved work to local recovery; only then the new worker activates and deletes older `spatialdeck-studio-*` caches, never other caches or IndexedDB data. The player, the playground and the exported HTML do not use the worker. Development (`pnpm dev:studio`) never registers it.
+The production Studio registers a versioned service worker (`sw.js`, generated at build time with the list of built files). After the first load the shell works offline and projects reopen from IndexedDB. A new version installs in the background and waits: a notice offers **Update and reload**, which first flushes unsaved work to local recovery; only then the new worker activates and deletes older `xcursus-studio-*` caches (and the `spatialdeck-studio-*` caches of releases made under the former name), never other caches or IndexedDB data. The player, the playground and the exported HTML do not use the worker. Development (`pnpm dev:studio`) never registers it.

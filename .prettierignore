@@ -5,6 +5,3 @@ packages/core/src/document/validator.js
 packages/plugins/src/katex.css
 playwright-report
 test-results
-prompts
-docs/PROJECT_SPEC.md
-docs/ROADMAP.md

@@ -32,10 +32,9 @@ export default defineConfig({
       ],
       reporter: ["text", "json-summary", "html"],
       reportsDirectory: "test-results/coverage",
-      // Per-area floors a few points under the 0.4.1 measurement (core keeps
-      // its 0.3 gate). Uncovered branches are mostly DOM, focus and IndexedDB
-      // engine paths exercised by the browser E2E suite instead; rationale in
-      // docs/verification/phase-0.4.1.md.
+      // Per-area floors a few points under the measured coverage. Uncovered
+      // branches are mostly DOM, focus and IndexedDB engine paths exercised by
+      // the browser E2E suite instead; see docs/VERIFICATION.md#coverage.
       thresholds: {
         "packages/core/src/**": { statements: 85, branches: 80 },
         "packages/player/src/assets/**": { statements: 90, branches: 85 },
