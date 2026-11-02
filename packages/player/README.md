@@ -18,4 +18,4 @@ player.destroy();
 - Classic script without a bundler: `@xcursus/player/iife` (`dist/iife/xcursus-player.iife.js`, global `XCursus`) with `dist/iife/player.css`. That build embeds core, gl-matrix and the Ajv runtime; their licences are in `dist/iife/THIRD_PARTY_NOTICES.txt`.
 - Theme font: Atkinson Hyperlegible 5.3.0 (SIL OFL 1.1), woff2 files in `dist/fonts/` with `OFL.txt`, fetched by the browser only when used.
 
-Not yet published to npm. Licence: GPL-3.0-or-later. API: [API.md](https://github.com/XCursus/xcursus/blob/main/docs/API.md#player).
+Install with `npm install @xcursus/player`. Licence: GPL-3.0-or-later. API: [API.md](https://github.com/XCursus/xcursus/blob/main/docs/API.md#player).

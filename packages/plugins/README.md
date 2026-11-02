@@ -17,4 +17,4 @@ const player = createPlayer({ registry });
 - `@xcursus/plugins/archive`: `readArchive`, `writeArchive`, `archiveFormat(name)` and the `.xcursus` extension constants; format in [FILE_FORMAT.md](https://github.com/XCursus/xcursus/blob/main/docs/FILE_FORMAT.md). `writeArchive` streams in chunks and yields to the event loop; already compressed media are stored, not deflated again.
 - Plugins are trusted host code with page authority, not a sandbox: see [PLUGINS.md](https://github.com/XCursus/xcursus/blob/main/docs/PLUGINS.md).
 
-Not yet published to npm. Licence: GPL-3.0-or-later.
+Install with `npm install @xcursus/plugins`. Licence: GPL-3.0-or-later.

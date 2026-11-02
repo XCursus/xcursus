@@ -20,4 +20,4 @@ xcursus export video project.json --itinerary itinerary.json --fps 30 --out deck
 
 `@xcursus/cli/html` exports the standalone HTML pipeline without Node APIs (`standaloneHtml`, `verifyResources`, the `ExportKit` type); XCursus Studio uses it, so its HTML export is the same file.
 
-The export runtime (`dist/runtime/xcursus-runtime.js`) embeds the player and its third-party code; licences in `dist/runtime/THIRD_PARTY_NOTICES.txt`, also embedded in every HTML export. Not yet published to npm. Licence: GPL-3.0-or-later. Formats and limits: [DISTRIBUTION.md](https://github.com/XCursus/xcursus/blob/main/docs/DISTRIBUTION.md).
+The export runtime (`dist/runtime/xcursus-runtime.js`) embeds the player and its third-party code; licences in `dist/runtime/THIRD_PARTY_NOTICES.txt`, also embedded in every HTML export. Install with `npm install --global @xcursus/cli` (or run `npx @xcursus/cli`). Licence: GPL-3.0-or-later. Formats and limits: [DISTRIBUTION.md](https://github.com/XCursus/xcursus/blob/main/docs/DISTRIBUTION.md).

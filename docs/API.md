@@ -1,6 +1,6 @@
 # API and integration
 
-XCursus is published as five ESM packages under the `@xcursus` scope. They are not on npm yet (see [DISTRIBUTION](DISTRIBUTION.md#packages)); inside this repository they resolve as workspace packages, and `pnpm pack` produces installable tarballs.
+XCursus is published as five ESM packages under the `@xcursus` scope. They are installed from npm (see [DISTRIBUTION](DISTRIBUTION.md#packages)); inside this repository they resolve as workspace packages.
 
 | Package            | Use it to                                                                                | Reference             |
 | ------------------ | ---------------------------------------------------------------------------------------- | --------------------- |

@@ -19,4 +19,4 @@ const plan = planCapture(result.value, itinerary, { reducedMotion: false });
 - Runtime dependencies: `gl-matrix` and the Ajv runtime helpers (`ajv`), imported, never copied into `dist`.
 - ESM only, `sideEffects: false`. Tested with Node 24.22.0 and the browsers listed in the repository.
 
-Not yet published to npm. Licence: GPL-3.0-or-later. Documentation: [API.md](https://github.com/XCursus/xcursus/blob/main/docs/API.md) and [FILE_FORMAT.md](https://github.com/XCursus/xcursus/blob/main/docs/FILE_FORMAT.md).
+Install with `npm install @xcursus/core`. Licence: GPL-3.0-or-later. Documentation: [API.md](https://github.com/XCursus/xcursus/blob/main/docs/API.md) and [FILE_FORMAT.md](https://github.com/XCursus/xcursus/blob/main/docs/FILE_FORMAT.md).

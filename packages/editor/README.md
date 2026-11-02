@@ -14,4 +14,4 @@ createRoot(root).render(<Studio store={new EditorStore(emptyProject())} />);
 
 The public API is delimited in `dist/index.d.ts`; components and storage internals are private. The interface is in English.
 
-Not yet published to npm. Licence: GPL-3.0-or-later. Guides: [AUTHORING.md](https://github.com/XCursus/xcursus/blob/main/docs/AUTHORING.md), [API.md](https://github.com/XCursus/xcursus/blob/main/docs/API.md#editor).
+Install with `npm install @xcursus/editor`. Licence: GPL-3.0-or-later. Guides: [AUTHORING.md](https://github.com/XCursus/xcursus/blob/main/docs/AUTHORING.md), [API.md](https://github.com/XCursus/xcursus/blob/main/docs/API.md#editor).

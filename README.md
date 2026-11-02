@@ -113,7 +113,7 @@ if (mounted.ok) await player.next();
 ```
 
 > [!NOTE]
-> The `@xcursus/*` packages are not published on npm yet. Use them from this workspace or install the tarballs produced by `pnpm pack`.
+> Install from npm: `npm install @xcursus/core @xcursus/player` for the player, `@xcursus/plugins` for the rich renderers and archives, `@xcursus/editor` to embed Studio, and `npm install --global @xcursus/cli` for the `xcursus` command.
 
 ## Documentation
 
