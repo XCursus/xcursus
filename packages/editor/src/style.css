@@ -1825,6 +1825,26 @@ dialog.export-panel {
   color: var(--text-3);
   font-size: 11.5px;
 }
+/* impress.js import: the review lists every finding before the candidate opens. */
+.import-panel .export-options label {
+  display: grid;
+  gap: 4px;
+}
+.import-findings {
+  max-height: 240px;
+  overflow: auto;
+  width: 100%;
+}
+.import-severity {
+  display: inline-block;
+  min-width: 56px;
+  color: var(--text-3);
+  font-family: var(--ui-mono);
+  font-size: 11px;
+}
+.import-findings li[data-severity="error"] .import-severity {
+  color: var(--danger);
+}
 /* Presentation: the scene fills the screen; the controls float and fade at rest. */
 .presentation {
   position: fixed;

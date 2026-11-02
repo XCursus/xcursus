@@ -10,6 +10,7 @@
       "@xcursus/player": ["./packages/player/src/index.ts"],
       "@xcursus/editor": ["./packages/editor/src/index.ts"],
       "@xcursus/cli/html": ["./packages/cli/src/html.ts"],
+      "@xcursus/impress-compat": ["./packages/impress-compat/src/index.ts"],
       "@xcursus/plugins": ["./packages/plugins/src/sdk/index.ts"],
       "@xcursus/plugins/*": ["./packages/plugins/src/*"]
     },

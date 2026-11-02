@@ -10,6 +10,7 @@
     "@xcursus/cli": "workspace:*",
     "@xcursus/core": "workspace:*",
     "@xcursus/editor": "workspace:*",
+    "@xcursus/impress-compat": "workspace:*",
     "@xcursus/player": "workspace:*",
     "@xcursus/plugins": "workspace:*",
     "react": "19.3.1",

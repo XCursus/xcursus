@@ -40,6 +40,8 @@ import {
 } from "../storage/index.js";
 import type { Revision } from "../storage/index.js";
 import { Dialog } from "./Dialog.js";
+import { ImportPanel } from "./ImportPanel.js";
+import type { ImpressImporter, ImpressImportResult } from "./ImportPanel.js";
 import { ExportPanel } from "./ExportPanel.js";
 import type { HtmlExporter } from "./ExportPanel.js";
 import { Inspector } from "./Inspector.js";
@@ -77,6 +79,8 @@ export interface StudioProps {
   plugins?: readonly PluginDefinition[];
   /** Standalone HTML export of the Export panel; without it the panel gives the command line. */
   exportHtml?: HtmlExporter;
+  /** impress.js import with a review step; without it Studio offers no import. */
+  importImpress?: ImpressImporter;
 }
 export function Studio({
   store: providedStore,
@@ -84,6 +88,7 @@ export function Studio({
   onPlayer,
   plugins = noPlugins,
   exportHtml,
+  importImpress,
 }: StudioProps) {
   const store = useMemo(
     () => providedStore ?? new EditorStore(emptyProject()),
@@ -137,6 +142,7 @@ export function Studio({
     } | null>(null),
     [revisions, setRevisions] = useState<Revision[]>([]),
     [exporting, setExporting] = useState(false),
+    [importing, setImporting] = useState(false),
     [recoveryIndex, setRecoveryIndex] = useState(0);
   const [navigation, setNavigation] = useState<NavigationSelection | null>(
       null,
@@ -326,6 +332,23 @@ export function Studio({
         action,
       });
     else action();
+  }
+  /** Opens a reviewed import candidate; unsaved work goes to local recovery first. */
+  function openCandidate(result: Extract<ImpressImportResult, { ok: true }>) {
+    setImporting(false);
+    confirmReplace(() => {
+      const current = store.getSnapshot();
+      if (current.dirty) void autosave.flush(current.document);
+      autosave.cancelPending();
+      report(store.replace(result.document));
+      loadBlobs(result.document, result.blobs);
+      const findings = result.diagnostics.filter(
+        (d) => d.severity !== "info",
+      ).length;
+      setWarning(
+        `Opened an impress.js import candidate with ${findings} warning${findings === 1 ? "" : "s"}. The HTML file is unchanged; Save JSON or Save archive keeps the project.${current.dirty ? " The previous unsaved changes are in Recovery." : ""}`,
+      );
+    });
   }
   async function openFile(input: File) {
     const format = archiveFormat(input.name);
@@ -600,6 +623,17 @@ export function Studio({
             ref={openButton}
             onClick={() => file.current?.click()}
           />
+          {importImpress && (
+            <IconButton
+              icon="import"
+              label="Import impress.js"
+              shortcut="HTML presentation, reviewed before it opens"
+              onClick={() => {
+                store.endDrag();
+                setImporting(true);
+              }}
+            />
+          )}
           <IconButton
             icon="save"
             label="Save JSON"
@@ -1126,6 +1160,13 @@ export function Studio({
           exportHtml={exportHtml}
           onSaveArchive={() => void savePortable()}
           onClose={() => setExporting(false)}
+        />
+      )}
+      {importing && importImpress && (
+        <ImportPanel
+          importImpress={importImpress}
+          onOpen={openCandidate}
+          onClose={() => setImporting(false)}
         />
       )}
       {!!revisions.length && !dialog && (

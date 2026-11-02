@@ -1,8 +1,10 @@
+import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, rm } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
 import type { Page } from "@playwright/test";
 import { expect, test } from "./runner.js";
-import { studioURL, writeEvidence } from "./evidence.js";
+import { evidencePath, studioURL, writeEvidence } from "./evidence.js";
 
 const axeSource = readFile(
   createRequire(import.meta.url).resolve("axe-core/axe.min.js"),
@@ -131,6 +133,16 @@ test("axe: Studio empty, with content and dialogs has no serious or critical vio
   await expect(exportPanel.getByRole("status")).toContainText("Not exported");
   await audit(page, "studio-export", info);
   await exportPanel.getByRole("button", { name: "Close" }).click();
+  // impress.js import (1.0): the review with its findings.
+  await page.getByRole("button", { name: "Import impress.js" }).click();
+  const importPanel = page.getByRole("dialog", { name: "Import impress.js" });
+  await importPanel
+    .getByLabel("impress.js HTML file")
+    .setInputFiles("examples/impress-import/deck.html");
+  await importPanel.getByRole("button", { name: "Convert" }).click();
+  await expect(importPanel).toContainText("6 scenes");
+  await audit(page, "studio-import", info);
+  await importPanel.getByRole("button", { name: "Cancel" }).click();
   await page.getByRole("button", { name: "Present", exact: true }).click();
   await expect(page.locator(".presentation-player .xc-player")).toHaveCount(1);
   await audit(page, "studio-presentation", info);
@@ -154,4 +166,29 @@ test("axe: Studio scene editor, its panels and the theme have no serious or crit
   await audit(page, "studio-layout", info);
   await page.getByRole("tab", { name: /^Theme/ }).click();
   await audit(page, "studio-theme", info);
+});
+test("axe: exported standalone HTML with its on-screen navigation has no serious or critical violations", async ({
+  page,
+}, info) => {
+  // Written by the built CLI of this checkout; the page opens from file://.
+  const out = evidencePath(`a11y-export-${info.project.name}.html`);
+  await mkdir(evidencePath(""), { recursive: true });
+  await rm(out, { force: true });
+  await rm(`${out}.manifest.json`, { force: true });
+  execFileSync(process.execPath, [
+    "packages/cli/dist/cli.js",
+    "export",
+    "html",
+    "examples/distribution-static/project.json",
+    "--out",
+    out,
+  ]);
+  await page.goto(pathToFileURL(out).href);
+  await expect(page.locator("html")).toHaveAttribute("data-xcursus", "ready");
+  await expect(
+    page.getByRole("navigation", { name: "Presentation navigation" }),
+  ).toBeVisible();
+  await audit(page, "export-html", info);
+  await page.getByRole("button", { name: "Next" }).click();
+  await audit(page, "export-html-next", info);
 });

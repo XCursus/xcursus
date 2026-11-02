@@ -56,6 +56,7 @@
   },
   "dependencies": {
     "@xcursus/core": "workspace:*",
+    "@xcursus/impress-compat": "workspace:*",
     "@xcursus/player": "workspace:*",
     "@xcursus/plugins": "workspace:*",
     "pdf-lib": "1.17.1",

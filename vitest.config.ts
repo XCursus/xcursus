@@ -8,6 +8,10 @@ export default defineConfig({
         "./packages/player/src/index.ts",
         import.meta.url,
       ).pathname,
+      "@xcursus/impress-compat": new URL(
+        "./packages/impress-compat/src/index.ts",
+        import.meta.url,
+      ).pathname,
       "@xcursus/plugins/archive": new URL(
         "./packages/plugins/src/archive.ts",
         import.meta.url,
@@ -23,6 +27,7 @@ export default defineConfig({
         "packages/player/src/**/*.ts",
         "packages/plugins/src/{security,archive,media}.ts",
         "packages/editor/src/{store,storage}/**/*.ts",
+        "packages/impress-compat/src/**/*.ts",
       ],
       exclude: [
         "packages/core/src/document/types.ts",
@@ -50,6 +55,7 @@ export default defineConfig({
           statements: 88,
           branches: 72,
         },
+        "packages/impress-compat/src/**": { statements: 90, branches: 82 },
       },
     },
   },

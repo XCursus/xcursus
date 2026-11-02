@@ -8,6 +8,12 @@ export type {
   HtmlExportRequest,
   HtmlExportResult,
 } from "./components/ExportPanel.js";
+export type {
+  ImpressImporter,
+  ImpressImportRequest,
+  ImpressImportResult,
+  ImpressImportDiagnostic,
+} from "./components/ImportPanel.js";
 export { EditorStore } from "./store/index.js";
 export type { EditorSession, MapCamera } from "./store/index.js";
 export {

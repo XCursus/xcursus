@@ -5,3 +5,4 @@ packages/core/src/document/validator.js
 packages/plugins/src/katex.css
 playwright-report
 test-results
+packages/impress-compat/test/fixtures/upstream

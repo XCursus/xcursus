@@ -244,6 +244,9 @@ importers:
       '@xcursus/editor':
         specifier: workspace:*
         version: link:../../packages/editor
+      '@xcursus/impress-compat':
+        specifier: workspace:*
+        version: link:../../packages/impress-compat
       '@xcursus/player':
         specifier: workspace:*
         version: link:../../packages/player
@@ -262,6 +265,9 @@ importers:
       '@xcursus/core':
         specifier: workspace:*
         version: link:../core
+      '@xcursus/impress-compat':
+        specifier: workspace:*
+        version: link:../impress-compat
       '@xcursus/player':
         specifier: workspace:*
         version: link:../player
@@ -302,6 +308,18 @@ importers:
       react-dom:
         specifier: 19.3.1
         version: 19.3.1(react@19.3.1)
+
+  packages/impress-compat:
+    dependencies:
+      '@xcursus/core':
+        specifier: workspace:*
+        version: link:../core
+      gl-matrix:
+        specifier: ^3.4.4
+        version: 3.4.4
+      parse5:
+        specifier: 8.0.1
+        version: 8.0.1
 
   packages/player:
     dependencies:

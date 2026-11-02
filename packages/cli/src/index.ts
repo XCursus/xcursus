@@ -8,10 +8,12 @@ import {
   validate,
 } from "./commands.js";
 import type { Report } from "./commands.js";
+import { convertImpress } from "./convert.js";
 import { CliError, EXIT } from "./io.js";
 import { profiles } from "./profile.js";
 export { CliError, EXIT } from "./io.js";
 export type { ExportManifest } from "./commands.js";
+export type { ConvertReport } from "./convert.js";
 
 export const help = `xcursus ${toolVersion} — validate, build and export XCursus projects
 
@@ -22,6 +24,8 @@ Usage:
   xcursus export html <project> --out <file.html> [--overwrite] [--allow-partial]
   xcursus export pdf <project> --itinerary <file.json> --out <file.pdf>
   xcursus export video <project> --itinerary <file.json> --fps 30 --out <file.webm>
+  xcursus convert impress <input.html> --out <project.json|file.xcursus>
+                  [--profile bundle|core] [--root <id>] [--overwrite]
 
 <project> is a project JSON (assets resolved inside its directory), a
 .xcursus archive or a legacy .spatialdeck archive (read only). Documents of
@@ -31,6 +35,9 @@ archive. Exports are strict: content outside the format profile
 fails with exit 1; --allow-partial writes placeholders and a manifest with
 status "partial". Every output gets a manifest (<out>.manifest.json, or
 export-manifest.json inside a build). Private notes are never exported.
+convert impress parses an impress.js HTML file without running it and writes
+a candidate project with its local assets plus <out>.report.json listing
+everything not carried over; review the candidate before use.
 
 Options:
   --out <path>        output file or directory (refused if it exists)
@@ -43,6 +50,10 @@ Options:
   --lang en|it        player interface texts (default from metadata.language)
   --json              machine-readable validation report
   --frames <dir>      video: also copy the captured PNG frames into an empty directory
+  --profile <p>       convert: "bundle" (js/impress.js with its plugins, default)
+                      or "core" (src/impress.js alone); they read omitted
+                      coordinates differently
+  --root <id>         convert: ID of the impress.js root element (default impress)
   -h, --help          this help;  -v, --version  tool version
 
 Profiles:
@@ -64,7 +75,15 @@ interface Parsed {
   positional: string[];
   flags: Map<string, string | true>;
 }
-const valued = new Set(["--out", "--itinerary", "--fps", "--lang", "--frames"]);
+const valued = new Set([
+  "--out",
+  "--itinerary",
+  "--fps",
+  "--lang",
+  "--frames",
+  "--profile",
+  "--root",
+]);
 const switches = new Set([
   "--overwrite",
   "--allow-partial",
@@ -301,6 +320,32 @@ export async function run(argv: string[], io: Io): Promise<number> {
           EXIT.data,
           `Unknown export format: ${format ?? "(none)"}. Use html, pdf or video.`,
         );
+      }
+      case "convert": {
+        const [from, ...args] = rest;
+        if (from !== "impress")
+          throw new CliError(
+            EXIT.data,
+            `Unknown conversion: ${from ?? "(none)"}. Use convert impress.`,
+          );
+        only(p, ["--out", "--overwrite", "--profile", "--root"]);
+        const profile = text(p, "--profile");
+        if (profile !== undefined && profile !== "bundle" && profile !== "core")
+          throw new CliError(EXIT.data, "--profile must be bundle or core");
+        if (args.length !== 1)
+          throw new CliError(EXIT.data, "Expected exactly one <input.html>");
+        const rootId = text(p, "--root");
+        await convertImpress(
+          args[0]!,
+          {
+            out: required(p, "--out"),
+            overwrite: p.flags.has("--overwrite"),
+            ...(profile ? { profile: profile as "bundle" | "core" } : {}),
+            ...(rootId ? { rootId } : {}),
+          },
+          io,
+        );
+        return EXIT.ok;
       }
       default:
         throw new CliError(

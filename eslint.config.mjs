@@ -9,6 +9,8 @@ export default ts.config(
       "**/validator.js",
       "test-results/**",
       "playwright-report/**",
+      // Unmodified upstream impress.js files, test data only.
+      "packages/impress-compat/test/fixtures/upstream/**",
     ],
   },
   {

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Spaces between ideas</title>
+    <link rel="stylesheet" href="css/deck.css" />
+    <style>
+      .step {
+        width: 900px;
+        font-family: Georgia, serif;
+      }
+      .step:not(.active) {
+        opacity: 0.3;
+      }
+    </style>
+  </head>
+  <body class="impress-not-supported">
+    <div class="fallback-message">
+      <p>This presentation needs a browser that supports CSS 3D transforms.</p>
+    </div>
+    <div
+      id="impress"
+      data-width="1280"
+      data-height="720"
+      data-transition-duration="800"
+    >
+      <div id="welcome" class="step">
+        <h1>Spaces between ideas</h1>
+        <p>An impress.js presentation written to test the XCursus importer.</p>
+        <div class="notes">
+          Introduce the idea of a canvas larger than the screen.
+        </div>
+      </div>
+      <div id="beside" class="step" data-x="1400" data-rotate="15">
+        <h2>Beside</h2>
+        <p>Steps are placed in a plane, <em>left to right</em>.</p>
+        <img src="images/ring.png" alt="A blue ring on a light background" />
+      </div>
+      <div
+        id="below"
+        class="step"
+        data-x="1400"
+        data-y="1100"
+        data-scale="2"
+        data-transition-duration="1200"
+      >
+        <h2>Larger</h2>
+        <p>
+          A scale of two makes this step twice as large; the camera moves back.
+        </p>
+        <ul>
+          <li>Position</li>
+          <li class="substep">Rotation</li>
+          <li class="substep">Scale</li>
+        </ul>
+      </div>
+      <div
+        id="depth"
+        class="step"
+        data-x="0"
+        data-y="1100"
+        data-z="-900"
+        data-rotate-x="-30"
+        data-rotate-y="20"
+        data-rotate-order="zyx"
+      >
+        <h2>Depth</h2>
+        <p>Rotations about three axes, applied in the order z, y, x.</p>
+        <img
+          src="images/axes.svg"
+          alt="Three coloured axes from a common origin"
+        />
+      </div>
+      <div
+        id="sources"
+        class="step"
+        data-x="-1400"
+        data-y="550"
+        data-rotate="-90"
+      >
+        <h2>Sources</h2>
+        <p>
+          Read the
+          <a href="https://impress.js.org/">impress.js documentation</a> and
+          <a href="#/welcome">start again</a>.
+        </p>
+        <img
+          src="https://example.org/remote.png"
+          alt="A remote picture that is not fetched"
+        />
+      </div>
+      <div
+        id="overview"
+        class="step"
+        data-x="300"
+        data-y="550"
+        data-z="0"
+        data-scale="5"
+      >
+        <p>Overview</p>
+      </div>
+    </div>
+    <script src="js/impress.js"></script>
+    <script>
+      impress().init();
+    </script>
+  </body>
+</html>

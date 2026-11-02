@@ -71,6 +71,43 @@ if (
   )
 )
   issues.push("cli: export runtime contains editor, React or dynamic code");
+// impress.js importer (1.0): core and an inert parser only; no DOM, network,
+// file system or dynamic code, and nothing in the player depends on it.
+const impress = JSON.parse(
+  await readFile("packages/impress-compat/package.json", "utf8"),
+);
+for (const dependency of Object.keys(impress.dependencies ?? {}))
+  if (!["@xcursus/core", "gl-matrix", "parse5"].includes(dependency))
+    issues.push(`impress-compat: ${dependency}`);
+for (const file of await walk("packages/impress-compat/src")) {
+  const source = await readFile(file, "utf8");
+  if (
+    /\b(?:eval|Function)\s*\(|\.innerHTML\s*=|\b(?:window|globalThis)\.|\bfetch\s*\(|XMLHttpRequest|WebSocket|localStorage|requestAnimationFrame|\bimport\s*\(|\bdocument\.(?:create|query|get|body|cookie|write)|from ['"](?:node:|react|@xcursus\/(?:player|plugins|editor|cli))/.test(
+      source,
+    )
+  )
+    issues.push(`${file}: importer boundary`);
+}
+for (const name of ["core", "player", "plugins", "editor"])
+  for (const file of await walk(`packages/${name}/src`))
+    if (
+      /(?:\bfrom|\bimport)\s*\(?\s*['"]@xcursus\/impress-compat/.test(
+        await readFile(file, "utf8"),
+      )
+    )
+      issues.push(`${file}: imports the impress.js importer`);
+if (
+  /new Function|eval\(|react|@xcursus\/(?:player|editor)/.test(
+    await readFile("packages/impress-compat/dist/index.js", "utf8"),
+  )
+)
+  issues.push("impress-compat: forbidden bundled code");
+if (
+  /parse5|impress-compat/.test(
+    await readFile("packages/cli/dist/runtime/xcursus-runtime.js", "utf8"),
+  )
+)
+  issues.push("cli: export runtime contains the importer");
 if (issues.length) throw new Error(issues.join("\n"));
 const editor = JSON.parse(
   await readFile("packages/editor/package.json", "utf8"),
@@ -86,7 +123,7 @@ for (const peer of ["react", "react-dom"])
   if (!editor.peerDependencies?.[peer])
     throw new Error(`Missing editor peer: ${peer}`);
 console.log(
-  "Boundaries: core/player isolated; CLI and export runtime without editor or React; editor registers optional plugins and React peers",
+  "Boundaries: core/player isolated; importer on core and parse5 only, never in player, editor or export runtime; CLI and export runtime without editor or React; editor registers optional plugins and React peers",
 );
 const plugins = JSON.parse(
   await readFile("packages/plugins/package.json", "utf8"),

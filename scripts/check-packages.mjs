@@ -21,7 +21,7 @@ const root = new URL("..", import.meta.url).pathname;
 const out = join(root, "test-results", "packages");
 const tarballs = join(out, "tarballs");
 const consumer = join(out, "consumer");
-const names = ["core", "player", "plugins", "editor", "cli"];
+const names = ["core", "impress-compat", "player", "plugins", "editor", "cli"];
 const run = (command, args, cwd, env = {}) =>
   execFileSync(command, args, {
     cwd,
@@ -105,6 +105,7 @@ for (const name of names) {
 // 2. Library dists import their third-party dependencies instead of copying them.
 const external = {
   core: ["gl-matrix", "ajv/dist/runtime/"],
+  "impress-compat": ["parse5", "gl-matrix", "@xcursus/core"],
   plugins: ["dompurify", "marked", "katex", "fflate"],
 };
 for (const [name, specifiers] of Object.entries(external)) {
@@ -194,6 +195,7 @@ await writeFile(
 const pinned = Object.fromEntries(
   [
     ["core", ["gl-matrix", "ajv"]],
+    ["impress-compat", ["parse5"]],
     ["plugins", ["dompurify", "marked", "katex", "fflate"]],
     ["cli", ["playwright-core", "pdf-lib"]],
     ["player", ["@fontsource/atkinson-hyperlegible"]],
@@ -316,6 +318,12 @@ import { standaloneHtml, verifyResources } from "@xcursus/cli/html";
 import type { ExportKit, StandaloneResult } from "@xcursus/cli/html";
 import type { HtmlExporter } from "@xcursus/editor";
 import { firstPassItinerary } from "@xcursus/core";
+import { importImpress, createImpressAdapter, IMPORT_CODES, IMPRESS_BASELINE } from "@xcursus/impress-compat";
+import type { ImportCandidate, ImportDiagnostic, ImpressImportOptions, ImpressAdapter } from "@xcursus/impress-compat";
+import type { ConvertReport } from "@xcursus/cli";
+export const impress = { importImpress, createImpressAdapter, IMPORT_CODES, IMPRESS_BASELINE };
+export type Impress = [ImportCandidate, ImportDiagnostic, ImpressImportOptions, ImpressAdapter, ConvertReport];
+export const adapter: ImpressAdapter = createImpressAdapter(createPlayer(), emptyProject());
 export const surface = { validateDocument, planCapture, sampleCapture, publicDocument, firstPassItinerary, createPlayer, italianMessages, defaultMessages, createBuiltinRegistry, lazyRenderer, writeArchive, PluginHost, samplePlugin, Studio, EditorStore, emptyProject, RecoveryRepository, run, EXIT, standaloneHtml, verifyResources };
 export type Surface = [CapturePlan, ProjectDocument, Itinerary, Player, PlayerOptions, ContentRenderer, StudioProps, DocumentEdit, ExportManifest, ExportKit, StandaloneResult, HtmlExporter];
 const options: PlayerOptions = { messages: italianMessages, controls: false };
@@ -356,6 +364,19 @@ run(bin("vite"), ["build", "--logLevel", "error"], consumer);
 check(
   "consumer: CLI from tarball runs",
   run(bin("xcursus"), ["--version"], consumer).trim() === manifests.cli.version,
+);
+// The importer from its tarball, in Node: parse5 resolved as a dependency.
+await writeFile(
+  join(consumer, "import.mjs"),
+  `import { importImpress } from "@xcursus/impress-compat";
+const r = importImpress('<!doctype html><div id="impress"><div class="step" data-x="5" data-rotate="90"><h1>Hi</h1></div></div>', { profile: "core" });
+console.log(JSON.stringify(r.ok && { scenes: r.value.document.scenes.length, rotation: r.value.document.scenes[0].rotation, schema: r.value.document.schemaVersion }));
+`,
+);
+check(
+  "consumer: impress importer from tarball runs",
+  run("node", ["import.mjs"], consumer).trim() ===
+    JSON.stringify({ scenes: 1, rotation: [0, 0, 90], schema: "1.3.0" }),
 );
 
 // 4. Budgets measured on the built consumers (gzip level 9).
@@ -424,9 +445,28 @@ const minimalCode = (
 ).join("\n");
 check(
   "minimal consumer: no React, editor or rich renderers",
-  !/react-dom|react\/jsx|__SECRET_INTERNALS|DOMPurify|katex|marked|fflate/i.test(
+  !/react-dom|react\/jsx|__SECRET_INTERNALS|DOMPurify|katex|marked|fflate|parse5|impress-compat/i.test(
     minimalCode,
   ),
+);
+// Threshold of the realistic consumer (1.0): the initial chunk within the
+// minimal budget, every lazy renderer (KaTeX, marked, DOMPurify, media)
+// within twice that, CSS within the minimal CSS budget. Measured 0.6 and 1.0
+// candidate: about 66 KiB initial and 170 KiB in total.
+check(
+  "realistic consumer: initial JS <= 100 KiB gzip",
+  initial.jsGzip <= 102400,
+  initial.jsGzip,
+);
+check(
+  "realistic consumer: JS with every lazy renderer <= 200 KiB gzip",
+  full.jsGzip <= 204800,
+  full.jsGzip,
+);
+check(
+  "realistic consumer: CSS <= 20 KiB gzip",
+  full.cssGzip <= 20480,
+  full.cssGzip,
 );
 check(
   "realistic consumer: rich and media renderers are lazy chunks",

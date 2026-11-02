@@ -145,6 +145,10 @@ export default defineConfig({
         replacement: source("../../packages/core/src/index.ts"),
       },
       {
+        find: /^@xcursus\/impress-compat$/,
+        replacement: source("../../packages/impress-compat/src/index.ts"),
+      },
+      {
         find: "@xcursus/player/presenter",
         replacement: source("../../packages/player/src/presenter.ts"),
       },

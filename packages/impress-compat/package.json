@@ -1,0 +1,52 @@
+{
+  "name": "@xcursus/impress-compat",
+  "version": "0.6.0",
+  "description": "Essential impress.js import for XCursus: inert parsing of an impress.js HTML presentation into a validated candidate project with explicit diagnostics. No script is executed and nothing is fetched.",
+  "license": "GPL-3.0-or-later",
+  "author": "Francesco Vitucci",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/XCursus/xcursus.git",
+    "directory": "packages/impress-compat"
+  },
+  "homepage": "https://github.com/XCursus/xcursus/tree/main/packages/impress-compat#readme",
+  "bugs": {
+    "url": "https://github.com/XCursus/xcursus/issues"
+  },
+  "keywords": [
+    "xcursus",
+    "presentation",
+    "impress",
+    "import",
+    "converter"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "prepack": "node ../../scripts/package-license.mjs"
+  },
+  "dependencies": {
+    "@xcursus/core": "workspace:*",
+    "gl-matrix": "^3.4.4",
+    "parse5": "8.0.1"
+  }
+}
