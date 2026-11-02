@@ -36,8 +36,20 @@ export interface PluginInspector {
   edit(payload: JsonValue, field: string, value: string): JsonValue;
   fields: readonly string[];
 }
+/**
+ * Whether remote content can be reached, asked each time a block renders.
+ * `navigator.onLine === false` reliably means offline, but `true` only means
+ * a network interface is up: a kiosk, a captive portal or a file opened from
+ * disk under a CSP without connections still cannot reach anything. Hosts
+ * that know better pass their own signal; the default is `navigator.onLine`.
+ */
+export type NetworkSignal = () => boolean;
+export interface PluginHostOptions {
+  online?: NetworkSignal;
+}
 /** Installed JS is trusted host code, not a sandbox. No URL or module field is read from a project. */
 export class PluginHost {
+  constructor(private readonly options: PluginHostOptions = {}) {}
   private plugins = new Map<string, PluginDefinition>();
   private unregister: (() => void) | undefined;
   private live = new Set<{ id: string; clear: () => void }>();
@@ -130,10 +142,10 @@ export class PluginHost {
         host.setAttribute("role", "status");
         return;
       }
-      if (
-        !plugin.descriptor.capabilities.offline &&
-        !host.ownerDocument.defaultView!.navigator.onLine
-      ) {
+      const online =
+        this.options.online ??
+        (() => host.ownerDocument.defaultView!.navigator.onLine);
+      if (!plugin.descriptor.capabilities.offline && !online()) {
         clear();
         identity = "";
         placeholder(context, messages.pluginOffline);

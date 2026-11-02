@@ -95,6 +95,15 @@ describe("renderers on demand (0.6)", () => {
     // Positioning styles exist as CSSOM properties, never as parsed markup.
     expect(host.querySelector(".katex-html")).not.toBeNull();
     expect(host.querySelector("math")).not.toBeNull();
+    // A named formula is a math region (a generic element may not carry aria-label).
+    const block = context("latex").block;
+    if (block.type === "latex" && block.data.alt) {
+      const named = host.hasAttribute("aria-label")
+        ? host
+        : host.querySelector("[aria-label]");
+      expect(named?.getAttribute("role")).toBe("math");
+      expect(named?.getAttribute("aria-label")).toBe(block.data.alt);
+    }
     mount.destroy();
   });
   it("the demo badge is not a builtin; hosts approve it explicitly", () => {

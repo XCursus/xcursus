@@ -52,7 +52,11 @@ export function richRenderer(): ContentRenderer {
           displayMode: b.data.display,
           strict: "error",
         });
-        if (b.data.alt) host.setAttribute("aria-label", b.data.alt);
+        // A generic element cannot carry a name: the formula is a math region.
+        if (b.data.alt) {
+          host.setAttribute("role", "math");
+          host.setAttribute("aria-label", b.data.alt);
+        }
       } catch {
         const messages = context.messages ?? defaultMessages;
         host.textContent = messages.formulaInvalid(b.data.alt || b.data.source);

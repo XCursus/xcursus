@@ -8,7 +8,7 @@ import type { Block } from "@xcursus/core";
 import { registerNavigation } from "./navigation.js";
 import type { EmbedPolicy } from "./navigation.js";
 import { PluginHost } from "./sdk/index.js";
-import type { PluginDefinition } from "./sdk/index.js";
+import type { NetworkSignal, PluginDefinition } from "./sdk/index.js";
 
 /**
  * A renderer whose module is imported the first time one of its blocks is
@@ -91,6 +91,8 @@ export function lazyRenderer(
 export interface BuiltinOptions {
   /** Embed origins approved by the host; none by default. */
   embed?: EmbedPolicy;
+  /** Network reachability for plugins and embeds (see `NetworkSignal`); `navigator.onLine` by default. */
+  online?: NetworkSignal;
   /** Host-approved plugins. The demo badge is not a production builtin: pass `samplePlugin()` explicitly. */
   plugins?: readonly PluginDefinition[];
   /** Factories used instead of the builtin renderer of a type (export profiles, tests). */
@@ -103,7 +105,7 @@ export interface BuiltinOptions {
  */
 export function createBuiltinRegistry(options: BuiltinOptions = {}) {
   const registry = new RendererRegistry(),
-    plugins = new PluginHost();
+    plugins = new PluginHost(options.online ? { online: options.online } : {});
   const replace = options.replace ?? {};
   for (const [type, factory] of Object.entries(replace))
     if (factory) registry.register(type as Block["type"], factory);
@@ -119,7 +121,12 @@ export function createBuiltinRegistry(options: BuiltinOptions = {}) {
   for (const type of ["image", "audio", "video"] as const)
     if (free(type)) registry.register(type, media);
   const navigation = new RendererRegistry();
-  registerNavigation(navigation, options.embed);
+  registerNavigation(navigation, {
+    allowedOrigins: options.embed?.allowedOrigins ?? [],
+    ...(options.embed?.online || options.online
+      ? { online: options.embed?.online ?? options.online! }
+      : {}),
+  });
   for (const type of ["link", "embed"] as const)
     if (free(type)) registry.register(type, navigation.get(type)!);
   if (free("plugin")) {

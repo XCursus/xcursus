@@ -4,8 +4,11 @@ import type {
   ContentRenderer,
   RendererRegistry,
 } from "@xcursus/player";
+import type { NetworkSignal } from "./sdk/index.js";
 export interface EmbedPolicy {
   allowedOrigins: readonly string[];
+  /** Reachability of the origins, checked on consent; `navigator.onLine` by default. */
+  online?: NetworkSignal;
 }
 export function registerNavigation(
   registry: RendererRegistry,
@@ -69,7 +72,10 @@ export function registerNavigation(
         button.lang = messages.lang;
         button.textContent = messages.embedConsent(b.data.title);
         button.onclick = () => {
-          if (!host.ownerDocument.defaultView!.navigator.onLine) {
+          const online =
+            policy.online ??
+            (() => host.ownerDocument.defaultView!.navigator.onLine);
+          if (!online()) {
             status.textContent = messages.embedOffline;
             return;
           }

@@ -229,6 +229,41 @@ describe("rich, navigation and plugin placeholders", () => {
       "Allow embed:",
     );
   });
+  it("a host network signal overrides navigator.onLine for plugins and embeds", () => {
+    expect(navigator.onLine).toBe(true);
+    // A plugin without the offline capability, under a host that knows it is offline.
+    const plugin = samplePlugin();
+    plugin.descriptor.id = "org.test.online";
+    plugin.descriptor.capabilities = { offline: false, capture: false };
+    const block = blockOf("plugin");
+    if (block.type === "plugin") block.data.pluginId = "org.test.online";
+    for (const [online, offline] of [
+      [() => false, true],
+      [() => true, false],
+    ] as const) {
+      const registry = new RendererRegistry(),
+        host = new PluginHost({ online });
+      host.register(plugin);
+      host.attach(registry);
+      const view = mount(registry, block);
+      expect(
+        view.host.textContent === messages.pluginOffline,
+        String(offline),
+      ).toBe(offline);
+      host.destroy();
+    }
+    const registry = new RendererRegistry();
+    registerNavigation(registry, {
+      allowedOrigins: ["https://example.org"],
+      online: () => false,
+    });
+    const embed = blockOf("embed");
+    if (embed.type === "embed") embed.data.url = "https://example.org/page";
+    const view = mount(registry, embed);
+    view.host.querySelector("button")!.click();
+    expect(view.host.querySelector("iframe")).toBeNull();
+    expect(view.host.textContent).toContain(messages.embedOffline);
+  });
   it("localizes missing plugin placeholders", () => {
     const registry = new RendererRegistry(),
       host = new PluginHost();
