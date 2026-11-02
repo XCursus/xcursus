@@ -493,13 +493,19 @@ async function prepareCapture(
   report: Report,
 ): Promise<CaptureInput> {
   const project = await loadProject(input);
-  const analysis = analyze(project.document, project.resources, format);
   const itinerary = await readItinerary(itineraryFile);
   const plan = planCapture(project.document, itinerary, {
     reducedMotion: options.reducedMotion,
   });
   if (!plan.ok)
     throw new CliError(EXIT.data, "Invalid itinerary", plan.diagnostics);
+  // Only the visited scenes are the subject of a page or a frame.
+  const analysis = analyze(
+    project.document,
+    project.resources,
+    format,
+    new Set(plan.value.visits.map((v) => v.sceneId)),
+  );
   // The capture runtime shows animated images as their first frame.
   const images = new Set(
     project.document.scenes.flatMap((s) =>

@@ -387,6 +387,46 @@ test("standalone HTML from the packaged CLI opens from file:// offline, under it
   await expect(
     page.locator('.xc-scene[data-scene-id="context"]'),
   ).toHaveAttribute("data-active", "true");
+  // Without a keyboard: on-screen buttons and a touch swipe (1.0).
+  const nav = page.getByRole("navigation", { name: "Presentation navigation" });
+  await nav.getByRole("button", { name: "Previous" }).click();
+  await expect(page.locator(".xc-live")).not.toHaveText(
+    "Flow scene with Markdown",
+  );
+  await expect(nav.getByRole("button", { name: "Previous" })).toBeDisabled();
+  await nav.getByRole("button", { name: "Next" }).click();
+  await expect(page.locator(".xc-live")).toHaveText("Flow scene with Markdown");
+  const swipe = async (from: number, to: number) => {
+    for (const [type, x] of [
+      ["pointerdown", from],
+      ["pointerup", to],
+    ] as const)
+      await page.locator("#xcursus-stage").dispatchEvent(type, {
+        pointerType: "touch",
+        pointerId: 7,
+        isPrimary: true,
+        clientX: x,
+        clientY: 400,
+        bubbles: true,
+      });
+  };
+  await swipe(900, 400);
+  await expect(
+    page.locator('.xc-scene[data-scene-id="detail"]'),
+  ).toHaveAttribute("data-active", "true");
+  // The fixture path loops from the last scene back to the first: Next stays enabled.
+  await expect(nav.getByRole("button", { name: "Next" })).toBeEnabled();
+  await swipe(400, 900);
+  await expect(
+    page.locator('.xc-scene[data-scene-id="context"]'),
+  ).toHaveAttribute("data-active", "true");
+  const targets = await nav.getByRole("button").evaluateAll((buttons) =>
+    buttons.map((b) => {
+      const box = b.getBoundingClientRect();
+      return Math.min(box.width, box.height);
+    }),
+  );
+  expect(Math.min(...targets)).toBeGreaterThanOrEqual(44);
   expect(await page.content()).not.toContain("PRIVATE-NOTE");
   expect(network()).toEqual([]);
   expect(await page.evaluate(() => window.cspViolations)).toEqual([]);

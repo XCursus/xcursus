@@ -160,15 +160,23 @@ export function referencesRemote(
   return false;
 }
 
+/**
+ * Classifies every block for the format. For PDF and video, `visited` is the
+ * set of scenes the itinerary visits: content of other scenes, which can at
+ * most appear in the background of a frame, never blocks a strict export; it
+ * becomes a placeholder and a warning (`OUTSIDE_ITINERARY`).
+ */
 export function analyze(
   document: ProjectDocument,
   resources: LoadedResource[],
   format: Format,
+  visited?: ReadonlySet<string>,
 ): Analysis {
   const blocking: Diagnostic[] = [],
     warnings: Diagnostic[] = [],
     unsupported: Unsupported[] = [];
   const placeholders: Analysis["placeholders"] = {};
+  let outside = false;
   const block = (
     code: string,
     message: string,
@@ -176,14 +184,31 @@ export function analyze(
     entry: Unsupported,
     placeholder: "excluded" | "poster" = "excluded",
   ) => {
-    blocking.push(diagnostic(code, message, pointer));
-    unsupported.push(entry);
+    unsupported.push(
+      outside
+        ? {
+            ...entry,
+            reason: `${entry.reason}; scene not visited by the itinerary`,
+          }
+        : entry,
+    );
     placeholders[entry.type] = placeholder;
+    if (!outside) blocking.push(diagnostic(code, message, pointer));
+    else
+      warnings.push({
+        ...diagnostic(
+          "OUTSIDE_ITINERARY",
+          `${message}; the scene is not visited by the itinerary, so the block is a placeholder (${code})`,
+          pointer,
+        ),
+        severity: "warning",
+      });
   };
   const capture = format === "pdf" || format === "video";
   let links = false;
   for (const [s, scene] of document.scenes.entries())
     for (const [b, item] of scene.blocks.entries()) {
+      outside = capture && !!visited && !visited.has(scene.id);
       const pointer = `/scenes/${s}/blocks/${b}`;
       const entry = (reason: string): Unsupported => ({
         sceneId: scene.id,
@@ -257,13 +282,13 @@ export function analyze(
         case "html":
         case "svg": {
           if (referencesRemote(item.type, item.data.source)) {
-            blocking.push(
-              diagnostic(
-                "REMOTE_RESOURCE",
-                "Markup references a remote resource (font, stylesheet, image or frame); it is removed by the sanitizer and cannot be exported offline",
-                `${pointer}/data/source`,
-              ),
+            const finding = diagnostic(
+              "REMOTE_RESOURCE",
+              "Markup references a remote resource (font, stylesheet, image or frame); it is removed by the sanitizer and cannot be exported offline",
+              `${pointer}/data/source`,
             );
+            if (outside) warnings.push({ ...finding, severity: "warning" });
+            else blocking.push(finding);
             // The block is kept; only the remote part is missing from the output.
             unsupported.push(entry("remote resource removed by the sanitizer"));
           }
@@ -287,7 +312,8 @@ export function analyze(
     );
   // Assets the output really renders; problems elsewhere are warnings.
   const used = new Set<string>();
-  for (const scene of document.scenes)
+  for (const scene of document.scenes) {
+    if (capture && visited && !visited.has(scene.id)) continue;
     for (const b of scene.blocks) {
       if (b.type === "image") used.add(b.data.assetId);
       if (b.type === "video" && format === "pdf" && b.data.posterAssetId)
@@ -299,6 +325,7 @@ export function analyze(
         if (b.data.captionsAssetId) used.add(b.data.captionsAssetId);
       }
     }
+  }
   for (const resource of resources)
     if (resource.status !== "verified" && used.has(resource.id))
       blocking.push(resource.diagnostic!);

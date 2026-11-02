@@ -19,7 +19,7 @@ import { standaloneHtml, verifyResources } from "../src/html.js";
 import type { ExportKit } from "../src/html.js";
 import { run } from "../src/index.js";
 import { loadProject } from "../src/io.js";
-import { referencesRemote } from "../src/profile.js";
+import { analyze, referencesRemote } from "../src/profile.js";
 
 const root = new URL("../../../examples/", import.meta.url).pathname;
 const dirs: string[] = [];
@@ -447,6 +447,76 @@ describe("profiles and capture inputs (before any browser starts)", () => {
     );
     expect(r.code).toBe(1);
     expect(r.err).toContain("MEDIA_PROFILE");
+  });
+  it("for PDF and video, content of scenes the itinerary skips is a placeholder, not a refusal", async () => {
+    const { project } = await fixture((d) => {
+      // The flow scene; the itinerary below visits only the two canvas scenes.
+      d.scenes[1]!.blocks.push(
+        {
+          id: "web",
+          type: "embed",
+          data: { url: "https://example.org/", title: "Remote" },
+        },
+        {
+          id: "badge",
+          type: "plugin",
+          data: {
+            pluginId: "org.xcursus.badge",
+            apiVersion: "1.0.0",
+            dataVersion: "1.0.0",
+            payload: { label: "x" },
+          },
+        },
+        {
+          id: "font",
+          type: "html",
+          data: {
+            source: '<link rel="stylesheet" href="https://f.example/x.css">',
+          },
+        },
+      );
+    });
+    const loaded = await loadProject(project);
+    const doc = loaded.document;
+    const third = doc.scenes[1]!.id;
+    const visited = new Set([doc.scenes[0]!.id, doc.scenes[2]!.id]);
+    for (const format of ["pdf", "video"] as const) {
+      const scoped = analyze(doc, loaded.resources, format, visited);
+      expect(scoped.blocking, format).toEqual([]);
+      expect(
+        scoped.warnings.filter((w) => w.code === "OUTSIDE_ITINERARY"),
+      ).toHaveLength(2);
+      expect(scoped.warnings.map((w) => w.code)).toContain("REMOTE_RESOURCE");
+      expect(scoped.placeholders).toMatchObject({
+        embed: "excluded",
+        plugin: "excluded",
+      });
+      expect(
+        scoped.unsupported
+          .filter((u) => u.sceneId === third)
+          .map((u) => u.reason),
+      ).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("not visited by the itinerary"),
+        ]),
+      );
+      // Visited, the same content still refuses a strict export.
+      const all = analyze(
+        doc,
+        loaded.resources,
+        format,
+        new Set([...visited, third]),
+      );
+      expect(all.blocking.map((d) => d.code).sort()).toEqual([
+        "EMBED_REMOTE",
+        "PLUGIN_UNAVAILABLE",
+        "REMOTE_RESOURCE",
+      ]);
+    }
+    // The HTML and the build present every scene: no itinerary, no exception.
+    expect(
+      analyze(doc, loaded.resources, "html", visited).blocking,
+    ).toHaveLength(3);
   });
   it("validates the itinerary against the project before capture", async () => {
     const { dir, project } = await fixture();

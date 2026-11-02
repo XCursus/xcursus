@@ -106,6 +106,95 @@ async function freezeAnimations(
   }
 }
 
+const navigationTexts = {
+  en: {
+    label: "Presentation navigation",
+    previous: "Previous",
+    next: "Next",
+    enter: "Full screen",
+    exit: "Exit full screen",
+  },
+  it: {
+    label: "Navigazione della presentazione",
+    previous: "Precedente",
+    next: "Successiva",
+    enter: "Schermo intero",
+    exit: "Esci da schermo intero",
+  },
+};
+/** Interactive targets keep their own pointer gestures. */
+const interactive =
+  "a,button,input,select,textarea,summary,video,audio,iframe,[contenteditable],.xc-access,.xc-choices,.xc-outline";
+
+/**
+ * On-screen navigation of the presented HTML: previous and next follow the
+ * player's own rules (history, choices), a horizontal swipe does the same on
+ * touch screens, and full screen is offered where the browser allows it.
+ * Without a keyboard every visit stays reachable.
+ */
+function navigation(
+  player: Player,
+  project: ProjectDocument,
+  stage: HTMLElement,
+  lang: "en" | "it",
+) {
+  const t = navigationTexts[lang];
+  const nav = document.createElement("nav");
+  nav.className = "xc-export-nav";
+  nav.lang = lang;
+  nav.setAttribute("aria-label", t.label);
+  const button = (text: string, action: () => void) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = text;
+    b.addEventListener("click", action);
+    nav.append(b);
+    return b;
+  };
+  const previous = button(t.previous, () => void player.prev());
+  const next = button(t.next, () => void player.next());
+  const update = () => {
+    const state = player.getState();
+    const path = project.paths.find((p) => p.id === state.pathId);
+    previous.disabled = state.history.length < 2;
+    next.disabled = !path?.edges.some((e) => e.from === state.nodeId);
+  };
+  player.on("scenechange", update);
+  player.on("documentchange", update);
+  update();
+  if (document.fullscreenEnabled) {
+    const full = button(t.enter, () => {
+      void (
+        document.fullscreenElement
+          ? document.exitFullscreen()
+          : document.documentElement.requestFullscreen()
+      ).catch(() => undefined);
+    });
+    document.addEventListener("fullscreenchange", () => {
+      full.textContent = document.fullscreenElement ? t.exit : t.enter;
+    });
+  }
+  document.body.append(nav);
+  // Touch and pen swipes; a mouse drag keeps selecting text.
+  let start: { x: number; y: number; id: number } | undefined;
+  stage.addEventListener("pointerdown", (event) => {
+    start =
+      event.pointerType !== "mouse" &&
+      !(event.target as Element).closest(interactive)
+        ? { x: event.clientX, y: event.clientY, id: event.pointerId }
+        : undefined;
+  });
+  stage.addEventListener("pointerup", (event) => {
+    if (!start || event.pointerId !== start.id) return;
+    const dx = event.clientX - start.x,
+      dy = event.clientY - start.y;
+    start = undefined;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < 1.5 * Math.abs(dy)) return;
+    void (dx < 0 ? player.next() : player.prev());
+  });
+  stage.addEventListener("pointercancel", () => (start = undefined));
+}
+
 async function start() {
   const config = read("xcursus-config") as RuntimeConfig;
   const stage = document.getElementById("xcursus-stage")!;
@@ -162,6 +251,8 @@ async function start() {
   });
   const mounted = await player.mount(stage, project);
   if (!mounted.ok) throw new Error(mounted.diagnostics[0]!.message);
+  if (!capture)
+    navigation(player, project, stage, config.messages === "it" ? "it" : "en");
   if (capture)
     Object.assign(window, {
       xcursusCapture: {
