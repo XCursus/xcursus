@@ -1,6 +1,6 @@
 # Roadmap
 
-XCursus is at **0.6**, a pre-release. Releases 0.1 to 0.6 were published under the name SpatialDeck; the product, packages and native file format were renamed to XCursus after 0.6 (see [FILE_FORMAT](FILE_FORMAT.md#legacy-spatialdeck-archives) for compatibility). The next milestone is **1.0 Stabilization**.
+XCursus is a **1.0 candidate**, still a pre-release: the work of 1.0 Stabilization is implemented and tested, and 1.0 is declared only when the [release blockers](RELEASE_BLOCKERS.md) are closed. Releases 0.1 to 0.6 were published under the name SpatialDeck; the product, packages and native file format were renamed to XCursus after 0.6 (see [FILE_FORMAT](FILE_FORMAT.md#legacy-spatialdeck-archives) for compatibility). Changes are listed in the [changelog](../CHANGELOG.md).
 
 ## Released milestones
 
@@ -18,36 +18,40 @@ After 0.6 and before the rename: a redesigned dark Studio interface (27 October)
 
 ## 1.0 Stabilization
 
-Scope:
+Status on 2 November 2026: **candidate with open blockers**. Schema 1.3.0 is unchanged.
 
-- **impress.js import**: `xcursus convert impress` producing a candidate project and a report, with the mapping and diagnostics described in the [specification §9](SPECIFICATION.md#9-impressjs-import-planned).
-- **Hardening**: fuzzing of the ZIP parser and of the sanitization policies; review of the offline signal used by plugins; the known issues below.
-- **Browser matrix**: real Chrome, Edge and Safari according to the support policy, touch devices and a screen reader, recorded with versions.
-- **Performance**: the budgets of the [specification §12](SPECIFICATION.md#12-tests-ci-and-budgets) measured on a controlled machine, and a justified threshold for the realistic consumer.
-- **Project documents**: CHANGELOG, CONTRIBUTING and SECURITY policy.
-- **Release candidate** with schema 1.3.0 unchanged unless a schema change is explicitly decided.
+| Scope             | State                                                                                                                                                                                                                                                             |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| impress.js import | Done: `@xcursus/impress-compat`, `xcursus convert impress`, Studio **Import impress.js** with review; mapping of impress.js 2.0.0 with `bundle` and `core` profiles; independent oracle and the upstream engine in three browsers ([IMPRESS](IMPRESS.md))         |
+| Hardening         | Done: seeded fuzzing of the ZIP reader and of the HTML and SVG policies; host-provided network signal for plugins and embeds; declared embed limits; the two P1 export defects fixed; axe on exported HTML; dependency audit (production: no known vulnerability) |
+| Browser matrix    | Partial: Chromium, Firefox and WebKit automated; installed Google Chrome 156 automated. Real Safari and Edge, the previous stable versions, touch devices and a screen reader are not verified ([blockers](RELEASE_BLOCKERS.md))                                  |
+| Performance       | Measured with `pnpm benchmark` in three engines on a local machine: every budget met with margin; the run on a controlled machine is open. Realistic-consumer threshold set                                                                                       |
+| Project documents | Done: [CHANGELOG](../CHANGELOG.md), [CONTRIBUTING](../CONTRIBUTING.md), [SECURITY](../SECURITY.md); the private reporting channel must be enabled on GitHub                                                                                                       |
+| Release candidate | Prepared in the repository at version 0.6.0 of the packages; no tag, publish or deploy                                                                                                                                                                            |
+
+Evaluated and deferred after 1.0 (no schema change needed, decision recorded):
+
+- **AVIF and FLAC assets**: decoded by every desktop target browser (Safari since 16.4 for AVIF); support needs signatures in the player verifier, Studio's file types, the importer and the export profiles, plus fixtures. Deferred to the backlog.
+- **MOV assets**: not supported. QuickTime is reliably played only by Safari; Firefox does not play it and Chrome depends on the codec inside.
+- **Node and pnpm ranges**: the published packages accept `node >=24`; the repository keeps exact pins (`engines`, `packageManager`, CI) so that installs, generated files and tests are reproducible. Widening the development pins is a backlog item.
 
 ### Exit criteria
 
 1.0 is declared only when every criterion is met with recorded evidence; otherwise a candidate is prepared with a documented list of blockers.
 
-- [ ] Player independent of editor and React; editor without competing math or rendering.
-- [ ] Historical fixtures of every schema version migrate without loss or rendering differences.
-- [ ] Canvas layout, theme and token styles verified in the player, Studio and every export; reading order and drag alternative tested.
-- [ ] Branch, loop, history and interruption navigation, hierarchies and keyframes verified.
-- [ ] Builtin content, sanitization and trust model documented and tested, including fuzzing.
-- [ ] JSON, archive and recovery verified with real files, quota errors and missing assets.
-- [ ] Embed, offline HTML, PDF and video produced and inspected, with accurate manifests.
-- [ ] Presenter with no notes in the audience view and with a pop-up fallback.
-- [ ] Essential impress.js import with mapping and warnings, without claims of full compatibility.
-- [ ] Browser matrix: Chromium, Firefox and WebKit automated; real Chrome, Edge and Safari, touch and screen reader checks recorded or listed as blockers.
-- [ ] Budgets measured with hardware, browser and build recorded.
-- [ ] Complete CI, installable packages, public types, licences and attributions, reproducible documentation.
-- [ ] No known unresolved P0 or P1 issue, data loss or security risk; backlog classified.
-
-### Before publishing packages
-
-The packages are `private` and unpublished. Publishing to npm requires confirming ownership of the `@xcursus` scope (the registry returned 404 for the scope and its packages on 1 November 2026, so ownership cannot be verified yet) and an explicit decision to publish.
+- [x] Player independent of editor and React; editor without competing math or rendering (`check:boundaries`, `check:packages`).
+- [x] Historical fixtures of every schema version migrate without loss or rendering differences.
+- [x] Canvas layout, theme and token styles verified in the player, Studio and every export; reading order and drag alternative tested.
+- [x] Branch, loop, history and interruption navigation, hierarchies and keyframes verified.
+- [x] Builtin content, sanitization and trust model documented and tested, including fuzzing.
+- [x] JSON, archive and recovery verified with real files, quota errors and missing assets.
+- [x] Embed, offline HTML, PDF and video produced and inspected, with accurate manifests.
+- [x] Presenter with no notes in the audience view and with a pop-up fallback.
+- [x] Essential impress.js import with mapping and warnings, without claims of full compatibility.
+- [ ] Browser matrix: Chromium, Firefox and WebKit automated and Chrome 156 run; **real Safari and Edge, previous stable versions, touch and screen reader checks are blockers**.
+- [ ] Budgets measured with hardware, browser and build recorded: **met on a local machine; controlled-machine run open**.
+- [ ] Complete CI, installable packages, public types, licences and attributions, reproducible documentation: **all in place; a green Linux CI run of the candidate needs a push**.
+- [ ] No known unresolved P0 or P1 issue, data loss or security risk; backlog classified: **one P1 open (Firefox painting), security reporting channel not enabled**.
 
 ## Known issues
 
@@ -55,8 +59,6 @@ Defects found by testing that are still open, by severity (P1 blocks an intended
 
 | Severity | Issue                                                                                                                                                                                                      |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P1       | The export profile applies to the whole document: content the itinerary never visits (an embed, a plugin, an audio block) still blocks a strict PDF or video.                                              |
-| P1       | Exported HTML and static builds have no on-screen previous/next buttons, tap or swipe navigation, or full-screen control; without a keyboard only the text view is usable.                                 |
 | P1       | Firefox does not paint child scenes inside a large rotated parent scene (observed with an 8400×5600 parent rotated 12° on X); hit-testing still finds them. Smaller or unrotated parents are not affected. |
 | P2       | In the PDF, scenes with a world rotation are rasterized even when the camera frames them head-on, so their text is neither selectable nor searchable and files grow large.                                 |
 | P2       | Pressing **Next** during a long camera track restarts it from its first keyframe; repeated presses lengthen the transition.                                                                                |
@@ -73,7 +75,8 @@ Planned improvements without a committed release:
 - **Sanitization for diagrams**: a reviewed extension of the SVG allowlist (font attributes, dash arrays, markers, opacity, `preserveAspectRatio`) and of table formatting in HTML.
 - **Structure**: block groups, scene templates or sections, a hierarchical scene list and a "fit to world" map control.
 - **Distribution**: approved plugins in the CLI, exporting a subset of a document, presenter tools in exported HTML, bundled fonts to make PDF and video identical across machines, faster video capture.
-- **Formats**: AVIF, FLAC and MOV assets; embeds that need scripts, isolated on a separate origin.
-- **Toolchain**: accept a range of Node and pnpm versions instead of exact pins.
+- **Formats**: AVIF and FLAC assets (evaluated for 1.0, see above); embeds that need scripts, isolated on a separate origin.
+- **impress.js import**: `data-rel-position="relative"`, goto-plugin branches as XCursus choices, substeps once progressive builds exist, Markdown steps of the extras.
+- **Toolchain**: accept a range of Node and pnpm versions instead of exact pins; move the ESLint toolchain past the `minimatch` advisory (development only).
 
 Out of scope for 1.0, as listed in the [specification](SPECIFICATION.md#non-goals-for-10): collaborative cloud editing, accounts, a WebGL renderer, full 3D gizmos and real-time audio sync.

@@ -1,6 +1,6 @@
 # CLI, export and presentation
 
-This guide covers how an XCursus project leaves the editor: the `xcursus` command line, the standalone offline HTML, the static web build, the PDF and the minimal WebM video of an explicit itinerary, the npm packages, the presenter view and the offline Studio shell. Every output is rendered by the same DOM/CSS 3D player; there is no second renderer. How these outputs are tested, and their known limits, is in [VERIFICATION](VERIFICATION.md#exports-and-cli).
+This guide covers how an XCursus project leaves the editor: the `xcursus` command line (including the impress.js import), the standalone offline HTML, the static web build, the PDF and the minimal WebM video of an explicit itinerary, the npm packages, the presenter view and the offline Studio shell. Every output is rendered by the same DOM/CSS 3D player; there is no second renderer. How these outputs are tested, and their known limits, is in [VERIFICATION](VERIFICATION.md#exports-and-cli).
 
 ## Running the CLI
 
@@ -16,6 +16,7 @@ pnpm xcursus export html examples/distribution-static/project.json --out deck.ht
 pnpm xcursus build examples/distribution-static/project.json --out site
 pnpm xcursus export pdf examples/distribution-static/project.json --itinerary examples/distribution-static/itinerary.json --out deck.pdf
 pnpm xcursus export video examples/distribution-static/project.json --itinerary examples/distribution-static/itinerary.json --fps 30 --out deck.webm
+pnpm xcursus convert impress examples/impress-import/deck.html --out deck.json --profile bundle
 ```
 
 `pnpm xcursus` runs `packages/cli/dist/cli.js`, so it needs `pnpm build` first. Installed from npm (`npm install --global @xcursus/cli`, or `npx @xcursus/cli …`) the binary is `xcursus`.
@@ -28,6 +29,7 @@ pnpm xcursus export video examples/distribution-static/project.json --itinerary 
 | `export html <project> --out <file>`                              | One self-contained HTML + `<file>.manifest.json`                                                 | Node                                                 |
 | `export pdf <project> --itinerary <file> --out <file>`            | One page per visit + manifest                                                                    | Chromium for Playwright 1.64.1                       |
 | `export video <project> --itinerary <file> --fps 30 --out <file>` | WebM without audio + manifest                                                                    | Chromium, `ffmpeg` and `ffprobe` with a WebM encoder |
+| `convert impress <input.html> --out <project.json\|file.xcursus>` | Candidate project with its local assets + `<out>.report.json`; see [IMPRESS](IMPRESS.md)         | Node                                                 |
 
 `<project>` is a project JSON, whose assets are resolved inside its own directory, a `.xcursus` archive or a legacy `.spatialdeck` archive saved by SpatialDeck, the former name of XCursus (read only, see [FILE_FORMAT](FILE_FORMAT.md#legacy-spatialdeck-archives)). Exit codes: **0** success (warnings allowed), **1** invalid project, itinerary or capability, **2** missing environment (Chromium, FFmpeg), **3** write or export failure. An existing output needs `--overwrite`; a build directory is replaced only if it holds a previous `export-manifest.json`. Files are written to a temporary sibling and renamed atomically; a failed export leaves no output. Tools run with an argument vector, never through a shell. Nothing is installed automatically: `npx playwright@1.64.1 install chromium` (or `pnpm exec playwright install chromium` here) and FFmpeg come from the user. `XCURSUS_FFMPEG` and `XCURSUS_FFPROBE` select specific binaries (the former `SPATIALDECK_FFMPEG` and `SPATIALDECK_FFPROBE` are still read as a fallback).
 
@@ -50,6 +52,8 @@ Options: `--allow-partial` (placeholders, status `partial`), `--reduced-motion` 
 ## Profiles
 
 Exports are **strict** by default. A blocking finding fails with exit 1 and writes nothing; `--allow-partial` replaces the content with a visible placeholder ("Content unavailable (type)") and records it in `warnings` and `unsupported`.
+
+For PDF and video the profile applies to the scenes the itinerary visits, which are the subject of the pages and frames. Content outside the profile in scenes the itinerary never visits (an embed, a plugin, an audio block in a skipped branch) does not refuse a strict export: it becomes the same placeholder, in case the scene appears in the background of a frame, and is listed in `warnings` (`OUTSIDE_ITINERARY`) and in `unsupported` with the reason "scene not visited by the itinerary". Missing assets of those scenes are warnings too. The HTML and the static build present every scene, so for them the whole document counts.
 
 | Content                                                                                                                                                                         | HTML / build                                                       | PDF                                          | Video                      |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------- | -------------------------- |
@@ -80,6 +84,8 @@ base-uri 'none'; form-action 'none'
 ```
 
 **KaTeX inline styles:** no `'unsafe-inline'` for styles. KaTeX formulas are built with `katex.render`, which creates DOM nodes and assigns its positioning styles through CSSOM properties; CSP governs parsed `style` attributes and `<style>` elements, not CSSOM, and the player already applies transforms and theme tokens through CSSOM. The previous `renderToString` + `innerHTML` sink is gone. Two KaTeX features set a `style` attribute on MathML nodes with `setAttribute` (`\pmb` and `\fcolorbox`); under this CSP those attributes are blocked and reported, with no visual effect because the MathML copy is visually hidden. They are not used by the fixtures.
+
+Navigation without a keyboard: the page shows **Previous** and **Next** buttons (44 px targets, disabled when there is no previous visit or no connection from the current scene), a **Full screen** button where the browser allows it, and a horizontal swipe on touch screens moves to the next or previous visit (a mouse drag keeps selecting text; links, buttons, media and the player controls keep their own gestures). The keyboard, the text view and the player controls work as before. The texts follow `--lang` (English or Italian). The static build has the same controls.
 
 Studio writes the same file: see [Export from Studio](#export-from-studio).
 
@@ -127,23 +133,24 @@ Only the static profile: text, Markdown, HTML, SVG, LaTeX, images, links as stat
 
 ## Packages
 
-| Package            | Contents                                                                            | Third-party code                                                                                                          |
-| ------------------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `@xcursus/core`    | ESM, types, JSON Schemas                                                            | imports `gl-matrix`, Ajv runtime helpers                                                                                  |
-| `@xcursus/player`  | ESM, types, `style.css`, `fonts.css` + woff2/OFL, `presenter` subpath, `iife` build | IIFE embeds core, gl-matrix, Ajv runtime: `dist/iife/THIRD_PARTY_NOTICES.txt`                                             |
-| `@xcursus/plugins` | ESM per entry, lazy rich/media chunks, `style.css` (KaTeX, woff2 files + licence)   | imports DOMPurify, marked, KaTeX, fflate                                                                                  |
-| `@xcursus/editor`  | ESM, types, `style.css`; React `^19.3.1` peers                                      | none                                                                                                                      |
-| `@xcursus/cli`     | Node ESM, `xcursus` bin, export runtime, browser-safe `html` subpath                | runtime embeds player, renderers, DOMPurify, marked, KaTeX, Ajv, gl-matrix, fonts: `dist/runtime/THIRD_PARTY_NOTICES.txt` |
+| Package                   | Contents                                                                            | Third-party code                                                                                                          |
+| ------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `@xcursus/core`           | ESM, types, JSON Schemas                                                            | imports `gl-matrix`, Ajv runtime helpers                                                                                  |
+| `@xcursus/player`         | ESM, types, `style.css`, `fonts.css` + woff2/OFL, `presenter` subpath, `iife` build | IIFE embeds core, gl-matrix, Ajv runtime: `dist/iife/THIRD_PARTY_NOTICES.txt`                                             |
+| `@xcursus/plugins`        | ESM per entry, lazy rich/media chunks, `style.css` (KaTeX, woff2 files + licence)   | imports DOMPurify, marked, KaTeX, fflate                                                                                  |
+| `@xcursus/editor`         | ESM, types, `style.css`; React `^19.3.1` peers                                      | none                                                                                                                      |
+| `@xcursus/cli`            | Node ESM, `xcursus` bin, export runtime, browser-safe `html` subpath                | runtime embeds player, renderers, DOMPurify, marked, KaTeX, Ajv, gl-matrix, fonts: `dist/runtime/THIRD_PARTY_NOTICES.txt` |
+| `@xcursus/impress-compat` | ESM, types; no DOM, network or file system                                          | imports parse5 (MIT, with entities BSD-2-Clause) and gl-matrix                                                            |
 
-The npm scope is `@xcursus`. Every manifest has `license: GPL-3.0-or-later`, description, repository, homepage, keywords, `sideEffects`, `engines` and a README; `pnpm pack` adds the repository `LICENSE`. Internal dependencies become the same version in the tarball. A build plugin fails if a library chunk contains a module from `node_modules`; IIFE builds generate their notice file from the bundled modules and fail on a missing or incompatible licence. The packages are published on npm. Scope ownership is settled: since 2 November 2026 the `xcursus` organization exists on npm, with the maintainer account `fv-c` as owner (`npm org ls xcursus`), and none of the five package names is taken. The manifests no longer carry `"private": true` and set `"publishConfig": {"access": "public"}` (scoped packages are private by default on npm); `check:packages` verifies both in every tarball. Publishing a release is an explicit maintainer step, never done by the build, the tests or CI. Use `pnpm publish`, not `npm publish`: pnpm turns the `workspace:*` dependencies into the release version and runs the `prepack` script that copies `LICENSE`. Publish in dependency order after `pnpm build` and `pnpm check:packages`, from a machine signed in with `npm login` (the account asks for a two-factor code on every write):
+The npm scope is `@xcursus`. Every manifest has `license: GPL-3.0-or-later`, description, repository, homepage, keywords, `sideEffects`, `engines` and a README; `pnpm pack` adds the repository `LICENSE`. Internal dependencies become the same version in the tarball. A build plugin fails if a library chunk contains a module from `node_modules`; IIFE builds generate their notice file from the bundled modules and fail on a missing or incompatible licence. The packages are published on npm. Scope ownership is settled: since 2 November 2026 the `xcursus` organization exists on npm, with the maintainer account `fv-c` as owner (`npm org ls xcursus`), and the five packages of 0.6 are published at 0.6.0. `@xcursus/impress-compat` is new in the 1.0 candidate and not published yet; `@xcursus/cli` depends on it, so it is published right after the core. The manifests no longer carry `"private": true` and set `"publishConfig": {"access": "public"}` (scoped packages are private by default on npm); `check:packages` verifies both in every tarball. Publishing a release is an explicit maintainer step, never done by the build, the tests or CI. Use `pnpm publish`, not `npm publish`: pnpm turns the `workspace:*` dependencies into the release version and runs the `prepack` script that copies `LICENSE`. Publish in dependency order after `pnpm build` and `pnpm check:packages`, from a machine signed in with `npm login` (the account asks for a two-factor code on every write):
 
 ```sh
-for p in core player plugins editor cli; do (cd packages/$p && pnpm publish); done
+for p in core impress-compat player plugins editor cli; do (cd packages/$p && pnpm publish); done
 ```
 
 Inside this repository the packages resolve as workspace packages; `pnpm pack` produces the same tarballs that are published.
 
-`pnpm check:packages` packs the five packages, installs the tarballs in `test-results/packages/consumer` (own pnpm workspace, packages from the local store when present and registry metadata only when missing, third-party runtime dependencies pinned to the repository lockfile versions, no source aliases), type-checks without `skipLibCheck`, builds a minimal and a realistic consumer and measures them; the E2E suite serves that consumer and runs the CLI installed from its tarball.
+`pnpm check:packages` packs the six packages, installs the tarballs in `test-results/packages/consumer` (own pnpm workspace, packages from the local store when present and registry metadata only when missing, third-party runtime dependencies pinned to the repository lockfile versions, no source aliases), type-checks without `skipLibCheck`, builds a minimal and a realistic consumer and measures them; the E2E suite serves that consumer and runs the CLI installed from its tarball.
 
 ## Presenter view (Studio)
 

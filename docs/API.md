@@ -1,16 +1,17 @@
 # API and integration
 
-XCursus is published as five ESM packages under the `@xcursus` scope. They are installed from npm (see [DISTRIBUTION](DISTRIBUTION.md#packages)); inside this repository they resolve as workspace packages.
+XCursus is published as ESM packages under the `@xcursus` scope (five released in 0.6; `@xcursus/impress-compat` is new in the 1.0 candidate). They are installed from npm (see [DISTRIBUTION](DISTRIBUTION.md#packages)); inside this repository they resolve as workspace packages.
 
-| Package            | Use it to                                                                                | Reference             |
-| ------------------ | ---------------------------------------------------------------------------------------- | --------------------- |
-| `@xcursus/core`    | Validate, migrate and serialize documents; geometry, navigation, layout and capture math | [Core](#core)         |
-| `@xcursus/player`  | Mount a presentation in any page, without a framework                                    | [Player](#player)     |
-| `@xcursus/plugins` | Rich and media renderers, sanitization, the `.xcursus` archive, the plugin SDK           | [PLUGINS](PLUGINS.md) |
-| `@xcursus/editor`  | Embed the React editor behind XCursus Studio                                             | [Editor](#editor)     |
-| `@xcursus/cli`     | Validate, pack and export projects from Node                                             | [CLI](#cli)           |
+| Package                   | Use it to                                                                                | Reference             |
+| ------------------------- | ---------------------------------------------------------------------------------------- | --------------------- |
+| `@xcursus/core`           | Validate, migrate and serialize documents; geometry, navigation, layout and capture math | [Core](#core)         |
+| `@xcursus/player`         | Mount a presentation in any page, without a framework                                    | [Player](#player)     |
+| `@xcursus/plugins`        | Rich and media renderers, sanitization, the `.xcursus` archive, the plugin SDK           | [PLUGINS](PLUGINS.md) |
+| `@xcursus/editor`         | Embed the React editor behind XCursus Studio                                             | [Editor](#editor)     |
+| `@xcursus/cli`            | Validate, pack and export projects from Node                                             | [CLI](#cli)           |
+| `@xcursus/impress-compat` | Import impress.js presentations as candidate projects, without running them              | [IMPRESS](IMPRESS.md) |
 
-Every library ships `.d.ts` types; CSS is exported separately (`@xcursus/player/style.css`, `@xcursus/player/fonts.css`, `@xcursus/plugins/style.css`, `@xcursus/editor/style.css`). Importing the core has no browser side effect.
+XCursus Studio and the command line also use `@xcursus/impress-compat`, the impress.js importer. Every library ships `.d.ts` types; CSS is exported separately (`@xcursus/player/style.css`, `@xcursus/player/fonts.css`, `@xcursus/plugins/style.css`, `@xcursus/editor/style.css`). Importing the core has no browser side effect.
 
 ## Quick example
 
@@ -160,6 +161,7 @@ The document theme becomes custom properties on the `.xc-player` root (`--xc-tex
 - `Studio` (`StudioProps`: optional `store`, `repository`, host-approved `plugins`, `onPlayer(player, present)` and `exportHtml`), with `@xcursus/editor/style.css`. `exportHtml` is an `HtmlExporter`: `(request: {document, blobs, lang, allowPartial}) => Promise<HtmlExportResult>`, either `{ok: true, html, status, warnings}` or `{ok: false, diagnostics}`. The Export panel calls it for the standalone HTML; without it the panel shows the command line instead. The Studio app passes the CLI's pipeline (below).
 - `EditorStore`: `getSnapshot()` returns a frozen document and session, `subscribe` works with `useSyncExternalStore`, `execute(edit, selectNew?)` clones, applies and validates before committing. Undo and redo keep up to **100 commands or 20 MiB** of UTF-8 snapshots. `beginDrag` / `beginGesture`, `previewGesture`, `endDrag` and `cancelDrag` turn a gesture into one command; `coalesce(key, edit)` and `endCoalesce()` merge a typing session into one command.
 - Commands applied through the store: `createScene`, `editScene`, `deleteScene` (with `deleteImpact` for the confirmation preview), `reparent`, `createPath`, `editPath`, `deletePath`, `createNode`, `editNode`, `connectNodes`, `editEdge`, `removeGraphItem`, `setFrames`, `setBlockStyle`, `setAppearance`, `convertToCanvas`, `convertToFlow`, `moveInReadingOrder` and `editTheme`; `emptyProject()` creates a new document.
+- `importImpress` (`ImpressImporter`): `(request: {html, fileName, resources, profile?}) => Promise<ImpressImportResult>`, either `{ok: true, document, blobs, diagnostics, profile, profileExplicit, unresolved}` or `{ok: false, diagnostics}`. With it the toolbar offers **Import impress.js**, a dialog that reviews the candidate before it replaces the open document; without it there is no import entry. The Studio app passes `@xcursus/impress-compat`, loaded on first use; the editor package does not depend on it.
 - Persistence: `RecoveryRepository` (IndexedDB database `DATABASE_NAME`, schema `DATABASE_VERSION` 3), `Autosave`, `StorageConflict` and `StorageVersionError`. Reading and writing project files uses `@xcursus/plugins/archive` ([FILE_FORMAT](FILE_FORMAT.md)).
 
 Studio exposes a debug handle `window.studio` (store, repository and player references) only with the development server, or in a production build when the URL contains `?studio-debug`.
@@ -178,4 +180,15 @@ const code = await run(["validate", "deck.xcursus", "--json"], {
 });
 ```
 
-`run` never calls `process.exit`; it returns the exit code (`EXIT.ok` 0, `EXIT.data` 1, `EXIT.environment` 2, `EXIT.output` 3). The `ExportManifest` type describes the manifest written next to every export.
+`run` never calls `process.exit`; it returns the exit code (`EXIT.ok` 0, `EXIT.data` 1, `EXIT.environment` 2, `EXIT.output` 3). The `ExportManifest` type describes the manifest written next to every export; `ConvertReport` the report written next to every `convert impress` output.
+
+## impress.js import
+
+`@xcursus/impress-compat` depends on the core, parse5 and gl-matrix only, has no DOM, network or file system access and runs in Node and in the browser; the player never imports it.
+
+- `importImpress(html, options?)` returns `Result<ImportCandidate>`: `{document, diagnostics, resources, files, steps, profile, profileExplicit, baseline, css}`. Options: `baseline` (`"2.0.0"`), `profile` (`"bundle"` or `"core"`), `rootId`, `resources` (`ReadonlyMap<relativePath, Uint8Array>`), `matchBasename`, `documentId`.
+- `ImportDiagnostic` extends `Diagnostic` with `source: {step, line, column}`; `IMPORT_CODES` lists every code with its severity.
+- `createImpressAdapter(player, document)` returns `{steps, goto, next, prev}` with impress.js semantics on a mounted player.
+- `IMPRESS_BASELINE` records the upstream tag, commit and defaults the mapping follows.
+
+Mapping, limits and verification: [IMPRESS](IMPRESS.md).

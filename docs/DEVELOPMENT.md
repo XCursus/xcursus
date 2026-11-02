@@ -34,21 +34,23 @@ The development servers resolve the workspace sources through Vite aliases. The 
 
 ## Scripts
 
-| Script                              | Purpose                                                                                                      |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `pnpm generate`                     | Generates the standalone validators and the TypeScript types from the JSON Schemas, and the KaTeX stylesheet |
-| `pnpm typecheck`                    | `generate`, then `tsc --noEmit` over packages, apps, tests and scripts                                       |
-| `pnpm lint`                         | ESLint (flat config, typescript-eslint, React hooks)                                                         |
-| `pnpm format` / `pnpm format:check` | Prettier                                                                                                     |
-| `pnpm test`                         | Unit and integration tests (Vitest, jsdom and fake-indexeddb where needed)                                   |
-| `pnpm test:coverage`                | The same with V8 coverage and per-area floors                                                                |
-| `pnpm build`                        | Builds core, player, plugins, CLI, editor, playground and Studio in dependency order                         |
-| `pnpm check:boundaries`             | Dependency rules between packages, on sources and built output                                               |
-| `pnpm check:bundle`                 | Builds a minimal consumer from `dist` and checks the gzip budget                                             |
-| `pnpm check:packages`               | Packs the packages and tests the tarballs in an external consumer                                            |
-| `pnpm browsers:install`             | Installs the Playwright browsers for the current platform                                                    |
-| `pnpm test:e2e`                     | Build, package check, then the Playwright suites in Chromium, Firefox and WebKit                             |
-| `pnpm test:e2e:webkit:macos14`      | WebKit only, with the dedicated macOS 14 runner                                                              |
+| Script                              | Purpose                                                                                                        |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `pnpm generate`                     | Generates the standalone validators and the TypeScript types from the JSON Schemas, and the KaTeX stylesheet   |
+| `pnpm typecheck`                    | `generate`, then `tsc --noEmit` over packages, apps, tests and scripts                                         |
+| `pnpm lint`                         | ESLint (flat config, typescript-eslint, React hooks)                                                           |
+| `pnpm format` / `pnpm format:check` | Prettier                                                                                                       |
+| `pnpm test`                         | Unit and integration tests (Vitest, jsdom and fake-indexeddb where needed)                                     |
+| `pnpm test:coverage`                | The same with V8 coverage and per-area floors                                                                  |
+| `pnpm build`                        | Builds core, player, plugins, CLI, editor, playground and Studio in dependency order                           |
+| `pnpm check:boundaries`             | Dependency rules between packages, on sources and built output                                                 |
+| `pnpm check:bundle`                 | Builds a minimal consumer from `dist` and checks the gzip budget                                               |
+| `pnpm check:packages`               | Packs the packages and tests the tarballs in an external consumer                                              |
+| `pnpm browsers:install`             | Installs the Playwright browsers for the current platform                                                      |
+| `pnpm test:e2e`                     | Build, package check, then the Playwright suites in Chromium, Firefox and WebKit                               |
+| `pnpm test:e2e:webkit:macos14`      | WebKit only, with the dedicated macOS 14 runner                                                                |
+| `pnpm test:e2e:chrome`              | The same suites on the installed Google Chrome (Playwright channel `chrome`), results in `test-results/chrome` |
+| `pnpm benchmark`                    | Performance budgets on the production builds (`--browser chromium\|firefox\|webkit`, `--headed`, `--gate`)     |
 
 No script modifies tracked files: reports, coverage, bundles, tarballs and test evidence go to `test-results/` (ignored). CI fails if a check leaves a tracked file modified.
 
@@ -82,7 +84,7 @@ The E2E suites serve production builds of the playground (port 4173) and Studio 
 
 ## Packaging
 
-The five packages build with Vite library mode and `tsc --emitDeclarationOnly`; `prepack` copies the repository `LICENSE` into each package. Third-party dependencies are external (a build plugin fails if a chunk bundles a module from `node_modules`); artefacts that embed third-party code generate their notices from an allowlist of licences compatible with GPL-3.0-or-later. `pnpm check:packages` verifies the manifests, packs the tarballs into `test-results/packages/`, installs them in an external consumer without source aliases, type-checks it with `skipLibCheck: false` and builds a minimal and a realistic consumer.
+The six packages build with Vite library mode and `tsc --emitDeclarationOnly`; `prepack` copies the repository `LICENSE` into each package. Third-party dependencies are external (a build plugin fails if a chunk bundles a module from `node_modules`); artefacts that embed third-party code generate their notices from an allowlist of licences compatible with GPL-3.0-or-later. `pnpm check:packages` verifies the manifests, packs the tarballs into `test-results/packages/`, installs them in an external consumer without source aliases, type-checks it with `skipLibCheck: false` and builds a minimal and a realistic consumer.
 
 The packages are ready for npm (public access under the `@xcursus` scope) but nothing is published automatically: publishing is a manual maintainer step, described in [DISTRIBUTION](DISTRIBUTION.md#packages).
 

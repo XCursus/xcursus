@@ -28,6 +28,7 @@ The packages and their responsibilities are described in [ARCHITECTURE](ARCHITEC
 
 - Every library is ESM with explicit `exports`, `.d.ts` types and separately exported CSS; importing the core has no browser side effect.
 - `core` imports no DOM, React, file system, network, player or plugin. The player imports neither plugins nor the editor. React and React DOM are peers of the editor only. Optional packages never enter the default bundle. An automated check enforces these rules.
+- The impress.js importer (`@xcursus/impress-compat`) depends on the core and an inert parser only; it has no DOM, network, file system or dynamic code, and neither the player, the plugins, the editor nor the export runtime import it. The command line and the Studio application use it; the editor receives it as a callback.
 - No empty placeholder packages are created to simulate future deliverables.
 
 ### Toolchain
@@ -50,7 +51,7 @@ Exact pins, a committed `pnpm-lock.yaml` and `pnpm install --frozen-lockfile` in
 | gl-matrix                                   | 3.4.4                            | Matrices and quaternions                                                          |
 | DOMPurify / marked / KaTeX / fflate         | 3.4.17 / 18.1.1 / 0.19.0 / 0.8.3 | Sanitization, Markdown, formulas, archive                                         |
 | pdf-lib                                     | 1.17.1                           | CLI, merging PDF pages                                                            |
-| parse5                                      | 8.0.1                            | **Planned**: inert HTML parsing for the impress.js importer                       |
+| parse5                                      | 8.0.1                            | Inert HTML parsing for the impress.js importer (`@xcursus/impress-compat`)        |
 
 ## 3. Document, versions and contracts
 
@@ -210,7 +211,7 @@ Desktop layout: a toolbar (new, open, save, export, undo/redo, present), the sce
 - **Formulas.** KaTeX with `trust: false`, `maxExpand: 500`, `maxSize: 20`, fresh macros per block and `htmlAndMathml` output; only library-generated positioning styles are kept, applied through the CSSOM.
 - **Token styles.** Palette, fonts, type scale, appearance and block style are validated values, never CSS strings. Theme fonts are local files with a recorded licence, loaded only when used and embeddable in exports.
 - **Assets.** Declared MIME type and minimal signature checks, never executing a file to detect its type. Signature checks accept SVG with a prologue, comments or a DOCTYPE and UTF-8 text split across read chunks. SHA-256 uses `crypto.subtle` or a local implementation outside secure contexts. Temporary URLs are leased and released by the resolver. A missing asset keeps a stable size and offers a recovery action. Audio and video have native accessible controls, captions where relevant and handling of a rejected `play()`; audible autoplay is never guaranteed and an **Enable media** button provides the user gesture. Exit pauses by default; `stop` resets the time. Previews are muted; only one audience view plays audio.
-- **Plugins.** API 1.0.0: a descriptor `{id, version, apiVersion, capabilities, dataSchemas}` and a renderer `{mount, update, destroy, ready?}` with a host element, limited services, an abort signal and asset access; a separate editor entry point for inspectors. No mandatory global registry; namespaced events; errors isolated per block. A host-installed plugin is trusted code with the page's authority, **not a sandbox**; a document can never request the download or execution of code. Embeds are off by default: HTTPS origin allowlist, per-frame consent, `sandbox` without `allow-same-origin` or scripts.
+- **Plugins.** API 1.0.0: a descriptor `{id, version, apiVersion, capabilities, dataSchemas}` and a renderer `{mount, update, destroy, ready?}` with a host element, limited services, an abort signal and asset access; a separate editor entry point for inspectors. No mandatory global registry; namespaced events; errors isolated per block. A host-installed plugin is trusted code with the page's authority, **not a sandbox**; a document can never request the download or execution of code. Network availability for plugins and embeds is a host-provided signal (`navigator.onLine` by default, which can only prove being offline). Embeds are off by default: HTTPS origin allowlist, per-frame consent, `sandbox` without `allow-same-origin` or scripts.
 - **Hardware integrations.** Web MIDI is optional, feature-detected and permission-gated. OSC has no browser transport and is outside the 1.0 requirements. Cues do not guarantee sample-accurate audio sync.
 
 Details and the threat model: [PLUGINS](PLUGINS.md).
@@ -229,17 +230,17 @@ Binary `xcursus`, documented in [DISTRIBUTION](DISTRIBUTION.md):
 | `xcursus export html <project> --out <file>`                              | Standalone HTML, no fetch needed                                    |
 | `xcursus export pdf <project> --itinerary <file> --out <file>`            | One page per visit of a finite itinerary                            |
 | `xcursus export video <project> --itinerary <file> --fps 30 --out <file>` | Deterministic minimal video of the static profile                   |
-| `xcursus convert impress <input.html> --out <project.json>`               | **Planned** for 1.0: a candidate project and a sidecar report       |
+| `xcursus convert impress <input.html> --out <project.json>`               | A candidate project (JSON with assets, or `.xcursus`) and a report  |
 
 The CLI reuses the core for parsing and validation and the player for rendering and capture. An existing output fails unless `--overwrite`; writes go through a temporary file and an atomic rename; no asset path may leave the project root; no input is interpolated into a shell. Exit codes: 0 success (warnings allowed), 1 invalid document, asset or capability, 2 missing environment or dependency, 3 write or export failure. The CLI never installs FFmpeg or browsers.
 
 ### Outputs
 
 - **Embed.** Reusable ESM and CSS, and a classic IIFE generated from the same player; not a second engine.
-- **Standalone HTML.** JSON escaped against `</script>`, runtime, CSS, fonts and allowed assets inline; no external imports, fetches, CDNs or service worker. A static outline and `<noscript>`. A CSP with hashes, `connect-src 'none'`, no `unsafe-eval` and no `unsafe-inline`. It opens from `file://` with the network disabled. Target size 25 MiB, with a warning above.
+- **Standalone HTML.** JSON escaped against `</script>`, runtime, CSS, fonts and allowed assets inline; no external imports, fetches, CDNs or service worker. A static outline and `<noscript>`. Navigation without a keyboard: on-screen previous and next buttons, touch swipes and a full-screen button where the browser allows it (also in the static build). A CSP with hashes, `connect-src 'none'`, no `unsafe-eval` and no `unsafe-inline`. It opens from `file://` with the network disabled. Target size 25 MiB, with a warning above.
 - **Static build.** The same runtime over HTTP(S), fetching `project.json` and assets from the same origin.
 - **Packaging.** Third-party libraries stay external dependencies; artefacts that embed their code (IIFE, standalone HTML, export runtime) include generated licence notices. Manifests carry `license: "GPL-3.0-or-later"`, description, repository, homepage, keywords, `sideEffects`, `engines` and a README; the React peer is a range. Optional renderers load on demand; KaTeX fonts ship as woff2 files. The bundle budget is measured on a minimal and on a realistic consumer, and an E2E suite installs the `pnpm pack` tarballs in an external consumer. The packages are published on npm under the `@xcursus` scope with public access, by the maintainer with `pnpm publish` in dependency order; the build, the tests and CI never publish.
-- **Manifest.** Every export writes an `ExportManifest` `{format, status, toolVersion, schemaVersion, itinerary?, resources, licenses, warnings, unsupported, environment, verification, output}`. Strict exports reject remote resources, plugins without the offline capability and non-embeddable media or fonts; `--allow-partial` writes explicit placeholders and a `partial` manifest. Private notes are excluded from every export.
+- **Manifest.** Every export writes an `ExportManifest` `{format, status, toolVersion, schemaVersion, itinerary?, resources, licenses, warnings, unsupported, environment, verification, output}`. Strict exports reject remote resources, plugins without the offline capability and non-embeddable media or fonts; `--allow-partial` writes explicit placeholders and a `partial` manifest. For PDF and video the profile applies to the scenes the itinerary visits; unsupported content of other scenes becomes a placeholder with an `OUTSIDE_ITINERARY` warning and never refuses the export. Private notes are excluded from every export.
 
 ### Itinerary, PDF and video
 
@@ -254,20 +255,27 @@ Codec, font, resource, timeout or dependency errors produce a diagnosed failure,
 
 Private notes, current scene and node, a preview of the next visit (or the choices of an ambiguous branch) and a monotonic timer. The audience window opens on a user gesture; a blocked pop-up shows instructions and a single-window fallback. The session uses a random ID, a handshake, validated messages and origin and source checks; the console is the single navigation authority, with sequence numbers to avoid feedback loops, and reconnection resynchronizes from a snapshot. Notes never reach the public DOM. This is not cryptographic protection if the authoring project itself is distributed. Full support needs a local host or HTTPS; `file://` HTML falls back to a single window.
 
-## 9. impress.js import (planned)
+## 9. impress.js import
 
-**Planned** for 1.0, not implemented. The paradigm of spatial HTML steps is a reference; the XCursus architecture stays independent.
+Implemented in `@xcursus/impress-compat`, used by `xcursus convert impress` and by Studio's **Import impress.js**; the guide is [IMPRESS](IMPRESS.md). The paradigm of spatial HTML steps is a reference; the XCursus architecture stays independent and no upstream code is copied into it.
 
-| impress.js attribute or API                                                      | Planned conversion                                                      |
-| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `data-x`, `data-y`, `data-z`                                                     | Position of the centre in CSS units                                     |
-| `data-rotate`, `data-rotate-x/y/z`, `data-rotate-order`                          | Composed in the source order, then decomposed in the XCursus convention |
-| `data-scale`                                                                     | Positive uniform scale; invalid values diagnosed                        |
-| Root `data-width`, `data-height`, `data-perspective`, `data-transition-duration` | Viewport, perspective and duration                                      |
-| `.step`, IDs and DOM order                                                       | Scenes, nodes and main path                                             |
-| `init`, `next`, `prev`, `goto`                                                   | An optional facade on top of a local player                             |
+| impress.js attribute or API                                                      | Conversion                                                                                                                                  |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data-x`, `data-y`, `data-z`                                                     | Position of the centre in CSS units                                                                                                         |
+| `data-rotate`, `data-rotate-x/y/z`, `data-rotate-order`                          | Composed in the source order (only the listed axes), then decomposed in the XCursus convention; `data-rotate-z` wins over `data-rotate`     |
+| `data-scale`                                                                     | Positive uniform scale; a negative value is a half turn about Z; zero or out of range diagnosed                                             |
+| Root `data-width`, `data-height`, `data-perspective`, `data-transition-duration` | Viewport, perspective and durations                                                                                                         |
+| `.step`, IDs and DOM order                                                       | Top-level scenes, nodes and a linear main path                                                                                              |
+| `data-rel-*`, `.skip` (release bundle)                                           | Reproduced for the `bundle` profile, except `data-rel-position="relative"`, which is reported                                               |
+| `init`, `next`, `prev`, `goto`                                                   | `createImpressAdapter`: `goto`, `next` and `prev` in document order with wrap-around on a mounted player; no `init`, events or `window` API |
 
-Requirements for the importer: inert parsing with parse5, never opening imported HTML as a page; matrix and landmark comparison for the six rotation orders; explicit warnings for zero perspective, scale limits, relative positioning, arbitrary CSS, remote fonts, scripts, plugins and frames; no automatic download of resources; no claim of general visual or timing fidelity; upstream licences preserved.
+Requirements, all implemented and tested:
+
+- The baseline is a fixed upstream release (2.0.0, tag `v2.0.0`, commit `dc3cf697`); defaults and numeric coercion follow it. The profile (`bundle` or `core`) is explicit, or assumed with a `PROFILE_AMBIGUOUS` warning where the two differ.
+- Inert parsing with parse5; imported HTML is never opened as a page, executed, styled or fetched from. Only local files inside the folder of the HTML are read, by the caller. Active content is never copied into the candidate.
+- `importImpress(html, options)` returns `Result<ImportCandidate>` with a document validated at schema 1.3.0, the diagnostics (stable code, JSON Pointer, source line), the resources and their status, and the asset bytes. Structural errors return no candidate; partial conversions return a valid candidate with every loss listed. A candidate replaces an open document only after review and confirmation.
+- Geometry is verified against an independent oracle (the transform strings of impress.js evaluated with CSS arithmetic) within 1e-6 for the six rotation orders, partial orders, gimbal lock, scales, sizes, aliases, invalid and omitted values and the rel plugin, and against the unmodified upstream engine in Chromium, Firefox and WebKit.
+- Explicit warnings for zero or invalid perspective, scale limits, relative positioning, arbitrary CSS, remote fonts and resources, scripts, plugins, frames and forms; no claim of general visual or timing fidelity; upstream licences preserved for the test fixtures.
 
 ## 10. Security and accessibility
 
@@ -314,9 +322,9 @@ These are thresholds to meet, not claims of measured performance. Reference scen
 | Camera                     | p95 frame interval ≤ 34 ms, no long task > 200 ms during 10 transitions                     |
 | Teardown                   | Zero owned resources after 50 mount/destroy cycles; retained heap delta ≤ 5 MiB after GC    |
 | Video export               | Exact frame count, duration within one frame, endpoint pose within 1e-6                     |
-| Realistic consumer         | Measured with rich and media renderers; a justified threshold is set before 1.0             |
+| Realistic consumer         | ≤ 100 KiB gzip JS initially, ≤ 200 KiB with every lazy renderer, ≤ 20 KiB gzip CSS          |
 
-Timings on shared CI runners are informative; the performance gate runs on a controlled machine. Budgets are never lowered just to make a build pass.
+Timings on shared CI runners are informative; the performance gate runs on a controlled machine with `pnpm benchmark` (`scripts/benchmark.mjs`), which records the raw samples, p50 and p95 and the machine, power source, browser, commit and lockfile. The realistic-consumer threshold keeps the initial chunk within the minimal budget and allows twice that for KaTeX, marked, DOMPurify and the media renderers, loaded only when a document uses them. Budgets are never lowered just to make a build pass.
 
 ## 13. Versioning and release
 

@@ -40,7 +40,7 @@ A migration never enables a capability the document does not use, never renames 
 
 ### Serialization
 
-`serializeDocument` produces deterministic JSON: object keys sorted, arrays in their original order, a final newline. It refuses an invalid document. Unknown extension data (`extensions`, plugin payloads and settings) is kept as opaque JSON and round-trips unchanged.
+`serializeDocument` produces deterministic JSON: object keys sorted, arrays in their original order, a final newline. It refuses an invalid document. Unknown extension data (`extensions`, plugin payloads and settings) is kept as opaque JSON and round-trips unchanged. Projects converted from impress.js carry the extension `xcursus.impress` (version `1.0.0`): on the document the upstream baseline, commit, profile and root ID, on each scene the original step ID and its index, used by the impress.js adapter ([IMPRESS](IMPRESS.md)). It is informative and can be removed.
 
 ### Project JSON with assets alongside
 
