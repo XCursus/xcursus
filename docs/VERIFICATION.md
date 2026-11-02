@@ -91,28 +91,6 @@ Backward compatibility with SpatialDeck is verified with an archive written by S
 
 Historical JSON fixtures at schema 1.0.0 (`examples/core-three-scenes`, `examples/editor-roundtrip`), 1.1.0 (`examples/structure-branching`) and 1.2.0 (`examples/content-gallery`) are opened and migrated by both the unit and the browser suites.
 
-## Recorded results
-
-| Date        | Revision                                          | Environment                                                                                                                                          | Unit | E2E | Outcome                       |
-| ----------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---: | --: | ----------------------------- |
-| 21 Oct 2026 | `07916cc` (0.1)                                   | Linux CI, Playwright 1.64.1 ([run 39596586324](https://github.com/XCursus/xcursus/actions/runs/39596586324))                                         |   85 |  30 | passed                        |
-| 22 Oct 2026 | 0.4                                               | Linux CI ([run 39730492795](https://github.com/XCursus/xcursus/actions/runs/39730492795))                                                            |  233 | 120 | passed                        |
-| 26 Oct 2026 | `5ad6a89` (0.6)                                   | Linux CI, Chromium, Firefox 157.0, WebKit 27.2 ([run 40323855783](https://github.com/XCursus/xcursus/actions/runs/40323855783))                      |  458 | 246 | passed                        |
-| 1 Nov 2026  | XCursus rename (branch `chore/xcursus-rebrand`)   | macOS 14.8.7 (Darwin 23.6.0, arm64), Node 24.22.0, pnpm 12.14.0; Chromium and Firefox with Playwright 1.64.1, WebKit with the macOS 14 runner 1.61.1 |  478 | 273 | passed, zero skipped or flaky |
-| 1 Nov 2026  | `6be7eab` (XCursus rename)                        | Linux CI, Chromium, Firefox 157.0, WebKit 27.2 ([run 41322884897](https://github.com/XCursus/xcursus/actions/runs/41322884897))                      |  478 | 273 | passed                        |
-| 2 Nov 2026  | Studio export panel (branch `feat/studio-export`) | macOS 14.8.7 (Darwin 23.6.0, arm64), Node 24.22.0, pnpm 12.14.0; Chromium and Firefox with Playwright 1.64.1, WebKit with the macOS 14 runner 1.61.1 |  484 | 282 | passed, zero skipped or flaky |
-
-Measurements from the 2 November 2026 run (unchanged from 1 November except the package checks):
-
-| Measurement (gzip level 9)                            | Value                                                                                                                                  |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Minimal core+player bundle (`check:bundle`)           | 66 385 B JS, 1 345 B CSS (budgets 102 400 B and 20 480 B); theme fonts separate, 53 488 B of woff2                                     |
-| Minimal consumer from the tarballs                    | 59 705 B JS, 1 682 B CSS; no React, editor or rich renderers                                                                           |
-| Realistic consumer (content gallery from the archive) | 65 681 B JS and 9 100 B CSS initially; 170 038 B JS once the on-demand renderers load; 23 font files, 309 656 B, loaded only when used |
-| Package checks (`check:packages`)                     | 85 of 85, including public access in every tarball                                                                                     |
-
-The bundle and package figures above come from the local run.
-
 ## Not verified and known limits
 
 - **Browsers.** WebKit is tested through Playwright, not an installed Safari. Mobile devices, touch input and screen readers have not been tested. On macOS 14 the WebKit runner paints 3D-rotated scenes flattened in screenshots while the measured geometry is correct, so WebKit assertions rely on geometry rather than pixels of 3D poses; offline emulation does not work with `file://` in that runner, where only request blocking applies.

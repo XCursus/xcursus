@@ -2,8 +2,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Evidence from browser runs goes to the ignored test-results tree; tracked
-// verification reports are written by hand from these files.
+// Evidence from browser runs goes to the ignored test-results tree, never to
+// tracked files.
 export const evidenceRoot = join(
   fileURLToPath(new URL("../..", import.meta.url)),
   "test-results",
