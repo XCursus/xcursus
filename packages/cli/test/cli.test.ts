@@ -15,8 +15,8 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { isAnimatedImage } from "../src/animation.js";
 import { classifyViolations } from "../src/capture.js";
-import { exportKit, toolVersion } from "../src/assemble.js";
 import { standaloneHtml, verifyResources } from "../src/html.js";
+import type { ExportKit } from "../src/html.js";
 import { run } from "../src/index.js";
 import { loadProject } from "../src/io.js";
 import { referencesRemote } from "../src/profile.js";
@@ -682,24 +682,49 @@ describe("pack and legacy archives", () => {
   });
 });
 
+/**
+ * A kit with a stand-in runtime: unit tests run before the build, so the real
+ * runtime is compared by the E2E suite (export.spec.ts), not here.
+ */
+const testKit: ExportKit = {
+  version: "0.0.0-test",
+  script: 'document.body.dataset.runtime = "</script><!-- inert";',
+  notices: "Third-party notices",
+  stylesheets: {
+    player: { css: ".xc-player{display:block}", fonts: [] },
+    fonts: { css: "@font-face{font-family:x}", fonts: [] },
+    katex: { css: ".katex{display:inline}", fonts: [] },
+  },
+};
+
 describe("HTML pipeline shared with Studio", () => {
-  it("writes the same bytes as `export html` from the same project and kit", async () => {
-    const { dir, project } = await fixture();
-    const out = join(dir, "deck.html");
-    expect((await cli("export", "html", project, "--out", out)).code).toBe(0);
+  it("writes a self-checked page: CSP hashes, safe inline script, no notes", async () => {
+    const { project } = await fixture();
     const loaded = await loadProject(project);
     const result = await standaloneHtml({
       document: loaded.document,
       resources: loaded.resources,
       blobs: loaded.blobs,
-      kit: await exportKit(),
+      kit: testKit,
       allowPartial: false,
-      generator: `XCursus CLI ${toolVersion}`,
+      generator: "XCursus CLI test",
     });
     if (!result.ok) throw new Error("refused");
-    expect(result.html).toBe(await readFile(out, "utf8"));
     expect(result.status).toBe("complete");
-    expect(result.verification.privateNotesAbsent).toBe(true);
+    expect(result.verification).toEqual({
+      jsonBlocksParse: true,
+      scriptCount: 4,
+      cspHashesMatchInlineCode: true,
+      privateNotesAbsent: true,
+    });
+    expect(result.csp).toContain("connect-src 'none'");
+    // The stand-in runtime cannot close its element or open a comment.
+    expect(result.html).toContain("\\x3C/script>\\x3C!-- inert");
+    expect(result.html).not.toContain("PRIVATE-NOTE");
+    // Only the stylesheets the fixture needs (theme font and a formula).
+    expect(result.html).toContain("/* fonts.css */");
+    expect(result.html).toContain("/* katex.css */");
+    expect(result.needed.size).toBe(1);
   });
   it("verifies in-memory assets like the CLI: missing and altered bytes are reported", async () => {
     const { project } = await fixture();
@@ -736,7 +761,7 @@ describe("HTML pipeline shared with Studio", () => {
       document: loaded.document,
       resources: loaded.resources,
       blobs: loaded.blobs,
-      kit: await exportKit(),
+      kit: testKit,
       generator: "XCursus Studio test",
     };
     const strict = await standaloneHtml({ ...input, allowPartial: false });

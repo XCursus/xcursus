@@ -294,6 +294,8 @@ export async function exportHtml(
 ) {
   const target = await prepareOutput(options.out, options.overwrite, "file");
   const project = await loadProject(input);
+  // The profile decides before the runtime is read: a refusal needs no build output.
+  gate(analyze(project.document, project.resources, "html"), options, report);
   const kit = await exportKit();
   const result = await standaloneHtml({
     document: project.document,
@@ -306,7 +308,6 @@ export async function exportHtml(
   }).catch((error: unknown) => {
     throw new CliError(EXIT.output, String(error));
   });
-  gate(result.analysis, options, report);
   if (!result.ok) throw new Error("unreachable: strict gate");
   const { analysis, document, needed, fonts, verification } = result;
   const bytes = Buffer.from(result.html, "utf8");
