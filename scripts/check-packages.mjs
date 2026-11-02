@@ -78,6 +78,11 @@ for (const name of names) {
     `${name}: license GPL-3.0-or-later`,
     packed.license === "GPL-3.0-or-later",
   );
+  // Ready for npm: the scope is owned (2 Nov 2026); scoped packages need public access.
+  check(
+    `${name}: publishable with public access`,
+    packed.private === undefined && packed.publishConfig?.access === "public",
+  );
   check(
     `${name}: README and LICENSE packed`,
     listing.includes("package/README.md") &&
@@ -307,8 +312,12 @@ import { Studio, EditorStore, emptyProject, RecoveryRepository } from "@xcursus/
 import type { StudioProps, DocumentEdit } from "@xcursus/editor";
 import { run, EXIT } from "@xcursus/cli";
 import type { ExportManifest } from "@xcursus/cli";
-export const surface = { validateDocument, planCapture, sampleCapture, publicDocument, createPlayer, italianMessages, defaultMessages, createBuiltinRegistry, lazyRenderer, writeArchive, PluginHost, samplePlugin, Studio, EditorStore, emptyProject, RecoveryRepository, run, EXIT };
-export type Surface = [CapturePlan, ProjectDocument, Itinerary, Player, PlayerOptions, ContentRenderer, StudioProps, DocumentEdit, ExportManifest];
+import { standaloneHtml, verifyResources } from "@xcursus/cli/html";
+import type { ExportKit, StandaloneResult } from "@xcursus/cli/html";
+import type { HtmlExporter } from "@xcursus/editor";
+import { firstPassItinerary } from "@xcursus/core";
+export const surface = { validateDocument, planCapture, sampleCapture, publicDocument, firstPassItinerary, createPlayer, italianMessages, defaultMessages, createBuiltinRegistry, lazyRenderer, writeArchive, PluginHost, samplePlugin, Studio, EditorStore, emptyProject, RecoveryRepository, run, EXIT, standaloneHtml, verifyResources };
+export type Surface = [CapturePlan, ProjectDocument, Itinerary, Player, PlayerOptions, ContentRenderer, StudioProps, DocumentEdit, ExportManifest, ExportKit, StandaloneResult, HtmlExporter];
 const options: PlayerOptions = { messages: italianMessages, controls: false };
 export const player: Player = createPlayer(options);
 export const store = new EditorStore(emptyProject());

@@ -53,6 +53,18 @@ for (const file of await walk("packages/cli/src"))
     )
   )
     issues.push(`${file}: forbidden import`);
+// `@xcursus/cli/html` also runs in Studio: its modules use no Node API.
+for (const file of ["html", "page", "profile", "config"].map(
+  (name) => `packages/cli/src/${name}.ts`,
+))
+  if (
+    /from ['"](?:node:|playwright|pdf-lib|\.\/(?:io|assemble|commands|capture)\.js)/.test(
+      await readFile(file, "utf8"),
+    )
+  )
+    issues.push(
+      `${file}: Node or capture import in the browser-safe HTML pipeline`,
+    );
 if (
   /react-dom|react\/jsx|__SECRET_INTERNALS|@xcursus\/editor|new Function\(|eval\(/.test(
     await readFile("packages/cli/dist/runtime/xcursus-runtime.js", "utf8"),

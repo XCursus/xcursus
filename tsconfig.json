@@ -9,6 +9,7 @@
       "@xcursus/player/presenter": ["./packages/player/src/presenter.ts"],
       "@xcursus/player": ["./packages/player/src/index.ts"],
       "@xcursus/editor": ["./packages/editor/src/index.ts"],
+      "@xcursus/cli/html": ["./packages/cli/src/html.ts"],
       "@xcursus/plugins": ["./packages/plugins/src/sdk/index.ts"],
       "@xcursus/plugins/*": ["./packages/plugins/src/*"]
     },

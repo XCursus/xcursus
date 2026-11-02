@@ -15,7 +15,10 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { isAnimatedImage } from "../src/animation.js";
 import { classifyViolations } from "../src/capture.js";
+import { exportKit, toolVersion } from "../src/assemble.js";
+import { standaloneHtml, verifyResources } from "../src/html.js";
 import { run } from "../src/index.js";
+import { loadProject } from "../src/io.js";
 import { referencesRemote } from "../src/profile.js";
 
 const root = new URL("../../../examples/", import.meta.url).pathname;
@@ -676,6 +679,80 @@ describe("pack and legacy archives", () => {
         if (value === undefined) delete process.env[key];
         else process.env[key] = value;
     }
+  });
+});
+
+describe("HTML pipeline shared with Studio", () => {
+  it("writes the same bytes as `export html` from the same project and kit", async () => {
+    const { dir, project } = await fixture();
+    const out = join(dir, "deck.html");
+    expect((await cli("export", "html", project, "--out", out)).code).toBe(0);
+    const loaded = await loadProject(project);
+    const result = await standaloneHtml({
+      document: loaded.document,
+      resources: loaded.resources,
+      blobs: loaded.blobs,
+      kit: await exportKit(),
+      allowPartial: false,
+      generator: `XCursus CLI ${toolVersion}`,
+    });
+    if (!result.ok) throw new Error("refused");
+    expect(result.html).toBe(await readFile(out, "utf8"));
+    expect(result.status).toBe("complete");
+    expect(result.verification.privateNotesAbsent).toBe(true);
+  });
+  it("verifies in-memory assets like the CLI: missing and altered bytes are reported", async () => {
+    const { project } = await fixture();
+    const loaded = await loadProject(project);
+    const [id, blob] = [...loaded.blobs][0]!;
+    const all = await verifyResources(loaded.document, loaded.blobs);
+    expect(all.resources.map((r) => r.status)).toEqual(
+      loaded.resources.map((r) => r.status),
+    );
+    expect(all.resources.map((r) => r.sha256)).toEqual(
+      loaded.resources.map((r) => r.sha256),
+    );
+    const missing = await verifyResources(loaded.document, new Map());
+    expect(missing.resources.find((r) => r.id === id)?.diagnostic?.code).toBe(
+      "ASSET_MISSING",
+    );
+    const altered = await verifyResources(
+      loaded.document,
+      new Map([[id, new Blob([await blob.text(), " "])]]),
+    );
+    expect(altered.resources.find((r) => r.id === id)?.status).toBe("invalid");
+    expect(altered.blobs.has(id)).toBe(false);
+  });
+  it("is strict by default and marks a placeholder export as partial", async () => {
+    const { project } = await fixture((d) =>
+      d.scenes[1]!.blocks.push({
+        id: "web",
+        type: "embed",
+        data: { url: "https://example.org/", title: "Remote" },
+      }),
+    );
+    const loaded = await loadProject(project);
+    const input = {
+      document: loaded.document,
+      resources: loaded.resources,
+      blobs: loaded.blobs,
+      kit: await exportKit(),
+      generator: "XCursus Studio test",
+    };
+    const strict = await standaloneHtml({ ...input, allowPartial: false });
+    expect(strict.ok).toBe(false);
+    expect(strict.analysis.blocking.map((d) => d.code)).toEqual([
+      "EMBED_REMOTE",
+    ]);
+    const partial = await standaloneHtml({ ...input, allowPartial: true });
+    if (!partial.ok) throw new Error("refused");
+    expect(partial.status).toBe("partial");
+    expect(partial.warnings.map((d) => d.code)).toContain("EMBED_REMOTE");
+    expect(partial.html).toContain(
+      '<meta name="generator" content="XCursus Studio test">',
+    );
+    // The block stays in the public JSON; the runtime shows a placeholder.
+    expect(partial.html).toContain('"placeholders":{"embed":"excluded"}');
   });
 });
 

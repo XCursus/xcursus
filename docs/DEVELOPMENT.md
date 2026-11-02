@@ -84,7 +84,7 @@ The E2E suites serve production builds of the playground (port 4173) and Studio 
 
 The five packages build with Vite library mode and `tsc --emitDeclarationOnly`; `prepack` copies the repository `LICENSE` into each package. Third-party dependencies are external (a build plugin fails if a chunk bundles a module from `node_modules`); artefacts that embed third-party code generate their notices from an allowlist of licences compatible with GPL-3.0-or-later. `pnpm check:packages` verifies the manifests, packs the tarballs into `test-results/packages/`, installs them in an external consumer without source aliases, type-checks it with `skipLibCheck: false` and builds a minimal and a realistic consumer.
 
-The packages are `"private": true` and nothing is published from this repository; see [DISTRIBUTION](DISTRIBUTION.md#packages).
+The packages are ready for npm (public access under the `@xcursus` scope) but nothing is published automatically: publishing is a manual maintainer step, described in [DISTRIBUTION](DISTRIBUTION.md#packages).
 
 ## Contributing
 

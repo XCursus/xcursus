@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import three from "../../../examples/core-three-scenes/project.json";
 import branching from "../../../examples/structure-branching/project.json";
 import layout from "../../../examples/layout-canvas/project.json";
+import distribution from "../../../examples/distribution-static/project.json";
 import {
   NavigationMachine,
   cameraPose,
+  firstPassItinerary,
   frameSchedule,
   frameTime,
   planCapture,
@@ -160,6 +162,50 @@ describe("itinerary validation", () => {
         expect((await machine.next({ edgeId })).status).toBe("completed");
       expect((await machine.next({ edgeId: "DD" })).status).toBe("error");
     })();
+  });
+});
+
+describe("first-pass itinerary", () => {
+  it("follows the only transition of each node and fills the edges", () => {
+    expect(value(firstPassItinerary(load(three)))).toEqual({
+      itinerary: {
+        pathId: "main",
+        visits: [
+          { nodeId: "n1", edgeIdToNext: "e1" },
+          { nodeId: "n2", edgeIdToNext: "e2" },
+          { nodeId: "n3" },
+        ],
+      },
+    });
+  });
+  it("stops before a node already visited instead of looping", () => {
+    // n1 → n2 → n3 → n1, with a visit limit.
+    const pass = value(firstPassItinerary(load(distribution)));
+    expect(pass.stoppedBefore).toBe("n1");
+    expect(pass.itinerary.visits.map((v) => v.nodeId)).toEqual([
+      "n1",
+      "n2",
+      "n3",
+    ]);
+    expect(pass.itinerary.visits[2]!.edgeIdToNext).toBeUndefined();
+  });
+  it("refuses a branch, an unknown path and a path without start", () => {
+    const doc = load(branching);
+    expect(codes(firstPassItinerary(doc, "branch"))).toEqual([
+      ["ITINERARY_BRANCH", ""],
+    ]);
+    expect(
+      value(firstPassItinerary(doc, "alternate")).itinerary.visits,
+    ).toEqual([
+      { nodeId: "alt-C", edgeIdToNext: "alt-CD" },
+      { nodeId: "alt-D" },
+    ]);
+    expect(codes(firstPassItinerary(doc, "missing"))).toEqual([
+      ["UNKNOWN_PATH", ""],
+    ]);
+    const empty = load(three);
+    empty.paths[0]!.startNodeId = null;
+    expect(codes(firstPassItinerary(empty))[0]![0]).toBe("ITINERARY_EMPTY");
   });
 });
 

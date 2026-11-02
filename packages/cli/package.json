@@ -21,13 +21,15 @@
     "pdf",
     "webm"
   ],
-  "private": true,
   "type": "module",
   "sideEffects": [
     "./dist/cli.js"
   ],
   "engines": {
     "node": ">=24"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "bin": {
     "xcursus": "./dist/cli.js"
@@ -41,6 +43,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./html": {
+      "types": "./dist/html.d.ts",
+      "import": "./dist/html.js"
     },
     "./package.json": "./package.json"
   },

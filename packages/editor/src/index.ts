@@ -3,6 +3,11 @@
 // recovery storage. Components, helpers and storage internals stay private.
 export { Studio } from "./components/Studio.js";
 export type { StudioProps } from "./components/Studio.js";
+export type {
+  HtmlExporter,
+  HtmlExportRequest,
+  HtmlExportResult,
+} from "./components/ExportPanel.js";
 export { EditorStore } from "./store/index.js";
 export type { EditorSession, MapCamera } from "./store/index.js";
 export {

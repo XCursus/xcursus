@@ -58,7 +58,7 @@ XCursus is a local-first platform for presentations that live in space rather th
 
 | Component                                        | What it is                                                                                                                                       |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [XCursus Studio](apps/studio)                    | The visual editor: scenes, map, inspector, layout editor, paths and camera timeline, presenter console, offline shell.                           |
+| [XCursus Studio](apps/studio)                    | The visual editor: scenes, map, inspector, layout editor, paths and camera timeline, presenter console, HTML export, offline shell.              |
 | [`@xcursus/core`](packages/core/README.md)       | The document model: JSON Schemas 1.0.0–1.3.0, validation with JSON Pointer diagnostics, migrations, camera and layout math, navigation, capture. |
 | [`@xcursus/player`](packages/player/README.md)   | The framework-free DOM/CSS 3D player, with a presenter protocol and a classic script build.                                                      |
 | [`@xcursus/plugins`](packages/plugins/README.md) | Builtin renderers, the sanitization pipeline, the `.xcursus` archive and the plugin SDK.                                                         |

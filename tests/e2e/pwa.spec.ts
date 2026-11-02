@@ -178,6 +178,55 @@ test("Studio shell: offline reload with the IndexedDB project, explicit update k
   }
 });
 
+test("with the shell offline, the export panel still writes the standalone HTML", async ({
+  page,
+  browserName,
+}) => {
+  const site = await deployment(`${browserName}-export`);
+  try {
+    await page.goto(`${site.url}/?studio-debug`);
+    await expect(page.locator(".preview-player .xc-player")).toHaveCount(1);
+    await controlled(page);
+    // The export kit is part of the precached shell, not fetched later.
+    expect(
+      await page.evaluate(async () => {
+        for (const key of await caches.keys())
+          if (
+            key.startsWith("xcursus-studio-") &&
+            (await (await caches.open(key)).match("export-kit.json"))
+          )
+            return true;
+        return false;
+      }),
+    ).toBe(true);
+    await site.stop();
+    page.on("dialog", (d) => void d.accept());
+    await page.reload();
+    await expect(page.locator(".preview-player .xc-player")).toHaveCount(1);
+    await page
+      .getByLabel("JSON project file")
+      .setInputFiles("examples/layout-canvas/layout-canvas.xcursus");
+    const exportButton = page.getByRole("button", {
+      name: "Export",
+      exact: true,
+    });
+    await expect(exportButton).toBeEnabled();
+    await exportButton.click();
+    const download = page.waitForEvent("download");
+    await page
+      .getByRole("dialog", { name: "Export" })
+      .getByRole("button", { name: "Download HTML" })
+      .click();
+    const file = await download;
+    expect(file.suggestedFilename()).toMatch(/\.html$/);
+    const html = await readFile((await file.path())!, "utf8");
+    expect(html).toContain('<meta name="generator" content="XCursus Studio ');
+    expect(html).toContain("connect-src 'none'");
+  } finally {
+    await site.close();
+  }
+});
+
 test("the player playground does not use the Studio worker", async ({
   page,
 }) => {

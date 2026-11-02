@@ -124,6 +124,13 @@ test("axe: Studio empty, with content and dialogs has no serious or critical vio
     .getByRole("dialog")
     .getByRole("button", { name: "Cancel" })
     .click();
+  await page.getByRole("button", { name: "Export", exact: true }).click();
+  const exportPanel = page.getByRole("dialog", { name: "Export" });
+  await exportPanel.getByRole("button", { name: "Download HTML" }).click();
+  // The gallery embeds remote web content: the strict refusal lists it.
+  await expect(exportPanel.getByRole("status")).toContainText("Not exported");
+  await audit(page, "studio-export", info);
+  await exportPanel.getByRole("button", { name: "Close" }).click();
   await page.getByRole("button", { name: "Present", exact: true }).click();
   await expect(page.locator(".presentation-player .xc-player")).toHaveCount(1);
   await audit(page, "studio-presentation", info);

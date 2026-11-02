@@ -203,6 +203,60 @@ export function validateItinerary(
     : { ok: true, value: result, diagnostics: [] };
 }
 
+export interface FirstPass {
+  itinerary: Itinerary;
+  /** Node the walk would enter a second time; the itinerary stops before it. */
+  stoppedBefore?: string;
+}
+/**
+ * Itinerary proposed by Studio: from the start node, follow the only
+ * transition of each node until a node without transitions or one already
+ * visited. A node with several transitions is a choice the author makes in
+ * an itinerary file, so it fails instead of being linearized.
+ */
+export function firstPassItinerary(
+  document: ProjectDocument,
+  pathId = document.defaultPathId,
+): Result<FirstPass> {
+  const path = document.paths.find((p) => p.id === pathId);
+  if (!path) return failure("UNKNOWN_PATH", "Unknown path");
+  if (!path.startNodeId)
+    return failure("ITINERARY_EMPTY", `Path ${path.name} has no start scene`);
+  const visits: ItineraryVisit[] = [{ nodeId: path.startNodeId }];
+  const seen = new Set([path.startNodeId]);
+  let stoppedBefore: string | undefined;
+  for (;;) {
+    const visit = visits[visits.length - 1]!;
+    const outgoing = path.edges.filter((e) => e.from === visit.nodeId);
+    if (outgoing.length > 1)
+      return failure(
+        "ITINERARY_BRANCH",
+        `Node ${visit.nodeId} has ${outgoing.length} transitions: choose the branch in an itinerary file`,
+      );
+    const edge = outgoing[0];
+    if (!edge) break;
+    if (seen.has(edge.to)) {
+      stoppedBefore = edge.to;
+      break;
+    }
+    if (visits.length === ITINERARY_VISIT_LIMIT)
+      return failure(
+        "ITINERARY_LIMIT",
+        `An itinerary has at most ${ITINERARY_VISIT_LIMIT} visits`,
+      );
+    visit.edgeIdToNext = edge.id;
+    visits.push({ nodeId: edge.to });
+    seen.add(edge.to);
+  }
+  const itinerary = validateItinerary(document, { pathId: path.id, visits });
+  if (!itinerary.ok) return itinerary;
+  return success(
+    stoppedBefore
+      ? { itinerary: itinerary.value, stoppedBefore }
+      : { itinerary: itinerary.value },
+  );
+}
+
 export interface CaptureVisit {
   index: number;
   nodeId: string;

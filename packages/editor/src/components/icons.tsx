@@ -26,6 +26,12 @@ const paths = {
       <path d="M2 4.5 8 7l6-2.5M8 7v7" />
     </>
   ),
+  export: (
+    <>
+      <path d="M8 10V2M4.5 5.5 8 2l3.5 3.5" />
+      <path d="M5 8H2.5v6h11V8H11" />
+    </>
+  ),
   undo: <path d="M5.5 3 2.5 6l3 3M2.5 6H10a3.5 3.5 0 0 1 0 7H7" />,
   redo: <path d="m10.5 3 3 3-3 3M13.5 6H6a3.5 3.5 0 0 0 0 7h3" />,
   history: (

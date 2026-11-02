@@ -21,11 +21,13 @@
     "non-linear",
     "camera"
   ],
-  "private": true,
   "type": "module",
   "sideEffects": false,
   "engines": {
     "node": ">=24"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "files": [
     "dist",

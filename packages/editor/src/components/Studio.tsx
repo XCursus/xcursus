@@ -40,6 +40,8 @@ import {
 } from "../storage/index.js";
 import type { Revision } from "../storage/index.js";
 import { Dialog } from "./Dialog.js";
+import { ExportPanel } from "./ExportPanel.js";
+import type { HtmlExporter } from "./ExportPanel.js";
 import { Inspector } from "./Inspector.js";
 import { MapView } from "./MapView.js";
 import { HierarchyTree } from "./HierarchyTree.js";
@@ -73,12 +75,15 @@ export interface StudioProps {
   onPlayer?: (player: Player | null, present: boolean) => void;
   /** Plugins approved by the host application for preview and presentation. */
   plugins?: readonly PluginDefinition[];
+  /** Standalone HTML export of the Export panel; without it the panel gives the command line. */
+  exportHtml?: HtmlExporter;
 }
 export function Studio({
   store: providedStore,
   repository: providedRepository,
   onPlayer,
   plugins = noPlugins,
+  exportHtml,
 }: StudioProps) {
   const store = useMemo(
     () => providedStore ?? new EditorStore(emptyProject()),
@@ -131,6 +136,7 @@ export function Studio({
       confirm?: string;
     } | null>(null),
     [revisions, setRevisions] = useState<Revision[]>([]),
+    [exporting, setExporting] = useState(false),
     [recoveryIndex, setRecoveryIndex] = useState(0);
   const [navigation, setNavigation] = useState<NavigationSelection | null>(
       null,
@@ -519,7 +525,8 @@ export function Studio({
           setPresent(false);
           return;
         }
-        if (present || presenter || dialog || revisions.length) return;
+        if (present || presenter || dialog || exporting || revisions.length)
+          return;
         const editing = (event.target as Element).matches(
           "input,textarea,select,[contenteditable]",
         );
@@ -604,6 +611,16 @@ export function Studio({
             label="Save archive"
             shortcut=".xcursus file with the assets"
             onClick={() => void savePortable()}
+          />
+          <IconButton
+            icon="export"
+            label="Export"
+            shortcut="HTML, PDF and video"
+            disabled={!session.document.scenes.length}
+            onClick={() => {
+              store.endDrag();
+              setExporting(true);
+            }}
           />
           <span className="toolbar-divider" aria-hidden="true" />
           <IconButton
@@ -1101,6 +1118,15 @@ export function Studio({
         >
           <p>{dialog.body}</p>
         </Dialog>
+      )}
+      {exporting && (
+        <ExportPanel
+          document={session.document}
+          blobs={blobs}
+          exportHtml={exportHtml}
+          onSaveArchive={() => void savePortable()}
+          onClose={() => setExporting(false)}
+        />
       )}
       {!!revisions.length && !dialog && (
         <Dialog

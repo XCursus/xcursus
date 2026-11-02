@@ -9,6 +9,7 @@ import type { Player } from "@xcursus/player";
 import { LEGACY_SAMPLE_PLUGIN_ID, samplePlugin } from "@xcursus/plugins/sample";
 import "@xcursus/player/fonts.css";
 import "@xcursus/plugins/style.css";
+import { exportHtml } from "./export.js";
 import { registerShell } from "./shell.js";
 const store = new EditorStore(emptyProject()),
   repository = new RecoveryRepository();
@@ -36,6 +37,7 @@ createRoot(document.getElementById("root")!).render(
     repository={repository}
     // The demo badge stays available in this app as an explicitly approved plugin.
     plugins={[samplePlugin(), samplePlugin(LEGACY_SAMPLE_PLUGIN_ID)]}
+    exportHtml={exportHtml}
     onPlayer={(player, present) => {
       if (present) studio.presentation = player;
       else studio.preview = player;

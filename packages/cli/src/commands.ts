@@ -28,14 +28,21 @@ import type {
 } from "@xcursus/core";
 import {
   buildPage,
-  inlineFonts,
+  exportKit,
   pageStyle,
   runtimeFiles,
-  standalonePage,
   stylesheets,
   toolVersion,
 } from "./assemble.js";
-import type { EmbeddedFont } from "./assemble.js";
+import {
+  base64Assets,
+  manifestWarnings,
+  messagesFor,
+  requiredAssets,
+  standaloneHtml,
+} from "./html.js";
+import { kitStyles, standalonePage } from "./page.js";
+import type { EmbeddedFont } from "./page.js";
 import { isAnimatedImage } from "./animation.js";
 import {
   captureViolations,
@@ -123,19 +130,6 @@ export interface ExportManifest {
   output: { file: string; byteLength: number; sha256: string };
 }
 
-function messagesFor(document: ProjectDocument, lang?: "en" | "it") {
-  return (
-    lang ??
-    (document.metadata.language.toLowerCase().startsWith("it") ? "it" : "en")
-  );
-}
-/** What the output records: blocking findings became placeholders, so every entry is a warning. */
-function manifestWarnings(analysis: Analysis): Diagnostic[] {
-  return [...analysis.blocking, ...analysis.warnings].map((d) => ({
-    ...d,
-    severity: "warning",
-  }));
-}
 function environment(extra: Record<string, unknown> = {}) {
   return {
     node: process.version,
@@ -222,39 +216,6 @@ const fontResources = (fonts: EmbeddedFont[], status: "embedded" | "copied") =>
     sha256: f.sha256,
     status,
   }));
-const base64Assets = async (
-  project: LoadedProject,
-  include: (id: string) => boolean,
-) => {
-  const data: Record<string, string> = {};
-  for (const [id, blob] of project.blobs)
-    if (include(id))
-      data[id] = Buffer.from(await blob.arrayBuffer()).toString("base64");
-  return data;
-};
-function requiredAssets(
-  document: ProjectDocument,
-  analysis: Analysis,
-  format: Format,
-) {
-  const ids = new Set<string>();
-  for (const scene of document.scenes)
-    for (const b of scene.blocks) {
-      const kind = analysis.placeholders[b.type];
-      if (b.type === "image") ids.add(b.data.assetId);
-      if (b.type === "video" && kind === "poster" && b.data.posterAssetId)
-        ids.add(b.data.posterAssetId);
-      if ((format === "html" || format === "build") && !kind) {
-        if (b.type === "audio" || b.type === "video") ids.add(b.data.assetId);
-        if (b.type === "video" && b.data.posterAssetId)
-          ids.add(b.data.posterAssetId);
-        if (b.type === "video" && b.data.captionsAssetId)
-          ids.add(b.data.captionsAssetId);
-      }
-    }
-  return ids;
-}
-
 export async function validate(input: string) {
   const project = await loadProject(input);
   const problems = project.resources.flatMap((r) =>
@@ -333,30 +294,23 @@ export async function exportHtml(
 ) {
   const target = await prepareOutput(options.out, options.overwrite, "file");
   const project = await loadProject(input);
-  const analysis = analyze(project.document, project.resources, "html");
-  gate(analysis, options, report);
-  const document = publicDocument(project.document);
-  const lang = messagesFor(document, options.lang);
-  const config: RuntimeConfig = {
-    mode: "present",
-    assets: "inline",
-    messages: lang,
-    placeholders: analysis.placeholders,
-  };
-  const runtime = await runtimeFiles();
-  const sheets = await stylesheets(document);
-  const { css, fonts } = await inlineFonts(sheets);
-  const needed = requiredAssets(document, analysis, "html");
-  const page = standalonePage({
-    document,
-    config,
-    css,
-    runtime: runtime.script,
-    notices: runtime.notices,
-    assets: await base64Assets(project, (id) => needed.has(id)),
+  const kit = await exportKit();
+  const result = await standaloneHtml({
+    document: project.document,
+    resources: project.resources,
+    blobs: project.blobs,
+    kit,
+    ...(options.lang ? { lang: options.lang } : {}),
+    allowPartial: options.allowPartial,
+    generator: `XCursus CLI ${toolVersion}`,
+  }).catch((error: unknown) => {
+    throw new CliError(EXIT.output, String(error));
   });
-  const bytes = Buffer.from(page.html, "utf8");
-  const warnings = manifestWarnings(analysis);
+  gate(result.analysis, options, report);
+  if (!result.ok) throw new Error("unreachable: strict gate");
+  const { analysis, document, needed, fonts, verification } = result;
+  const bytes = Buffer.from(result.html, "utf8");
+  const warnings = result.warnings;
   if (bytes.length > HTML_TARGET)
     warnings.push({
       code: "HTML_SIZE",
@@ -364,36 +318,6 @@ export async function exportHtml(
       pointer: "",
       message: `The HTML is ${bytes.length} bytes, above the 25 MiB target; prefer a static build or an archive for large projects`,
     });
-  // Checks this run performs on its own output.
-  const scripts = [
-    ...page.html.matchAll(
-      /<script type="application\/json"[^>]*>([\s\S]*?)<\/script>/g,
-    ),
-  ];
-  const verification = {
-    jsonBlocksParse: scripts.every((m) => {
-      try {
-        JSON.parse(m[1]!);
-        return true;
-      } catch {
-        return false;
-      }
-    }),
-    scriptCount: (page.html.match(/<script\b/g) ?? []).length,
-    cspHashesMatchInlineCode:
-      page.csp.includes(page.scriptHash) && page.csp.includes(page.styleHash),
-    privateNotesAbsent: project.document.scenes.every(
-      (s) =>
-        s.notes === "" ||
-        !page.html.includes(JSON.stringify(s.notes).slice(1, -1)),
-    ),
-  };
-  if (
-    !verification.jsonBlocksParse ||
-    !verification.cspHashesMatchInlineCode ||
-    !verification.privateNotesAbsent
-  )
-    throw new CliError(EXIT.output, "Self-check of the generated HTML failed");
   const manifest: ExportManifest = {
     format: "html",
     status: analysis.blocking.length ? "partial" : "complete",
@@ -417,15 +341,15 @@ export async function exportHtml(
       {
         id: "xcursus-runtime.js",
         kind: "runtime",
-        sha256: sha(runtime.script),
+        sha256: sha(kit.script),
         status: "embedded",
       },
     ],
-    licenses: await licensesOf(runtime.notices, fontsUsed(document)),
+    licenses: await licensesOf(kit.notices, fontsUsed(document)),
     warnings,
     unsupported: analysis.unsupported,
     environment: environment(),
-    verification: { ...verification, csp: page.csp },
+    verification: { ...verification, csp: result.csp },
     output: {
       file: basename(target.path),
       byteLength: bytes.length,
@@ -624,10 +548,10 @@ async function withCapture<T>(
   ) => Promise<T>,
 ) {
   const { document, analysis, project } = capture;
-  const runtime = await runtimeFiles();
-  const { css, fonts } = await inlineFonts(await stylesheets(document));
+  const kit = await exportKit();
+  const { css, fonts } = kitStyles(kit, document);
   const needed = requiredAssets(document, analysis, format);
-  const page = standalonePage({
+  const page = await standalonePage({
     document,
     config: {
       mode: "capture",
@@ -636,9 +560,10 @@ async function withCapture<T>(
       placeholders: analysis.placeholders,
     },
     css,
-    runtime: runtime.script,
-    notices: runtime.notices,
-    assets: await base64Assets(project, (id) => needed.has(id)),
+    runtime: kit.script,
+    notices: kit.notices,
+    assets: await base64Assets(project.blobs, (id) => needed.has(id)),
+    generator: `XCursus CLI ${toolVersion}`,
     capture: true,
   });
   // Owned temporary directory: the only thing this command removes.
@@ -668,7 +593,7 @@ async function withCapture<T>(
       analysis.warnings.push(warning);
       report.warn(`warning ${warning.code} ${warning.message}`);
     }
-    return { result, fonts, runtime, needed };
+    return { result, fonts, runtime: kit, needed };
   } finally {
     await chromium.browser.close().catch(() => undefined);
     await rm(dir, { recursive: true, force: true });

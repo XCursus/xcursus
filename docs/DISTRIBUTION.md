@@ -81,7 +81,16 @@ base-uri 'none'; form-action 'none'
 
 **KaTeX inline styles:** no `'unsafe-inline'` for styles. KaTeX formulas are built with `katex.render`, which creates DOM nodes and assigns its positioning styles through CSSOM properties; CSP governs parsed `style` attributes and `<style>` elements, not CSSOM, and the player already applies transforms and theme tokens through CSSOM. The previous `renderToString` + `innerHTML` sink is gone. Two KaTeX features set a `style` attribute on MathML nodes with `setAttribute` (`\pmb` and `\fcolorbox`); under this CSP those attributes are blocked and reported, with no visual effect because the MathML copy is visually hidden. They are not used by the fixtures.
 
+Studio writes the same file: see [Export from Studio](#export-from-studio).
+
 The JSON blocks escape `<`, `>`, `&`, U+2028 and U+2029, so a `</script>` in the content stays text; the inline runtime has every `</script` and `<!--` rewritten to `\x3C…`. The file opens from `file://` with the network disabled. Size target: 25 MiB (warning `HTML_SIZE` above). `file://` has no reliable origin: the presenter view is not available there (single window only).
+
+## Export from Studio
+
+**Export** in the Studio toolbar opens a panel with two parts.
+
+- **Standalone HTML** is written in the browser by the same pipeline as `xcursus export html` (`@xcursus/cli/html`): same profile and strict refusal, same placeholders with **Replace unsupported content with placeholders**, same CSP, notices and self-checks, same interface languages. The assets held by Studio are verified against their declared size, MIME signature and digest first. Only the generator named in the header comment and the `generator` meta differs (`XCursus Studio` instead of `XCursus CLI`); the E2E suite compares the two files byte for byte. The runtime, its notices and the stylesheets with inlined fonts come from `export-kit.json`, written at build time from the built CLI and precached by the offline shell, so the export works offline too. The panel names every refused item; no manifest is written (use the CLI for one).
+- **PDF and video** need Chromium and FFmpeg, so they stay on the command line. The panel saves the archive (**Save archive**) and proposes an itinerary for the chosen path (**Download itinerary**): from the start scene it follows the only transition of each scene and stops before a scene already visited, saying so; a scene with several transitions is a choice, so no itinerary is proposed and the file has to be written by hand. The panel then shows the two commands with the saved file names, ready to copy.
 
 ## Static build
 
@@ -96,7 +105,7 @@ The JSON blocks escape `<`, `>`, `&`, U+2028 and U+2029, so a `</script>` in the
 }
 ```
 
-At most 500 visits, finite, with explicit repetitions for loops. Consecutive visits must be connected by an edge of the path; `edgeIdToNext` is required when several edges join the same nodes and must be absent on the last visit. Visit limits (`loopPolicy`, `visit-limit`) are checked with the runtime rule. The first visit is placed without transition; the total is the sum of every `holdMs` plus the edges between visits. A track starts from the previous arrival pose, never from its saved first keyframe, and its endpoint is the arrival pose. Core API: `validateItinerary`, `planCapture`, `sampleCapture`, `frameSchedule` (see DEVELOPMENT).
+At most 500 visits, finite, with explicit repetitions for loops. Consecutive visits must be connected by an edge of the path; `edgeIdToNext` is required when several edges join the same nodes and must be absent on the last visit. Visit limits (`loopPolicy`, `visit-limit`) are checked with the runtime rule. The first visit is placed without transition; the total is the sum of every `holdMs` plus the edges between visits. A track starts from the previous arrival pose, never from its saved first keyframe, and its endpoint is the arrival pose. Core API: `validateItinerary`, `firstPassItinerary` (the itinerary Studio proposes), `planCapture`, `sampleCapture`, `frameSchedule` (see [API](API.md#capture)).
 
 ## PDF
 
@@ -124,9 +133,15 @@ Only the static profile: text, Markdown, HTML, SVG, LaTeX, images, links as stat
 | `@xcursus/player`  | ESM, types, `style.css`, `fonts.css` + woff2/OFL, `presenter` subpath, `iife` build | IIFE embeds core, gl-matrix, Ajv runtime: `dist/iife/THIRD_PARTY_NOTICES.txt`                                             |
 | `@xcursus/plugins` | ESM per entry, lazy rich/media chunks, `style.css` (KaTeX, woff2 files + licence)   | imports DOMPurify, marked, KaTeX, fflate                                                                                  |
 | `@xcursus/editor`  | ESM, types, `style.css`; React `^19.3.1` peers                                      | none                                                                                                                      |
-| `@xcursus/cli`     | Node ESM, `xcursus` bin, export runtime                                             | runtime embeds player, renderers, DOMPurify, marked, KaTeX, Ajv, gl-matrix, fonts: `dist/runtime/THIRD_PARTY_NOTICES.txt` |
+| `@xcursus/cli`     | Node ESM, `xcursus` bin, export runtime, browser-safe `html` subpath                | runtime embeds player, renderers, DOMPurify, marked, KaTeX, Ajv, gl-matrix, fonts: `dist/runtime/THIRD_PARTY_NOTICES.txt` |
 
-The npm scope is `@xcursus`. Every manifest has `license: GPL-3.0-or-later`, description, repository, homepage, keywords, `sideEffects`, `engines` and a README; `pnpm pack` adds the repository `LICENSE`. Internal dependencies become the same version in the tarball. A build plugin fails if a library chunk contains a module from `node_modules`; IIFE builds generate their notice file from the bundled modules and fail on a missing or incompatible licence. The packages stay `"private": true` and are not published to npm: publishing waits until ownership of the `@xcursus` npm scope is confirmed. Until then, use them from this workspace or install the tarballs produced by `pnpm pack`.
+The npm scope is `@xcursus`. Every manifest has `license: GPL-3.0-or-later`, description, repository, homepage, keywords, `sideEffects`, `engines` and a README; `pnpm pack` adds the repository `LICENSE`. Internal dependencies become the same version in the tarball. A build plugin fails if a library chunk contains a module from `node_modules`; IIFE builds generate their notice file from the bundled modules and fail on a missing or incompatible licence. The packages are not published to npm yet, but they are ready to be. Scope ownership is settled: since 2 November 2026 the `xcursus` organization exists on npm, with the maintainer account `fv-c` as owner (`npm org ls xcursus`), and none of the five package names is taken. The manifests no longer carry `"private": true` and set `"publishConfig": {"access": "public"}` (scoped packages are private by default on npm); `check:packages` verifies both in every tarball. Publishing remains an explicit maintainer step, never done by the build, the tests or CI. Use `pnpm publish`, not `npm publish`: pnpm turns the `workspace:*` dependencies into the release version and runs the `prepack` script that copies `LICENSE`. Publish in dependency order after `pnpm build` and `pnpm check:packages`, from a machine signed in with `npm login` (the account asks for a two-factor code on every write):
+
+```sh
+for p in core player plugins editor cli; do (cd packages/$p && pnpm publish); done
+```
+
+Until the first release, use the packages from this workspace or install the tarballs produced by `pnpm pack`.
 
 `pnpm check:packages` packs the five packages, installs the tarballs in `test-results/packages/consumer` (own pnpm workspace, packages from the local store when present and registry metadata only when missing, third-party runtime dependencies pinned to the repository lockfile versions, no source aliases), type-checks without `skipLibCheck`, builds a minimal and a realistic consumer and measures them; the E2E suite serves that consumer and runs the CLI installed from its tarball.
 

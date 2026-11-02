@@ -235,6 +235,9 @@ importers:
 
   apps/studio:
     dependencies:
+      '@xcursus/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
       '@xcursus/core':
         specifier: workspace:*
         version: link:../../packages/core

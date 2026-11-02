@@ -1,8 +1,43 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { createHash } from "node:crypto";
+import { pathToFileURL } from "node:url";
 import type { Plugin } from "vite";
 const source = (path: string) => new URL(path, import.meta.url).pathname;
+/**
+ * Runtime, notices and stylesheets with inlined fonts of the export panel,
+ * written by the built CLI (`pnpm build` builds it before Studio). The file is
+ * part of the bundle, so the offline shell precaches it.
+ */
+async function exportKitJSON() {
+  const assemble = pathToFileURL(
+    source("../../packages/cli/dist/assemble.js"),
+  ).href;
+  const { exportKit } = (await import(assemble)) as {
+    exportKit: () => Promise<unknown>;
+  };
+  return JSON.stringify(await exportKit());
+}
+function exportKitAsset(): Plugin {
+  return {
+    name: "xcursus-export-kit",
+    async generateBundle() {
+      this.emitFile({
+        type: "asset",
+        fileName: "export-kit.json",
+        source: await exportKitJSON(),
+      });
+    },
+    configureServer(server) {
+      server.middlewares.use("/export-kit.json", (_request, response, next) => {
+        exportKitJSON().then((json) => {
+          response.setHeader("content-type", "application/json");
+          response.end(json);
+        }, next);
+      });
+    },
+  };
+}
 /**
  * Versioned offline shell: the worker precaches every built file under a cache
  * named after a digest of the build. Activation waits for the user (no
@@ -77,6 +112,7 @@ export default defineConfig({
   root: source("."),
   plugins: [
     react(),
+    exportKitAsset(),
     offlineShell(),
     {
       // The dev server needs its HMR websocket; production keeps connect-src 'self'.
@@ -88,6 +124,10 @@ export default defineConfig({
   ],
   resolve: {
     alias: [
+      {
+        find: "@xcursus/cli/html",
+        replacement: source("../../packages/cli/src/html.ts"),
+      },
       {
         find: "@xcursus/plugins/style.css",
         replacement: source("../../packages/plugins/src/katex.css"),

@@ -1,6 +1,17 @@
 import { diagnostic } from "@xcursus/core";
 import type { Block, Diagnostic, ProjectDocument } from "@xcursus/core";
-import type { LoadedResource } from "./io.js";
+
+export type ResourceStatus = "verified" | "missing" | "invalid";
+/** An asset of the project after its bytes were read and checked. */
+export interface LoadedResource {
+  id: string;
+  path: string;
+  mime: string;
+  byteLength: number;
+  sha256: string | null;
+  status: ResourceStatus;
+  diagnostic?: Diagnostic;
+}
 
 export type Format = "html" | "build" | "pdf" | "video";
 export interface Unsupported {

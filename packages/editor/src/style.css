@@ -1741,6 +1741,90 @@ dialog label {
   gap: 8px;
   margin-top: 20px;
 }
+/* Export panel: HTML written here, commands for PDF and video. */
+dialog.export-panel {
+  width: min(640px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+}
+.export-panel section {
+  display: grid;
+  /* Long commands scroll inside their box instead of widening the panel. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  justify-items: start;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+.export-panel h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.export-panel p {
+  margin: 0;
+}
+.export-options,
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+.export-panel label.export-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+}
+.export-status {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+}
+.export-panel .export-error {
+  color: var(--danger);
+}
+.export-findings,
+.export-visits {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.export-findings code,
+.export-panel .export-note code {
+  font-family: var(--ui-mono);
+  font-size: 11.5px;
+}
+.export-pointer {
+  color: var(--text-3);
+}
+.export-command {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.export-command pre {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-3);
+  font-family: var(--ui-mono);
+  font-size: 11.5px;
+}
+.export-panel .export-note {
+  color: var(--text-3);
+  font-size: 11.5px;
+}
 /* Presentation: the scene fills the screen; the controls float and fade at rest. */
 .presentation {
   position: fixed;

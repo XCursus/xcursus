@@ -27,6 +27,8 @@ import {
   readArchive,
 } from "@xcursus/plugins/archive";
 import type { ArchiveFormat } from "@xcursus/plugins/archive";
+import type { LoadedResource, ResourceStatus } from "./profile.js";
+export type { LoadedResource, ResourceStatus } from "./profile.js";
 
 /** Exit codes of the contract: 0 success (warnings allowed), 1 data, 2 environment, 3 write/export. */
 export const EXIT = { ok: 0, data: 1, environment: 2, output: 3 } as const;
@@ -40,16 +42,6 @@ export class CliError extends Error {
   }
 }
 
-export type ResourceStatus = "verified" | "missing" | "invalid";
-export interface LoadedResource {
-  id: string;
-  path: string;
-  mime: string;
-  byteLength: number;
-  sha256: string | null;
-  status: ResourceStatus;
-  diagnostic?: Diagnostic;
-}
 export interface LoadedProject {
   kind: "json" | "archive";
   /** `current` for `.xcursus`, `legacy` for a `.spatialdeck` archive; absent for JSON. */
