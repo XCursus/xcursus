@@ -51,19 +51,18 @@ Evaluated and deferred after 1.0 (no schema change needed, decision recorded):
 - [ ] Browser matrix: Chromium, Firefox and WebKit automated and Chrome 156 run; **real Safari and Edge, previous stable versions, touch and screen reader checks are blockers**.
 - [ ] Budgets measured with hardware, browser and build recorded: **met on a local machine; controlled-machine run open**.
 - [x] Complete CI, installable packages, public types, licences and attributions, reproducible documentation (green Linux CI on the candidate, 4 November 2026).
-- [ ] No known unresolved P0 or P1 issue, data loss or security risk; backlog classified: **one P1 open (Firefox painting)**.
+- [x] No known unresolved P0 or P1 issue, data loss or security risk; backlog classified (the Firefox painting defect is fixed, 4 November 2026).
 
 ## Known issues
 
 Defects found by testing that are still open, by severity (P1 blocks an intended use or shows wrong data; P2 has a workaround; P3 is polish).
 
-| Severity | Issue                                                                                                                                                                                                      |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P1       | Firefox does not paint child scenes inside a large rotated parent scene (observed with an 8400×5600 parent rotated 12° on X); hit-testing still finds them. Smaller or unrotated parents are not affected. |
-| P2       | In the PDF, scenes with a world rotation are rasterized even when the camera frames them head-on, so their text is neither selectable nor searchable and files grow large.                                 |
-| P2       | Pressing **Next** during a long camera track restarts it from its first keyframe; repeated presses lengthen the transition.                                                                                |
-| P2       | At the maximum of 1000 scenes the exported HTML takes several seconds to become ready, the overview about 2 s, and selecting a scene in Studio 1–3 s; the Paths tab creates a very large DOM.              |
-| P3       | Studio logs CSP reports in the console whenever it parses HTML that contains inline `style` or `on*` attributes (removed by the sanitizer), which can hide other errors.                                   |
+| Severity | Issue                                                                                                                                                                                         |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P2       | In the PDF, scenes with a world rotation are rasterized even when the camera frames them head-on, so their text is neither selectable nor searchable and files grow large.                    |
+| P2       | Pressing **Next** during a long camera track restarts it from its first keyframe; repeated presses lengthen the transition.                                                                   |
+| P2       | At the maximum of 1000 scenes the exported HTML takes several seconds to become ready, the overview about 2 s, and selecting a scene in Studio 1–3 s; the Paths tab creates a very large DOM. |
+| P3       | Studio logs CSP reports in the console whenever it parses HTML that contains inline `style` or `on*` attributes (removed by the sanitizer), which can hide other errors.                      |
 
 ## Backlog
 

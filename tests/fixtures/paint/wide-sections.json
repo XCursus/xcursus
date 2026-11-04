@@ -1,0 +1,214 @@
+{
+  "assets": [],
+  "cameraTracks": [],
+  "cues": [],
+  "defaultPathId": "main",
+  "extensions": {},
+  "id": "wide-sections",
+  "metadata": {
+    "language": "en",
+    "title": "A wall and a turned panel"
+  },
+  "paths": [
+    {
+      "edges": [
+        {
+          "from": "wall",
+          "id": "e1",
+          "label": "",
+          "to": "panel",
+          "transition": {
+            "durationMs": 0,
+            "easing": "linear"
+          }
+        },
+        {
+          "from": "panel",
+          "id": "e2",
+          "label": "",
+          "to": "first",
+          "transition": {
+            "durationMs": 0,
+            "easing": "linear"
+          }
+        },
+        {
+          "from": "first",
+          "id": "e3",
+          "label": "",
+          "to": "second",
+          "transition": {
+            "durationMs": 0,
+            "easing": "linear"
+          }
+        }
+      ],
+      "id": "main",
+      "name": "Main",
+      "nodes": [
+        {
+          "holdMs": 0,
+          "id": "wall",
+          "sceneId": "wall"
+        },
+        {
+          "holdMs": 0,
+          "id": "panel",
+          "sceneId": "panel"
+        },
+        {
+          "holdMs": 0,
+          "id": "first",
+          "sceneId": "first"
+        },
+        {
+          "holdMs": 0,
+          "id": "second",
+          "sceneId": "second"
+        }
+      ],
+      "startNodeId": "wall"
+    }
+  ],
+  "requiredCapabilities": ["linear", "structure", "layout"],
+  "scenes": [
+    {
+      "appearance": {
+        "background": "sand",
+        "titleVisible": true,
+        "variant": "plain"
+      },
+      "blocks": [],
+      "extensions": {},
+      "id": "wall",
+      "layout": "canvas",
+      "notes": "",
+      "parentId": null,
+      "position": [20500, 2000, 0],
+      "rotation": [0, 0, 0],
+      "scale": 1,
+      "size": [12400, 8600],
+      "title": "Wall",
+      "visible": true
+    },
+    {
+      "appearance": {
+        "background": "grey",
+        "titleVisible": true,
+        "variant": "plain"
+      },
+      "blocks": [],
+      "extensions": {},
+      "id": "panel",
+      "layout": "canvas",
+      "notes": "",
+      "parentId": null,
+      "position": [33500, 0, 0],
+      "rotation": [0, 15, 0],
+      "scale": 1,
+      "size": [9000, 3200],
+      "title": "Panel",
+      "visible": true
+    },
+    {
+      "appearance": {
+        "background": null,
+        "titleVisible": true,
+        "variant": "card"
+      },
+      "blocks": [],
+      "extensions": {},
+      "id": "first",
+      "layout": "canvas",
+      "notes": "",
+      "parentId": "panel",
+      "position": [1000, -650, 30],
+      "rotation": [0, 0, 0],
+      "scale": 1,
+      "size": [1600, 900],
+      "title": "First child",
+      "visible": true
+    },
+    {
+      "appearance": {
+        "background": null,
+        "titleVisible": true,
+        "variant": "card"
+      },
+      "blocks": [],
+      "extensions": {},
+      "id": "second",
+      "layout": "canvas",
+      "notes": "",
+      "parentId": "panel",
+      "position": [3000, -650, 30],
+      "rotation": [0, 0, 0],
+      "scale": 1,
+      "size": [1600, 900],
+      "title": "Second child",
+      "visible": true
+    }
+  ],
+  "schemaVersion": "1.3.0",
+  "settings": {
+    "presentation": {
+      "defaultTransition": {
+        "durationMs": 0,
+        "easing": "linear"
+      },
+      "fit": "contain",
+      "motion": "system"
+    },
+    "viewport": {
+      "height": 1080,
+      "perspective": 1400,
+      "width": 1920
+    }
+  },
+  "theme": {
+    "colors": {
+      "accent": "accent",
+      "backdrop": "backdrop",
+      "background": "background",
+      "text": "text"
+    },
+    "fonts": {
+      "body": "system-sans",
+      "heading": "system-sans"
+    },
+    "palette": [
+      {
+        "id": "text",
+        "value": "#172035"
+      },
+      {
+        "id": "background",
+        "value": "#fffdf7"
+      },
+      {
+        "id": "accent",
+        "value": "#215baf"
+      },
+      {
+        "id": "backdrop",
+        "value": "#0b1622"
+      },
+      {
+        "id": "lavender",
+        "value": "#ede9fe"
+      },
+      {
+        "id": "sand",
+        "value": "#fef3c7"
+      },
+      {
+        "id": "grey",
+        "value": "#f0f4f8"
+      }
+    ],
+    "typeScale": {
+      "body": 28,
+      "title": 46
+    }
+  }
+}

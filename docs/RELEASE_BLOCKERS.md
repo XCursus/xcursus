@@ -13,7 +13,7 @@ Priorities: **P1** prevents declaring 1.0 (a criterion without evidence, or a de
 
 ## B2 · P1 · Real Edge, Firefox and the previous Chrome
 
-- **Missing evidence:** Microsoft Edge and a release build of Firefox are not installed on the development machine. Google Chrome 156.0.8078.79 is installed and passed the full browser suite (`pnpm test:e2e:chrome`: 101 passed, 0 failed, skipped or flaky); the previous stable Chrome (155) was not run. Playwright's Firefox 157 build passes every suite but is Playwright's patched build.
+- **Missing evidence:** Microsoft Edge and a release build of Firefox are not installed on the development machine. Google Chrome 156.0.8078.79 is installed and passed the full browser suite (`pnpm test:e2e:chrome`: 103 passed, 0 failed, skipped or flaky); the previous stable Chrome (155) was not run. Playwright's Firefox 157 build passes every suite but is Playwright's patched build.
 - **Impact:** the policy names the last two stable versions of Chrome, Edge, Firefox and Safari.
 - **Closing criterion:** the browser suites (Playwright channels `chrome`, `msedge`, or the manual checklist for Firefox) passed in the two latest stable versions of each, with versions recorded.
 
@@ -28,13 +28,6 @@ Priorities: **P1** prevents declaring 1.0 (a criterion without evidence, or a de
 - **Missing evidence:** axe reports no serious or critical violation in the playground, Studio (including the import and export dialogs) and the exported HTML in three engines, but no manual screen reader test has been done. axe is not a screen reader test.
 - **Closing criterion:** the screen reader part of the [manual checklist](#manual-checklist) with VoiceOver and Safari on macOS and NVDA with Firefox or Chrome on Windows, findings fixed or recorded with a severity.
 
-## B5 · P1 · Firefox painting of children inside a large rotated parent
-
-- **Defect:** observed in October 2026 with the stress deck `examples/stress-temporal-system`: Firefox did not paint the child scenes of `sec-gerarchia` (8400×5600, rotated 12° on X); hit-testing still found them. Chromium and WebKit paint them.
-- **Reproduction:** open `examples/stress-temporal-system/project.json` in the playground or Studio in Firefox and navigate to a child of `sec-gerarchia`. A minimal probe on 2 November 2026 (one parent of the same size and rotation, one coplanar child, camera on the child, headless Playwright Firefox 157) painted the child correctly, so the trigger is not the size and rotation alone; the player already places every scene as a direct child of the world with its own world matrix, so it is not DOM nesting.
-- **Impact:** wrong rendering (missing content) in a supported browser for a valid document.
-- **Closing criterion:** reproduce with the stress deck in headed Firefox, isolate the condition, then fix it or apply a tested mitigation, with a regression test in the Firefox suite.
-
 ## B6 · P2 · Performance gate on a controlled machine
 
 - **Evidence so far:** `pnpm benchmark` on the reference scenario (100 scenes × 10 text blocks of 100 characters, 1280×720, DPR 1, production build, 5 warm-ups + 20 runs) on an Apple M3 Max, 64 GiB, macOS 14.8.7, **on battery**, with other applications open. All budgets met with margin (Chromium 156 / Firefox 157 / WebKit 26.5 builds of Playwright, headless): validation p95 13.4 / 11.8 / 12.0 ms; mount-ready p95 329 / 416 / 236 ms; input → preview p95 53 / 32 / 33 ms; frame interval p95 16.7 / 16.7 / 18.0 ms over 10 transitions; no long task (observable in Chromium only); 50 mount/destroy cycles with zero owned resources in every engine and a heap delta of 0.05 MiB after GC (Chromium only). Raw samples in `test-results/benchmark/`.
@@ -42,6 +35,8 @@ Priorities: **P1** prevents declaring 1.0 (a criterion without evidence, or a de
 - **Closing criterion:** `pnpm benchmark --gate` in Chromium, Firefox and WebKit on a controlled machine, results recorded with the environment.
 
 ## Closed
+
+- **B5 · Firefox painting of child scenes in front of large sections** (closed 4 November 2026). Cause: Gecko sorts the planes of a 3D scene by inserting them, in paint order, into a splitting tree; when a turned plane painted earlier cuts a very large plane, the fragments lose precision and child scenes 30 px in front of the section are drawn behind its background. Isolated with the stress deck to two reproductions of four scenes each (`tests/fixtures/paint`), and to a static page of eleven elements without any XCursus code that Firefox renders wrongly and Chromium correctly. Fix: in Gecko only, the player gives scene wrappers a paint order (`z-index`, the DOM is not reordered) in which the planes that cut the least area of the others come first and the scene being shown comes before all (`packages/player/src/paint.ts`); the 3D result is decided by depth as before. Evidence on the stress deck in Firefox: the 10 of 48 visits that showed missing or broken children (children of the two sections, the recursion, the sections themselves and a far overview) now match Chromium, the other 38 are unchanged and no seam appears on the scene shown; the unit test checks the order and its application, `tests/e2e/paint.spec.ts` checks in every engine that the children are drawn and fails in Firefox when the order is disabled. Chromium and WebKit get no `z-index` at all.
 
 - **B7 · Security reporting channel** (closed 4 November 2026): GitHub's private vulnerability reporting, the channel named in [SECURITY.md](../SECURITY.md), is enabled on `XCursus/xcursus` (`GET /repos/XCursus/xcursus/private-vulnerability-reporting` returns `{"enabled": true}`; it returned `false` on 2 November).
 

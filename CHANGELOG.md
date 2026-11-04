@@ -23,6 +23,7 @@ Schema `1.3.0`, archive manifest `1.0.0` and plugin API `1.0.0` are unchanged; d
 
 ### Fixed
 
+- Firefox drew some child scenes behind their large section (only the section's background was visible). Gecko sorts 3D planes in paint order and loses precision when a large plane is cut; the player now gives scene wrappers a split-minimizing paint order in that engine, with the scene being shown first, without moving them in the DOM.
 - LaTeX blocks with alternative text named a generic element (`aria-label` without a role, an axe `aria-prohibited-attr` violation in exported HTML); the formula is now a `math` region.
 - The review list of the import dialog scrolls and is keyboard focusable.
 

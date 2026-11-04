@@ -170,7 +170,7 @@ The core exposes pure sampling from monotonic time; the player uses `requestAnim
 
 Transitions are frozen in hidden tabs and resume without skipping cues. Cues fire once per transition, only when the threshold is crossed forwards; cancellation suppresses future cues. Zero duration runs cues once in `(atMs, id)` order. `prefers-reduced-motion: reduce` or the `reduced` setting forces zero durations while keeping destination, history and events; an author cannot force animation against the user's preference.
 
-Content is native, selectable DOM; no canvas or WebGL for text. Inactive scenes stay visible where intended but are `inert` and `aria-hidden`. An accessible linear outline shows sanitized content and navigation in the order of the chosen path. Wrappers avoid properties that flatten `preserve-3d` (`filter`, group opacity, overflow).
+Content is native, selectable DOM; no canvas or WebGL for text. Every scene wrapper is a direct child of the world with its own world matrix, in document order. In engines that sort 3D planes in paint order (Gecko), the player sets a paint order on the wrappers without moving them, so that large sections never hide the scenes in front of them; depth alone decides what is visible. Inactive scenes stay visible where intended but are `inert` and `aria-hidden`. An accessible linear outline shows sanitized content and navigation in the order of the chosen path. Wrappers avoid properties that flatten `preserve-3d` (`filter`, group opacity, overflow).
 
 ## 5. Public API and navigation machine
 

@@ -29,6 +29,7 @@ import { ContentMount, blockText } from "./content/index.js";
 import type { RendererRegistry } from "./content/index.js";
 import type { AssetResolver } from "./assets/index.js";
 import { resolveMessages } from "./messages.js";
+import { activeFirst, needsPaintOrder, paintOrder } from "./paint.js";
 import type { PlayerMessages } from "./messages.js";
 export * from "./content/index.js";
 export * from "./assets/index.js";
@@ -172,7 +173,9 @@ export function createPlayer(options: PlayerOptions = {}): Player {
     outlineOpen = false,
     spatialSupported = true,
     focusRequested = false,
-    focusAllowed = false;
+    focusAllowed = false,
+    // Gecko only: wrappers carry an explicit paint order (see paint.ts).
+    planeOrder = false;
   // Render memo: per-frame work is the camera; everything else runs when its inputs change.
   let revision = 0,
     layout = 0,
@@ -184,7 +187,10 @@ export function createPlayer(options: PlayerOptions = {}): Player {
     outlineNode: string | null | undefined,
     choicesSource = "",
     choicesRendered = "",
-    liveKey = "";
+    liveKey = "",
+    paintKey = "",
+    paintGeometry = "",
+    paintBase: string[] = [];
   let mediaEnabled = false;
   const scenes = new Map<string, SceneView>();
   const clearContents = () => {
@@ -644,6 +650,27 @@ export function createPlayer(options: PlayerOptions = {}): Player {
       renderedCamera = s.camera;
       world.style.transform = `matrix3d(${viewMatrix(s.camera).join(",")})`;
     }
+    if (planeOrder) {
+      // The split-minimizing order depends on the geometry only; the scene
+      // shown, or arrived at, moves to the front (paint.ts).
+      const geometry = `${revision}|${layout}`;
+      if (geometry !== paintGeometry) {
+        paintGeometry = geometry;
+        paintBase = paintOrder(doc);
+      }
+      const active =
+        s.view === "overview"
+          ? null
+          : (s.transition?.to.sceneId ?? s.sceneId ?? null);
+      const paint = `${geometry}|${active}`;
+      if (paint !== paintKey) {
+        paintKey = paint;
+        activeFirst(paintBase, active).forEach((id, rank) => {
+          const view = scenes.get(id);
+          if (view) view.wrapper.style.zIndex = String(rank);
+        });
+      }
+    }
     const activation = `${layout}|${s.sceneId}|${outlineOpen}|${s.view}|${mediaEnabled}`;
     if (activation !== activationKey) {
       activationKey = activation;
@@ -773,6 +800,7 @@ export function createPlayer(options: PlayerOptions = {}): Player {
       const win = container.ownerDocument.defaultView;
       if (!win)
         return failure("NO_WINDOW", "Container must belong to a window");
+      planeOrder = needsPaintOrder(win);
       spatialSupported =
         win.CSS.supports("transform-style", "preserve-3d") &&
         win.CSS.supports("perspective", "1000px");
