@@ -1,9 +1,9 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync, rmSync } from "node:fs";
+import { copyFileSync, readFileSync, rmSync } from "node:fs";
 import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { cpus, platform, release, totalmem } from "node:os";
-import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { basename, join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { preview, serveDir } from "./preview.mjs";
 import { Key, startBrowser } from "./webdriver.mjs";
 
@@ -28,13 +28,16 @@ import { Key, startBrowser } from "./webdriver.mjs";
 // is proven by counting remote requests, and on touch devices Studio's file
 // input is filled by script (there is no system file picker to drive).
 
-const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("..", import.meta.url));
 const args = process.argv.slice(2);
 const option = (name, fallback) =>
   args.includes(name) ? args[args.indexOf(name) + 1] : fallback;
 const browser = option("--browser", "safari");
 const touchTarget = ["ios-phone", "ios-tablet", "android"].includes(browser);
 const out = join(root, "test-results/checklist", browser);
+// Files the browser reads from disk (file inputs, file:// pages) are copied
+// here first: XCURSUS_STAGE, by default the results folder.
+const stage = process.env.XCURSUS_STAGE ?? out;
 const PLAYGROUND = "http://127.0.0.1:4173";
 const STUDIO = "http://127.0.0.1:4174";
 const STUDIO_URL = `${STUDIO}/?studio-debug`;
@@ -45,9 +48,16 @@ const only = option("--only")
   : null;
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/** The distribution fixture exported by the packaged CLI, at out/deck.html. */
-function exportDeck() {
-  const html = join(out, "deck.html");
+/** A copy of `file` in the staging folder. */
+function staged(file) {
+  const copy = join(stage, basename(file));
+  copyFileSync(file, copy);
+  return copy;
+}
+
+/** The distribution fixture exported by the packaged CLI, at <dir>/deck.html. */
+function exportDeck(dir = out) {
+  const html = join(dir, "deck.html");
   rmSync(html, { force: true });
   rmSync(`${html}.manifest.json`, { force: true });
   execFileSync(
@@ -390,6 +400,11 @@ async function player() {
     await s.click(next);
     await settled(0, "n2");
     const normal = (await lastDuration()).ms;
+    // With "Reduce motion" on in the operating system the player is already
+    // instant: the button then only keeps it so.
+    const system = await s.run(
+      () => matchMedia("(prefers-reduced-motion: reduce)").matches,
+    );
     await s.click(button("Reduce motion", "#player-1"));
     assert(
       (await s.run(() =>
@@ -402,10 +417,15 @@ async function player() {
     await s.click(next);
     await settled(0, "n3");
     const reduced = (await lastDuration()).ms;
-    assert(normal > 200, "normal transition too short, ms", normal);
+    if (system) assert(normal < 50, "system preference ignored, ms", normal);
+    else assert(normal > 200, "normal transition too short, ms", normal);
     assert(reduced < 50, "reduced transition not instant, ms", reduced);
     await s.click('#player-1 button[aria-pressed="true"]');
-    return { normalMs: normal, reducedMs: reduced };
+    return {
+      systemReducesMotion: system,
+      normalMs: normal,
+      reducedMs: reduced,
+    };
   });
 
   await s.navigate(`${PLAYGROUND}/layout`);
@@ -440,7 +460,9 @@ async function player() {
 // ---- 2. Studio -------------------------------------------------------------
 
 async function studio() {
-  const archive = join(root, "examples/layout-canvas/layout-canvas.xcursus");
+  const archive = staged(
+    join(root, "examples/layout-canvas/layout-canvas.xcursus"),
+  );
   let saved;
   await freshStudio();
   await check(2, "Studio opens the example archive", async () => {
@@ -588,7 +610,7 @@ async function studio() {
     assert(file.name.endsWith(".xcursus"), "file name", file.name);
     assert(bytes.subarray(0, 2).toString() === "PK", "not a ZIP archive");
     saved = {
-      path: join(out, file.name),
+      path: join(stage, file.name),
       document: JSON.stringify(await studioDoc()),
     };
     await writeFile(saved.path, bytes);
@@ -630,11 +652,14 @@ async function impress() {
       await s.waitFor(() => !!document.querySelector(".import-panel[open]"));
       await s.sendKeys(
         '.import-panel input[aria-label="impress.js HTML file"]',
-        join(dir, "deck.html"),
+        staged(join(dir, "deck.html")),
       );
       await s.sendKeys(
         '.import-panel input[aria-label="Images and media of the presentation"]',
-        [join(dir, "images/ring.png"), join(dir, "images/axes.svg")].join("\n"),
+        [
+          staged(join(dir, "images/ring.png")),
+          staged(join(dir, "images/axes.svg")),
+        ].join("\n"),
       );
       await s.click(button("Convert", ".import-panel"));
       await s.waitFor(
@@ -698,7 +723,7 @@ async function impress() {
 // ---- 4. Exported HTML ------------------------------------------------------
 
 async function exported() {
-  const html = exportDeck();
+  const html = exportDeck(stage);
   await s.navigate(pathToFileURL(html).href);
   await s.waitFor(() => document.documentElement.dataset.xcursus === "ready", {
     what: "the exported presentation",
@@ -843,7 +868,7 @@ async function presenter() {
   for (const edge of deck.paths[0].edges)
     if (edge.id === "BD" || edge.id === "CD")
       edge.condition = { kind: "visit-limit", maxVisits: 2 };
-  const deckPath = join(out, "presenter-deck.json");
+  const deckPath = join(stage, "presenter-deck.json");
   await writeFile(deckPath, JSON.stringify(deck));
   const consoleRegion = '[aria-label="Presenter view"]';
   const notes = () =>
@@ -1395,6 +1420,7 @@ function environment(caps) {
 }
 
 await mkdir(out, { recursive: true });
+await mkdir(stage, { recursive: true });
 for (const name of await readdir(out))
   if (name.startsWith("failure-")) await rm(join(out, name));
 const servers = [

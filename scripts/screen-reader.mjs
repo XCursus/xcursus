@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { platform, release } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { nvda, voiceOver } from "@guidepup/guidepup";
 import { preview } from "./preview.mjs";
 import { Key, startBrowser } from "./webdriver.mjs";
@@ -18,10 +19,7 @@ import { Key, startBrowser } from "./webdriver.mjs";
 //
 // Results, with every phrase heard, go to test-results/screen-reader/.
 
-const root = new URL("..", import.meta.url).pathname.replace(
-  /^\/([A-Za-z]:)/,
-  "$1",
-);
+const root = fileURLToPath(new URL("..", import.meta.url));
 const args = process.argv.slice(2);
 const reader =
   (args.includes("--reader") && args[args.indexOf("--reader") + 1]) ||

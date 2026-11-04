@@ -71,10 +71,12 @@ async function launch(driver, timeoutMs) {
 /** Driver and capabilities of each target. */
 function target(browser, env) {
   const common = { unhandledPromptBehavior: "accept" };
+  // SAFARI_DIAGNOSE keeps safaridriver's logs (~/Library/Logs/com.apple.WebDriver).
+  const diagnose = env.SAFARI_DIAGNOSE ? { "safari:diagnose": true } : {};
   if (browser === "safari")
     return {
       driver: "/usr/bin/safaridriver",
-      capabilities: { ...common, browserName: "safari" },
+      capabilities: { ...common, ...diagnose, browserName: "safari" },
     };
   if (browser === "ios-phone" || browser === "ios-tablet")
     return {
@@ -85,6 +87,9 @@ function target(browser, env) {
         platformName: "iOS",
         "safari:useSimulator": true,
         "safari:deviceType": browser === "ios-phone" ? "iPhone" : "iPad",
+        // A simulator booted beforehand (IOS_UDID) connects reliably.
+        ...(env.IOS_UDID ? { "safari:deviceUDID": env.IOS_UDID } : {}),
+        ...diagnose,
       },
     };
   if (browser === "firefox")
@@ -115,7 +120,7 @@ export async function startBrowser(
   let failure;
   for (let attempt = 0; attempt < attempts; attempt++) {
     if (attempt) await delay(3000);
-    const started = await launch(driver, 15000);
+    const started = await launch(driver, 60000);
     if (!started.child) {
       failure = started.error;
       continue;

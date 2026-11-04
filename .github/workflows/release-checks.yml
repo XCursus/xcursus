@@ -30,6 +30,11 @@ jobs:
       # Lets WebDriver drive Safari; the runner's sudo needs no password.
       - run: sudo safaridriver --enable
       - run: node scripts/checklist.mjs --browser safari
+        env:
+          XCURSUS_STAGE: /tmp/xcursus-checklist
+          SAFARI_DIAGNOSE: "1"
+      - if: always()
+        run: cp -R ~/Library/Logs/com.apple.WebDriver test-results/checklist/safaridriver-logs || true
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
@@ -125,7 +130,31 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: sudo safaridriver --enable
+      # A simulator of the newest iOS runtime, booted before the session.
+      - id: simulator
+        env:
+          KIND: ${{ matrix.device == 'ios-phone' && 'iPhone' || 'iPad' }}
+        run: |
+          udid=$(xcrun simctl list devices available --json | node -e '
+            const { devices } = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
+            const version = (r) => r.split(".iOS-")[1].split("-").map(Number);
+            const runtime = Object.keys(devices)
+              .filter((r) => r.includes(".iOS-") && devices[r].length)
+              .sort((a, b) => version(a)[0] - version(b)[0] || version(a)[1] - version(b)[1])
+              .at(-1);
+            const device = devices[runtime].find((d) => d.name.startsWith(process.env.KIND));
+            console.log(device.udid);
+          ')
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          xcrun simctl launch "$udid" com.apple.mobilesafari
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
       - run: node scripts/checklist.mjs --browser ${{ matrix.device }}
+        env:
+          IOS_UDID: ${{ steps.simulator.outputs.udid }}
+          SAFARI_DIAGNOSE: "1"
+      - if: always()
+        run: cp -R ~/Library/Logs/com.apple.WebDriver test-results/checklist/safaridriver-logs || true
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
@@ -186,8 +215,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      # Prepares VoiceOver for automation.
-      - uses: guidepup/setup-action@acf1a64cc26292ebe0db6a28d1341bd1bae93c65 # 0.21.0
+      # Prepares macOS and VoiceOver for automation, with the screen reader
+      # assets of the installed Guidepup version.
+      - run: pnpm dlx @guidepup/setup@0.29.3 setup --ci
+      - run: pnpm dlx @guidepup/setup@0.29.3 install voiceover
       - run: sudo safaridriver --enable
       - run: node scripts/screen-reader.mjs --reader voiceover
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -212,7 +243,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       # Installs NVDA with the Guidepup add-on.
-      - uses: guidepup/setup-action@acf1a64cc26292ebe0db6a28d1341bd1bae93c65 # 0.21.0
+      - run: pnpm dlx @guidepup/setup@0.29.3 setup --ci
+      - run: pnpm dlx @guidepup/setup@0.29.3 install nvda
       - run: node scripts/screen-reader.mjs --reader nvda
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
@@ -221,9 +253,16 @@ jobs:
           path: test-results/screen-reader
 
   benchmark:
-    name: Performance gate (macOS 15)
-    runs-on: macos-15
-    timeout-minutes: 45
+    name: Performance gate (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macOS with a window (GPU compositing) and Linux headless.
+          - { name: macOS 15, os: macos-15, mode: --headed }
+          - { name: Ubuntu 24.04, os: ubuntu-24.04, mode: "" }
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
@@ -235,17 +274,17 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: pnpm exec playwright install chromium firefox webkit
+      - run: pnpm exec playwright install --with-deps chromium firefox webkit
       # A dedicated runner on mains power with fixed browser builds; every
       # engine runs even when an earlier one misses a budget.
       - run: |
           status=0
           for browser in chromium firefox webkit; do
-            node scripts/benchmark.mjs --gate --browser "$browser" || status=1
+            node scripts/benchmark.mjs --gate --browser "$browser" ${{ matrix.mode }} || status=1
           done
           exit $status
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
-          name: benchmark
+          name: benchmark-${{ matrix.os }}
           path: test-results/benchmark
