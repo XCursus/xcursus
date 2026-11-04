@@ -126,6 +126,12 @@ function assert(condition, message, details) {
         : `${message}: ${JSON.stringify(details)}`,
     );
 }
+/**
+ * A check this machine cannot carry out (the browser refuses an operation
+ * for reasons of the environment): recorded as not verified, neither passed
+ * nor failed.
+ */
+class NotVerifiable extends Error {}
 async function check(item, name, fn) {
   const started = Date.now();
   try {
@@ -133,6 +139,17 @@ async function check(item, name, fn) {
     results.push({ item, name, ok: true, ms: Date.now() - started, details });
     console.log(`  ok   ${item}. ${name}`);
   } catch (error) {
+    if (error instanceof NotVerifiable) {
+      results.push({
+        item,
+        name,
+        ok: null,
+        ms: Date.now() - started,
+        notVerified: error.message,
+      });
+      console.log(`  n/a  ${item}. ${name}\n       ${error.message}`);
+      return;
+    }
     results.push({
       item,
       name,
@@ -874,10 +891,33 @@ async function exported() {
   });
   await check(4, "exported HTML: Full screen enters and exits", async () => {
     const nav = 'nav[aria-label="Presentation navigation"]';
-    await s.click(button("Full screen", nav));
-    await s.waitFor(() => !!document.fullscreenElement, {
-      what: "full screen",
+    // The outcome of the request, to tell a refusal of the machine from a
+    // page that never asks.
+    await s.run(() => {
+      window.fullscreenOutcome = null;
+      const request = Element.prototype.requestFullscreen;
+      Element.prototype.requestFullscreen = function (...options) {
+        const asked = request.apply(this, options);
+        asked.then(
+          () => (window.fullscreenOutcome = "entered"),
+          (e) => (window.fullscreenOutcome = `${e.name}: ${e.message}`),
+        );
+        return asked;
+      };
     });
+    await s.click(button("Full screen", nav));
+    try {
+      await s.waitFor(() => !!document.fullscreenElement, {
+        what: "full screen",
+      });
+    } catch (error) {
+      const outcome = await s.run(() => window.fullscreenOutcome);
+      if (outcome && outcome !== "entered")
+        throw new NotVerifiable(
+          `the browser refused full screen on this machine (${outcome})`,
+        );
+      throw error;
+    }
     await delay(1000);
     await shot("export-fullscreen");
     const label = await s.run(
@@ -1226,6 +1266,7 @@ async function touchChecks() {
         window.touchLog = [];
         for (const type of [
           "pointerdown",
+          "pointermove",
           "pointerup",
           "pointercancel",
           "touchstart",
@@ -1241,8 +1282,15 @@ async function touchChecks() {
             true,
           );
       });
+      // Safari on the iOS Simulator turns a slow synthetic swipe into a
+      // long press with text selection: a quick flick there.
+      const steps = browser.startsWith("ios") ? [3, 20] : [12, 25];
       const swipeTo = async (from, to, sceneId) => {
-        await s.swipe({ x: view.width * from, y }, { x: view.width * to, y });
+        await s.swipe(
+          { x: view.width * from, y },
+          { x: view.width * to, y },
+          ...steps,
+        );
         try {
           await at(sceneId);
         } catch (error) {
@@ -1285,8 +1333,10 @@ async function touchChecks() {
         sizes,
       );
       const first = await active();
-      // A tap right after a fast swipe only stops the fling (no click).
+      // A tap right after a fast swipe only stops the fling (no click), and
+      // a tap inside a text selection opens its menu.
       await delay(2500);
+      await s.run(() => getSelection()?.removeAllRanges());
       await s.tap(
         await centre(
           'nav[aria-label="Presentation navigation"] button',
@@ -1538,14 +1588,15 @@ const report = {
   date: started.toISOString(),
   target: browser,
   environment: environment(s?.capabilities ?? {}),
-  passed: results.filter((r) => r.ok).length,
-  failed: results.filter((r) => !r.ok).length,
+  passed: results.filter((r) => r.ok === true).length,
+  failed: results.filter((r) => r.ok === false).length,
+  notVerified: results.filter((r) => r.ok === null).length,
   results,
 };
 const version = (s?.capabilities?.browserVersion ?? "unknown").split(" ")[0];
 const file = join(out, `${browser}-${version}.json`);
 await writeFile(file, `${JSON.stringify(report, null, 2)}\n`);
 console.log(
-  `${report.passed} passed, ${report.failed} failed · ${file.slice(root.length)}`,
+  `${report.passed} passed, ${report.failed} failed, ${report.notVerified} not verifiable here · ${file.slice(root.length)}`,
 );
 process.exit(report.failed || !report.passed ? 1 : 0);

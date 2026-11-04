@@ -248,8 +248,8 @@ export class Session {
     await this.cmd("DELETE", "/actions");
   }
   /** A touch swipe from a point to another, in viewport coordinates. */
-  async swipe(from, to, steps = 12) {
-    await this.pointer("touch", from, to, steps, 25);
+  async swipe(from, to, steps = 12, stepMs = 25) {
+    await this.pointer("touch", from, to, steps, stepMs);
   }
   /** A touch tap at a point, in viewport coordinates. */
   async tap(at) {

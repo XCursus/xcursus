@@ -172,6 +172,31 @@ async function hearClose() {
   );
 }
 
+function assert(condition, message, details) {
+  if (!condition)
+    throw new Error(`${message}: ${JSON.stringify(details).slice(0, 1500)}`);
+}
+async function check(name, fn) {
+  const started = Date.now();
+  try {
+    const details = await fn();
+    results.push({ name, ok: true, ms: Date.now() - started, details });
+    console.log(`  ok   ${name}`);
+  } catch (error) {
+    results.push({
+      name,
+      ok: false,
+      ms: Date.now() - started,
+      error: error.message,
+    });
+    console.log(`  FAIL ${name}\n       ${error.message}`);
+    await writeFile(
+      join(out, `${reader}-failure-${results.length}.png`),
+      await page.screenshot(),
+    ).catch(() => {});
+  }
+}
+
 // Page functions: they only see their arguments.
 
 /**
