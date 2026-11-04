@@ -26,7 +26,7 @@ Status on 2 November 2026: **candidate with open blockers**. Schema 1.3.0 is unc
 | Hardening         | Done: seeded fuzzing of the ZIP reader and of the HTML and SVG policies; host-provided network signal for plugins and embeds; declared embed limits; the two P1 export defects fixed; axe on exported HTML; dependency audit (production: no known vulnerability) |
 | Browser matrix    | Partial: Chromium, Firefox and WebKit automated; installed Google Chrome 156 automated. Real Safari and Edge, the previous stable versions, touch devices and a screen reader are not verified ([blockers](RELEASE_BLOCKERS.md))                                  |
 | Performance       | Measured with `pnpm benchmark` in three engines on a local machine: every budget met with margin; the run on a controlled machine is open. Realistic-consumer threshold set                                                                                       |
-| Project documents | Done: [CHANGELOG](../CHANGELOG.md), [CONTRIBUTING](../CONTRIBUTING.md), [SECURITY](../SECURITY.md); the private reporting channel must be enabled on GitHub                                                                                                       |
+| Project documents | Done: [CHANGELOG](../CHANGELOG.md), [CONTRIBUTING](../CONTRIBUTING.md), [SECURITY](../SECURITY.md), with GitHub's private vulnerability reporting enabled                                                                                                         |
 | Release candidate | Prepared in the repository at version 0.6.0 of the packages; no tag, publish or deploy                                                                                                                                                                            |
 
 Evaluated and deferred after 1.0 (no schema change needed, decision recorded):
@@ -51,7 +51,7 @@ Evaluated and deferred after 1.0 (no schema change needed, decision recorded):
 - [ ] Browser matrix: Chromium, Firefox and WebKit automated and Chrome 156 run; **real Safari and Edge, previous stable versions, touch and screen reader checks are blockers**.
 - [ ] Budgets measured with hardware, browser and build recorded: **met on a local machine; controlled-machine run open**.
 - [ ] Complete CI, installable packages, public types, licences and attributions, reproducible documentation: **all in place; a green Linux CI run of the candidate needs a push**.
-- [ ] No known unresolved P0 or P1 issue, data loss or security risk; backlog classified: **one P1 open (Firefox painting), security reporting channel not enabled**.
+- [ ] No known unresolved P0 or P1 issue, data loss or security risk; backlog classified: **one P1 open (Firefox painting)**.
 
 ## Known issues
 

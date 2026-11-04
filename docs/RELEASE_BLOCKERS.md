@@ -1,6 +1,6 @@
 # Release blockers for 1.0
 
-XCursus 1.0 is declared only when every [exit criterion](ROADMAP.md#exit-criteria) is met with recorded evidence. The work of 1.0 Stabilization is implemented and tested (see [VERIFICATION](VERIFICATION.md)); the items below are what is still missing. Until they are closed the repository holds a **1.0 candidate**, a pre-release, with the packages at 0.6.0. State on 2 November 2026.
+XCursus 1.0 is declared only when every [exit criterion](ROADMAP.md#exit-criteria) is met with recorded evidence. The work of 1.0 Stabilization is implemented and tested (see [VERIFICATION](VERIFICATION.md)); the items below are what is still missing. Until they are closed the repository holds a **1.0 candidate**, a pre-release, with the packages at 0.6.0. State on 4 November 2026.
 
 Priorities: **P1** prevents declaring 1.0 (a criterion without evidence, or a defect that blocks an intended use); **P2** must be closed or explicitly accepted before 1.0.
 
@@ -41,15 +41,14 @@ Priorities: **P1** prevents declaring 1.0 (a criterion without evidence, or a de
 - **Missing:** the specification requires the gate to run on a controlled machine (on mains power, idle, fixed browser builds); this run is informative.
 - **Closing criterion:** `pnpm benchmark --gate` in Chromium, Firefox and WebKit on a controlled machine, results recorded with the environment.
 
-## B7 · P1 · Security reporting channel
-
-- **Missing:** [SECURITY.md](../SECURITY.md) directs reports to GitHub's private vulnerability reporting, which is **disabled** on `XCursus/xcursus` (`GET /repos/XCursus/xcursus/private-vulnerability-reporting` returned `{"enabled": false}` on 2 November 2026).
-- **Closing criterion:** the maintainer enables it (repository Settings → Security → Private vulnerability reporting), or SECURITY.md names another private channel.
-
 ## B8 · P1 · Linux CI run of the candidate
 
 - **Missing:** every check of this candidate ran on macOS 14 (arm64). The CI workflow runs the same suite on Linux, including the new impress.js, fuzzing and accessibility tests, but needs a push.
 - **Closing criterion:** a green run of `.github/workflows/ci.yml` on the candidate commit, with `git diff --exit-code` passing.
+
+## Closed
+
+- **B7 · Security reporting channel** (closed 4 November 2026): GitHub's private vulnerability reporting, the channel named in [SECURITY.md](../SECURITY.md), is enabled on `XCursus/xcursus` (`GET /repos/XCursus/xcursus/private-vulnerability-reporting` returns `{"enabled": true}`; it returned `false` on 2 November).
 
 ## Not blocking, recorded
 
