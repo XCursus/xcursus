@@ -78,12 +78,18 @@ export function noscriptOutline(document: ProjectDocument, lang: "en" | "it") {
   )}</p><ol>${items.join("")}</ol></section></noscript>`;
 }
 
-/** Page layout of exports; the stage fills the window, the print book only prints. */
+/**
+ * Page layout of exports; the stage fills the window, the print book only
+ * prints. Horizontal swipes navigate: touch-action stops at every scroll
+ * container (scene content, framed blocks), so pan-y is set on each of
+ * them; code blocks keep horizontal scrolling and the outline keeps zoom.
+ * The outline scrolls its last item above the on-screen buttons.
+ */
 export function pageCSS(document: ProjectDocument, capture: boolean) {
   const { width, height } = document.settings.viewport;
   return capture
     ? `html,body{margin:0;padding:0;background:#fff;overflow:hidden}#xcursus-stage{position:absolute;left:0;top:0;width:${width}px;height:${height}px;overflow:hidden}@page{size:${width}px ${height}px;margin:0}`
-    : `html,body{margin:0;height:100%}#xcursus-stage{position:fixed;inset:0;touch-action:pan-y}.xc-noscript{padding:16px;font-family:system-ui,sans-serif}.xc-export-placeholder{margin:0;padding:8px}.xc-export-nav{position:fixed;right:16px;bottom:16px;z-index:2;display:flex;gap:8px}.xc-export-nav button{min-width:44px;min-height:44px;padding:8px 14px;border:1px solid #53637b;border-radius:6px;background:#fff;color:#172035;font:16px system-ui,sans-serif;cursor:pointer}.xc-export-nav button:disabled{opacity:.6;cursor:default}.xc-export-nav button:focus-visible{outline:3px solid #1169d4;outline-offset:3px}`;
+    : `html,body{margin:0;height:100%}#xcursus-stage{position:fixed;inset:0;touch-action:pan-y}#xcursus-stage :not(pre,pre *,.xc-outline,.xc-outline *){touch-action:pan-y}#xcursus-stage .xc-outline{padding-bottom:76px}.xc-noscript{padding:16px;font-family:system-ui,sans-serif}.xc-export-placeholder{margin:0;padding:8px}.xc-export-nav{position:fixed;right:16px;bottom:16px;z-index:2;display:flex;gap:8px}.xc-export-nav button{min-width:44px;min-height:44px;padding:8px 14px;border:1px solid #53637b;border-radius:6px;background:#fff;color:#172035;font:16px system-ui,sans-serif;cursor:pointer}.xc-export-nav button:disabled{opacity:.6;cursor:default}.xc-export-nav button:focus-visible{outline:3px solid #1169d4;outline-offset:3px}`;
 }
 
 export interface EmbeddedFont {

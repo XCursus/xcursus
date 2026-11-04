@@ -1039,3 +1039,59 @@ test("capture environment errors: failing FFmpeg exits 3, missing Chromium exits
   expect(noBrowser.stderr).toContain("install chromium");
   expect((await readdir(dir)).filter((f) => f.startsWith("x.pdf"))).toEqual([]);
 });
+
+test("exported HTML on a narrow touch screen: swipes are never taken by the browser and the outline ends above the buttons", async ({
+  page,
+  browserName,
+}) => {
+  const dir = await outDir("narrow", browserName);
+  const out = join(dir, "narrow.html");
+  const r = await xcursus(["export", "html", project, "--out", out]);
+  expect(r.code, r.stderr).toBe(0);
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto(pathToFileURL(out).href);
+  await page.waitForFunction(
+    () => document.documentElement.dataset.xcursus === "ready",
+  );
+  // touch-action stops at every scroll container: each one in the stage
+  // keeps pan-y (code blocks and the outline excepted), so a horizontal
+  // swipe on scene content is not cancelled by the browser.
+  const scrollers = await page.evaluate(() => {
+    const stage = document.getElementById("xcursus-stage")!;
+    return [stage, ...stage.querySelectorAll<Element>("*")]
+      .filter((e) => {
+        const style = getComputedStyle(e);
+        return style.overflowX !== "visible" || style.overflowY !== "visible";
+      })
+      .filter((e) => !e.closest("pre, .xc-outline"))
+      .map((e) => ({
+        element: `${e.tagName}.${e.getAttribute("class") ?? ""}`,
+        touchAction: getComputedStyle(e).touchAction,
+      }));
+  });
+  expect(scrollers.length).toBeGreaterThan(3);
+  expect(scrollers.filter((s) => s.touchAction !== "pan-y")).toEqual([]);
+  // Text view: the bar wraps at this width; the outline fits below it and,
+  // scrolled to the end, its last line is above the on-screen buttons.
+  await page.getByRole("button", { name: "Text view" }).click();
+  const fit = await page.evaluate(() => {
+    const outline = document.querySelector<HTMLElement>(".xc-outline")!;
+    outline.scrollTop = outline.scrollHeight;
+    const last = [...outline.querySelectorAll("p, button")]
+      .at(-1)!
+      .getBoundingClientRect();
+    const buttons = [
+      ...document.querySelectorAll(
+        'nav[aria-label="Presentation navigation"] button',
+      ),
+    ].map((b) => b.getBoundingClientRect().top);
+    return {
+      outlineBottom: outline.getBoundingClientRect().bottom,
+      viewport: innerHeight,
+      lastBottom: last.bottom,
+      buttonsTop: Math.min(...buttons),
+    };
+  });
+  expect(fit.outlineBottom).toBeLessThanOrEqual(fit.viewport + 1);
+  expect(fit.lastBottom).toBeLessThanOrEqual(fit.buttonsTop);
+});

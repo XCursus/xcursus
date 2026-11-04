@@ -932,6 +932,9 @@ export function createPlayer(options: PlayerOptions = {}): Player {
       const resize = () => {
         if (!host || !viewport || !doc) return;
         stage.style.top = `${controls.offsetHeight}px`;
+        // The bar wraps on narrow players: the outline fills what is left.
+        if (outline)
+          outline.style.maxHeight = `calc(100% - ${controls.offsetHeight}px)`;
         const bounds = stage.getBoundingClientRect();
         const fit = Math.min(
           bounds.width / doc.settings.viewport.width,
