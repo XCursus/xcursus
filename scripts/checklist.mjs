@@ -1177,13 +1177,42 @@ async function touchChecks() {
     "exported HTML: swipes move to the next and previous visit",
     async () => {
       assert(view.maxTouchPoints > 0, "no touch input", view);
+      // The input events the page receives, reported when a swipe fails.
+      await s.run(() => {
+        window.touchLog = [];
+        for (const type of [
+          "pointerdown",
+          "pointerup",
+          "pointercancel",
+          "touchstart",
+          "touchend",
+          "touchcancel",
+        ])
+          document.addEventListener(
+            type,
+            (e) =>
+              window.touchLog.push(
+                `${type}:${e.pointerType ?? "touch"}@${Math.round(e.clientX ?? e.changedTouches?.[0]?.clientX ?? -1)}`,
+              ),
+            true,
+          );
+      });
+      const swipeTo = async (from, to, sceneId) => {
+        await s.swipe({ x: view.width * from, y }, { x: view.width * to, y });
+        try {
+          await at(sceneId);
+        } catch (error) {
+          const events = await s.run(() => window.touchLog);
+          throw new Error(`${error.message}; events: ${events.join(" ")}`, {
+            cause: error,
+          });
+        }
+      };
       const first = await active();
       const y = view.height / 2;
-      await s.swipe({ x: view.width * 0.8, y }, { x: view.width * 0.2, y });
-      await at("context");
+      await swipeTo(0.8, 0.2, "context");
       await shot("touch-after-swipe");
-      await s.swipe({ x: view.width * 0.2, y }, { x: view.width * 0.8, y });
-      await at(first);
+      await swipeTo(0.2, 0.8, first);
       return { viewport: view, from: first, to: "context" };
     },
   );

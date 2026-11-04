@@ -4,16 +4,25 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { platform, release } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { nvda, voiceOver } from "@guidepup/guidepup";
+import {
+  macOSActivateId,
+  nvda,
+  NVDAKeyCodeCommands,
+  voiceOver,
+  WindowsKeyCodes,
+  WindowsModifiers,
+} from "@guidepup/guidepup";
 import { preview } from "./preview.mjs";
 import { Key, startBrowser } from "./webdriver.mjs";
 
 // Item 7 of the release checklist (docs/RELEASE_BLOCKERS.md) with a real
 // screen reader: VoiceOver with Safari on macOS, NVDA with Google Chrome on
-// Windows. The test moves focus and presses keys in the page; what the
-// screen reader says is read back through Guidepup and recorded. The
-// machine must be prepared for automation (on CI, guidepup/setup-action);
-// run `pnpm build` first.
+// Windows. VoiceOver is heard while the page moves focus and receives keys;
+// NVDA reports what it says only for the commands it runs, so with NVDA the
+// keys go through the screen reader (Tab into each element, Enter). What is
+// said is read back through Guidepup and recorded. The machine must be
+// prepared for automation (`@guidepup/setup setup` and `install`); run
+// `pnpm build` first.
 //
 //   node scripts/screen-reader.mjs [--reader voiceover|nvda]
 //
@@ -80,7 +89,7 @@ async function openBrowser() {
 
 // ---- listening --------------------------------------------------------------
 
-/** Runs `action` and returns everything the screen reader says meanwhile. */
+/** VoiceOver: everything said while `action` runs and shortly after. */
 async function listen(action, ms = 2500) {
   await sr.clearSpokenPhraseLog().catch(() => {});
   const before = await sr.lastSpokenPhrase().catch(() => "");
@@ -100,12 +109,69 @@ async function listen(action, ms = 2500) {
   const log = await sr.spokenPhraseLog().catch(() => []);
   return [...new Set([...log, ...heard])].filter(Boolean);
 }
+/** NVDA: what it says for a command it runs. */
+async function command(run) {
+  await nvda.clearSpokenPhraseLog();
+  await run();
+  await delay(800);
+  return (await nvda.spokenPhraseLog()).filter(Boolean);
+}
 const plain = (text) =>
-  text
+  (text ?? "")
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
 const said = (heard, text) => plain(heard.join(" ")).includes(plain(text));
+
+/** Brings the browser in front of the screen reader. */
+async function forward() {
+  if (reader === "voiceover") {
+    await macOSActivateId("com.apple.Safari");
+    await delay(500);
+    return;
+  }
+  const title = plain(await page.run(() => document.title));
+  for (let i = 0; i < 10; i++) {
+    await nvda.perform(NVDAKeyCodeCommands.reportTitle);
+    const window = plain(await nvda.lastSpokenPhrase());
+    if (window.includes("google chrome") || (title && window.startsWith(title)))
+      return;
+    await nvda.perform(
+      { keyCode: [WindowsKeyCodes.Escape], modifiers: [WindowsModifiers.Alt] },
+      { capture: false },
+    );
+    await delay(500);
+  }
+  throw new Error("the browser window is not in front of NVDA");
+}
+
+/** Moves to the element (with NVDA, by Tab from the one before) and listens. */
+async function hearFocus(selector, name = null, index = 0) {
+  if (reader === "voiceover") {
+    let target;
+    const heard = await listen(async () => {
+      target = await focus(selector, name, index);
+    }, 1500);
+    return { target, heard };
+  }
+  const target = await focus(selector, name, index);
+  await nvda.press("Shift+Tab", { capture: false });
+  await delay(200);
+  const heard = await command(() => nvda.press("Tab"));
+  return { target, heard, landed: (await page.run(STATE)).focus };
+}
+/** Presses a key on the focused element and listens. */
+async function hearKey(key) {
+  if (reader === "voiceover") return listen(() => page.press(key));
+  return command(() => nvda.press(key));
+}
+/** Closes the open dialog with Escape and listens to where focus lands. */
+async function hearClose() {
+  if (reader === "voiceover") return listen(() => page.press("Escape"));
+  await page.press("Escape");
+  await delay(300);
+  return command(() => nvda.perform(NVDAKeyCodeCommands.reportCurrentFocus));
+}
 
 function assert(condition, message, details) {
   if (!condition)
@@ -199,6 +265,7 @@ async function player() {
   await page.waitFor(() => window.demoPlayers?.length === 2, {
     what: "the players",
   });
+  await forward();
   // Instant moves, so each announcement follows the key press.
   await page.run(() =>
     [...document.querySelectorAll("#player-1 button")]
@@ -209,7 +276,7 @@ async function player() {
     const moves = [];
     await focus('nav[aria-label="Player 1 controls"] button', "Next");
     for (let i = 0; i < 2; i++) {
-      const heard = await listen(() => page.press("Enter"));
+      const heard = await hearKey("Enter");
       const title = await page.run(
         () => document.querySelector("#player-1 .xc-live").textContent,
       );
@@ -225,10 +292,9 @@ async function player() {
       () => !document.querySelector("#player-1 .xc-outline").hidden,
       { what: "the outline" },
     );
-    let first;
-    const heard = await listen(async () => {
-      first = await focus("#player-1 .xc-outline button");
-    });
+    const { target: first, heard } = await hearFocus(
+      "#player-1 .xc-outline button",
+    );
     assert(first && said(heard, first.name), "item not announced", {
       first,
       heard,
@@ -240,6 +306,7 @@ async function player() {
   await page.waitFor(() => window.demoPlayers?.length === 2, {
     what: "the players",
   });
+  await forward();
   await check(
     "player: the choices of a branch are reachable and named",
     async () => {
@@ -254,9 +321,10 @@ async function player() {
       );
       const heard = [];
       for (let i = 0; i < choices.length; i++) {
-        const phrase = await listen(
-          () => focus("#player-1 .xc-choices button", null, i),
-          2000,
+        const { heard: phrase } = await hearFocus(
+          "#player-1 .xc-choices button",
+          null,
+          i,
         );
         heard.push(phrase);
         assert(
@@ -278,6 +346,7 @@ async function studio() {
       !!document.querySelector(".preview-player .xc-player"),
     { timeout: 30000, what: "Studio" },
   );
+  await forward();
   const json = readFileSync(
     join(root, "examples/core-three-scenes/project.json"),
     "utf8",
@@ -305,10 +374,11 @@ async function studio() {
     assert(count > 5, "toolbar buttons", count);
     const buttons = [];
     for (let i = 0; i < count; i++) {
-      let target;
-      const heard = await listen(async () => {
-        target = await focus("header.toolbar button", null, i);
-      }, 1500);
+      const { target, heard } = await hearFocus(
+        "header.toolbar button",
+        null,
+        i,
+      );
       buttons.push({ name: target?.name, heard });
       assert(target?.name, "button without a name", buttons.at(-1));
       assert(said(heard, target.name), `"${target.name}" not announced`, heard);
@@ -321,13 +391,13 @@ async function studio() {
       const dialogs = [];
       for (const opener of ["Delete scene", "Export", "Import impress.js"]) {
         assert(await focus("button", opener), `no ${opener} button`, opener);
-        const opened = await listen(() => page.press("Enter"));
+        const opened = await hearKey("Enter");
         await page.waitFor(() => !!document.querySelector("dialog[open]"), {
           what: `the ${opener} dialog`,
         });
         const title = (await page.run(STATE)).dialog;
         assert(said(opened, title), `dialog "${title}" not announced`, opened);
-        const closed = await listen(() => page.press("Escape"));
+        const closed = await hearClose();
         const back = await page.run(STATE);
         dialogs.push({ opener, title, opened, closed, back });
         assert(
@@ -351,10 +421,7 @@ async function studio() {
     assert(count > 3, "inspector fields", count);
     const fields = [];
     for (let i = 0; i < count; i++) {
-      let target;
-      const heard = await listen(async () => {
-        target = await focus(selector, null, i);
-      }, 1500);
+      const { target, heard } = await hearFocus(selector, null, i);
       fields.push({ name: target?.name, heard });
       assert(target?.name, "field without a name", fields.at(-1));
       assert(said(heard, target.name), `"${target.name}" not announced`, heard);
