@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import { fileURLToPath } from "node:url";
 import {
   externalDependencies,
   noBundledDependencies,
@@ -15,7 +16,7 @@ export default defineConfig({
     },
     rollupOptions: {
       external: externalDependencies(
-        new URL("./package.json", import.meta.url).pathname,
+        fileURLToPath(new URL("./package.json", import.meta.url)),
       ),
     },
   },

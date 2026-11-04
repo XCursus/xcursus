@@ -1,9 +1,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { createHash } from "node:crypto";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import type { Plugin } from "vite";
-const source = (path: string) => new URL(path, import.meta.url).pathname;
+const source = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 /**
  * Runtime, notices and stylesheets with inlined fonts of the export panel,
  * written by the built CLI (`pnpm build` builds it before Studio). The file is

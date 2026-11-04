@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import {
   externalDependencies,
@@ -7,7 +8,7 @@ import {
 // React (peer), core, player and plugins stay external, subpaths included.
 // The player stylesheet is bundled into editor.css, as before 0.6.
 const external = externalDependencies(
-  new URL("./package.json", import.meta.url).pathname,
+  fileURLToPath(new URL("./package.json", import.meta.url)),
 );
 export default defineConfig({
   plugins: [react(), noBundledDependencies()],

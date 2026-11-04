@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import { fileURLToPath } from "node:url";
 import {
   installedPackage,
   licenseBanner,
@@ -6,7 +7,7 @@ import {
 } from "../../scripts/library.mjs";
 const { version } = (await import("./package.json", { with: { type: "json" } }))
   .default;
-const player = new URL("../player", import.meta.url).pathname;
+const player = fileURLToPath(new URL("../player", import.meta.url));
 // The classic script of every CLI output: player, core and builtin renderers
 // with their third-party code, from the published ESM builds. Theme and KaTeX
 // fonts are embedded at export time; their licences are listed here too.
