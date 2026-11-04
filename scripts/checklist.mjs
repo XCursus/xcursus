@@ -962,14 +962,6 @@ async function presenter() {
   const deckPath = join(stage, "presenter-deck.json");
   await writeFile(deckPath, JSON.stringify(deck));
   const consoleRegion = '[aria-label="Presenter view"]';
-  const notes = () =>
-    s.run(
-      (scope) =>
-        document
-          .querySelector(`${scope} [aria-label="Speaker notes"]`)
-          ?.textContent.trim() ?? "",
-      consoleRegion,
-    );
 
   await freshStudio();
   await check(
@@ -1011,13 +1003,31 @@ async function presenter() {
         { args: [consoleRegion], what: "the console status" },
       );
       await publicAt("A");
-      assert((await notes()).includes("PRIVATE-NOTE A"), "notes of A");
+      await s.waitFor(
+        (scope, text) =>
+          document
+            .querySelector(`${scope} [aria-label="Speaker notes"]`)
+            ?.textContent.includes(text),
+        {
+          args: [consoleRegion, "PRIVATE-NOTE A"],
+          what: "the notes of A in the console",
+        },
+      );
       // From the console.
       await s.click(
         button("Explore B", `${consoleRegion} [aria-label="Branch choices"]`),
       );
       await publicAt("B");
-      assert((await notes()).includes("PRIVATE-NOTE B"), "notes of B");
+      await s.waitFor(
+        (scope, text) =>
+          document
+            .querySelector(`${scope} [aria-label="Speaker notes"]`)
+            ?.textContent.includes(text),
+        {
+          args: [consoleRegion, "PRIVATE-NOTE B"],
+          what: "the notes of B in the console",
+        },
+      );
       // From the audience window.
       await s.switchTo(audience);
       const leak = await s.run(

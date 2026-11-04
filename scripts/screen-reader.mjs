@@ -137,11 +137,21 @@ async function forward() {
 async function hearFocus(selector, name = null, index = 0, how = "tab") {
   const target = await focus(selector, name, index);
   let heard;
-  if (reader === "voiceover")
+  if (reader === "voiceover" && how === "report")
     heard = await command(() =>
       voiceOver.perform(voiceOverKeyCodeCommands.moveCursorToKeyboardFocus),
     );
-  else if (how === "report")
+  else if (reader === "voiceover") {
+    // Into the element from the item before, as a VoiceOver user arrives.
+    await voiceOver.perform(
+      voiceOverKeyCodeCommands.moveCursorToKeyboardFocus,
+      {
+        capture: false,
+      },
+    );
+    await voiceOver.previous({ capture: false });
+    heard = await command(() => voiceOver.next());
+  } else if (how === "report")
     heard = await command(() =>
       nvda.perform(NVDAKeyCodeCommands.reportCurrentFocus),
     );
@@ -152,8 +162,24 @@ async function hearFocus(selector, name = null, index = 0, how = "tab") {
   }
   return { target, heard, landed: (await page.run(STATE)).focus };
 }
-/** Presses a key through the screen reader and hears the result. */
-const hearKey = (key) => command(() => sr.press(key));
+/**
+ * Presses a key through the screen reader and hears the result. VoiceOver
+ * activates the focused element itself (VO-Space), since keys it sends do
+ * not reach the WebKit window, then repeats its last phrase to collect a
+ * live announcement that came after the action.
+ */
+async function hearKey(key) {
+  if (reader !== "voiceover") return command(() => nvda.press(key));
+  await voiceOver.perform(voiceOverKeyCodeCommands.moveCursorToKeyboardFocus, {
+    capture: false,
+  });
+  const acted = await command(() => voiceOver.act());
+  await delay(1200);
+  const after = await command(() =>
+    voiceOver.perform(voiceOverKeyCodeCommands.repeatLastSpokenPhrase),
+  );
+  return [...acted, ...after];
+}
 /** Closes the open dialog with Escape and hears where focus lands. */
 async function hearClose() {
   await page.press("Escape");
