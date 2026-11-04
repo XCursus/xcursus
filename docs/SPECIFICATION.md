@@ -287,16 +287,16 @@ Target: WCAG 2.2 AA for the interface and builtin content, verified with automat
 
 Policy: the last two stable versions, at release time, of desktop Chrome, Edge, Firefox and Safari. Builds use an explicit browser target.
 
-| Surface          | Target and test                              | Limits and fallback                                           |
-| ---------------- | -------------------------------------------- | ------------------------------------------------------------- |
-| Core             | Node 24 and modern browsers                  | No DOM API; declared numeric limits                           |
-| Player           | Playwright Chromium, Firefox and WebKit      | Playwright WebKit is not an installed Safari                  |
-| Studio           | Desktop matrix; E2E in the three engines     | Download and file input instead of the File System Access API |
-| Tablet and phone | Safari on iPadOS/iOS and Chrome on Android   | Presenting and outline; limited precision editing             |
-| Presenter        | Pop-up on a local host or HTTPS              | Blocked pop-ups and `file://`: single-window fallback         |
-| MIDI             | Where feature detection and permission allow | No promise on Safari or Firefox                               |
-| PDF and video    | Chromium of the pinned Playwright version    | Local FFmpeg for video                                        |
-| Standalone HTML  | `file://` on the desktop targets             | No backend, fetch, service worker or storage                  |
+| Surface          | Target and test                                                                 | Limits and fallback                                                                                        |
+| ---------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Core             | Node 24 and modern browsers                                                     | No DOM API; declared numeric limits                                                                        |
+| Player           | Playwright Chromium, Firefox and WebKit; the installed Safari through WebDriver | Playwright WebKit is not an installed Safari; the Safari run covers the release checklist, not every suite |
+| Studio           | Desktop matrix; E2E in the three engines                                        | Download and file input instead of the File System Access API                                              |
+| Tablet and phone | Safari on iPadOS/iOS and Chrome on Android                                      | Presenting and outline; limited precision editing                                                          |
+| Presenter        | Pop-up on a local host or HTTPS                                                 | Blocked pop-ups and `file://`: single-window fallback                                                      |
+| MIDI             | Where feature detection and permission allow                                    | No promise on Safari or Firefox                                                                            |
+| PDF and video    | Chromium of the pinned Playwright version                                       | Local FFmpeg for video                                                                                     |
+| Standalone HTML  | `file://` on the desktop targets                                                | No backend, fetch, service worker or storage                                                               |
 
 A target that cannot be tested is reported as not verified and its criterion stays open. Without CSS 3D, or with a reduced-motion preference, content remains readable and navigable through the outline.
 

@@ -1,0 +1,251 @@
+name: Release checks
+# The release checklist of docs/RELEASE_BLOCKERS.md where the hardware is:
+# real Safari, Firefox, Chrome and Edge builds (latest and previous stable),
+# Safari in the iOS Simulator and Chrome in the Android Emulator with touch
+# input, VoiceOver and NVDA, and the performance gate. Runs on demand and on
+# release branches.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["release/**"]
+permissions:
+  contents: read
+jobs:
+  safari:
+    name: Safari (macOS 15)
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      # Actions pinned by commit SHA; the comment names the resolved release.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: 12.14.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.22.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      # Lets WebDriver drive Safari; the runner's sudo needs no password.
+      - run: sudo safaridriver --enable
+      - run: node scripts/checklist.mjs --browser safari
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: checklist-safari
+          path: test-results/checklist
+
+  firefox:
+    name: Firefox ${{ matrix.release }} (Linux)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        release: [latest, previous]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: 12.14.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.22.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - id: build
+        run: node scripts/browser-builds.mjs firefox ${{ matrix.release }} "$RUNNER_TEMP/browsers"
+      # The release build through geckodriver, in a virtual display.
+      - run: xvfb-run -a -s "-screen 0 1920x1080x24" node scripts/checklist.mjs --browser firefox
+        env:
+          FIREFOX_BINARY: ${{ steps.build.outputs.path }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: checklist-firefox-${{ matrix.release }}
+          path: test-results/checklist
+
+  chromium-family:
+    name: ${{ matrix.browser }} ${{ matrix.release }} (Linux)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chrome, msedge]
+        release: [latest, previous]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: 12.14.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.22.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm check:packages
+      # Playwright's Chromium renders the PDF and video exports the suites run.
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg poppler-utils
+      - id: build
+        run: node scripts/browser-builds.mjs ${{ matrix.browser }} ${{ matrix.release }} "$RUNNER_TEMP/browsers"
+      # Every browser suite on the release build.
+      - run: pnpm exec playwright test --config playwright.installed.config.ts
+        env:
+          XCURSUS_CHANNEL: ${{ matrix.browser }}
+          XCURSUS_EXECUTABLE: ${{ steps.build.outputs.path }}
+          XCURSUS_RESULTS: ${{ matrix.browser }}-${{ steps.build.outputs.version }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: suites-${{ matrix.browser }}-${{ matrix.release }}
+          path: test-results/${{ matrix.browser }}-*/results.json
+
+  ios:
+    name: Safari on iOS Simulator (${{ matrix.device }})
+    runs-on: macos-26
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        device: [ios-phone, ios-tablet]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: 12.14.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.22.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: sudo safaridriver --enable
+      - run: node scripts/checklist.mjs --browser ${{ matrix.device }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: checklist-${{ matrix.device }}
+          path: test-results/checklist
+
+  android:
+    name: Chrome on Android Emulator (${{ matrix.profile }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [pixel_7, pixel_tablet]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: 12.14.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.22.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      # Hardware acceleration for the emulator.
+      - run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: ${{ matrix.profile }}
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: node scripts/checklist.mjs --browser android
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: checklist-android-${{ matrix.profile }}
+          path: test-results/checklist
+
+  voiceover:
+    name: VoiceOver with Safari (macOS 15)
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: 12.14.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.22.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      # Prepares VoiceOver for automation.
+      - uses: guidepup/setup-action@acf1a64cc26292ebe0db6a28d1341bd1bae93c65 # 0.21.0
+      - run: sudo safaridriver --enable
+      - run: node scripts/screen-reader.mjs --reader voiceover
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: screen-reader-voiceover
+          path: test-results/screen-reader
+
+  nvda:
+    name: NVDA with Chrome (Windows)
+    runs-on: windows-2025
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: 12.14.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.22.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      # Installs NVDA with the Guidepup add-on.
+      - uses: guidepup/setup-action@acf1a64cc26292ebe0db6a28d1341bd1bae93c65 # 0.21.0
+      - run: node scripts/screen-reader.mjs --reader nvda
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: screen-reader-nvda
+          path: test-results/screen-reader
+
+  benchmark:
+    name: Performance gate (macOS 15)
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: 12.14.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.22.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm exec playwright install chromium firefox webkit
+      # A dedicated runner on mains power with fixed browser builds; every
+      # engine runs even when an earlier one misses a budget.
+      - run: |
+          status=0
+          for browser in chromium firefox webkit; do
+            node scripts/benchmark.mjs --gate --browser "$browser" || status=1
+          done
+          exit $status
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: benchmark
+          path: test-results/benchmark

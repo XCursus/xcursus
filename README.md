@@ -150,7 +150,7 @@ if (mounted.ok) await player.next();
 
 ## Status
 
-XCursus is a **1.0 candidate**, still a pre-release: the 1.0 Stabilization work (impress.js import, hardening, budgets, project documents) is done and tested on Chromium, Firefox and WebKit and on an installed Google Chrome, but 1.0 is not declared until the open [release blockers](docs/RELEASE_BLOCKERS.md) are closed, real Safari and Edge, touch devices, a screen reader and a benchmark on a controlled machine. See the [roadmap](docs/ROADMAP.md) and [VERIFICATION](docs/VERIFICATION.md) for what is tested and how.
+XCursus is a **1.0 candidate**, still a pre-release: the 1.0 Stabilization work (impress.js import, hardening, budgets, project documents) is done and tested on Chromium, Firefox and WebKit, on an installed Google Chrome and, for the release checklist, in Safari 26.5.2, but 1.0 is not declared until the open [release blockers](docs/RELEASE_BLOCKERS.md) are closed: Safari 27 (a CI run on macOS 15) and Edge, touch devices, a screen reader and a benchmark on a controlled machine. See the [roadmap](docs/ROADMAP.md) and [VERIFICATION](docs/VERIFICATION.md) for what is tested and how.
 
 ## Licence
 

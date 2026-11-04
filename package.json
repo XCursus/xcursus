@@ -17,7 +17,8 @@
     "test": "pnpm generate && vitest run",
     "test:e2e": "pnpm build && node scripts/check-packages.mjs && node scripts/run-e2e.mjs",
     "test:e2e:webkit:macos14": "pnpm build && node scripts/check-packages.mjs && node scripts/run-e2e.mjs --webkit-macos14",
-    "test:e2e:chrome": "pnpm build && node scripts/check-packages.mjs && playwright test --config playwright.chrome.config.ts",
+    "test:e2e:chrome": "pnpm build && node scripts/check-packages.mjs && playwright test --config playwright.installed.config.ts",
+    "test:safari": "pnpm build && node scripts/checklist.mjs --browser safari",
     "browsers:install": "node scripts/run-e2e.mjs --install",
     "build": "pnpm generate && pnpm --filter @xcursus/core build && pnpm --filter @xcursus/impress-compat build && pnpm --filter @xcursus/player build && pnpm --filter @xcursus/plugins build && pnpm --filter @xcursus/cli build && pnpm --filter @xcursus/editor build && pnpm --filter @xcursus/playground build && pnpm --filter @xcursus/studio build",
     "dev:playground": "vite --config apps/playground/vite.config.ts",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@guidepup/guidepup": "0.40.0",
     "@playwright/test": "1.64.1",
     "@types/node": "24.19.2",
     "@types/react": "19.3.0",
