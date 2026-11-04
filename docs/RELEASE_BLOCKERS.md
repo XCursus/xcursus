@@ -41,14 +41,11 @@ Priorities: **P1** prevents declaring 1.0 (a criterion without evidence, or a de
 - **Missing:** the specification requires the gate to run on a controlled machine (on mains power, idle, fixed browser builds); this run is informative.
 - **Closing criterion:** `pnpm benchmark --gate` in Chromium, Firefox and WebKit on a controlled machine, results recorded with the environment.
 
-## B8 · P1 · Linux CI run of the candidate
-
-- **Missing:** every check of this candidate ran on macOS 14 (arm64). The CI workflow runs the same suite on Linux, including the new impress.js, fuzzing and accessibility tests, but needs a push.
-- **Closing criterion:** a green run of `.github/workflows/ci.yml` on the candidate commit, with `git diff --exit-code` passing.
-
 ## Closed
 
 - **B7 · Security reporting channel** (closed 4 November 2026): GitHub's private vulnerability reporting, the channel named in [SECURITY.md](../SECURITY.md), is enabled on `XCursus/xcursus` (`GET /repos/XCursus/xcursus/private-vulnerability-reporting` returns `{"enabled": true}`; it returned `false` on 2 November).
+
+- **B8 · Linux CI run of the candidate** (closed 4 November 2026): the CI workflow passed on commit `326d32d` (run 41814077077, ubuntu-24.04): frozen install, typecheck, lint, format, 529 unit tests with coverage, build, boundaries, bundle, 104/104 package checks, 303 browser tests in Chromium, Firefox and WebKit with Playwright 1.64.1, and no tracked file modified by the checks.
 
 ## Not blocking, recorded
 
