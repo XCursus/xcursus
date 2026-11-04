@@ -176,18 +176,27 @@ function navigation(
   }
   document.body.append(nav);
   // Touch and pen swipes; a mouse drag keeps selecting text.
-  let start: { x: number; y: number; id: number } | undefined;
+  let start: { x: number; y: number; id: number } | undefined,
+    last: { x: number; y: number } | undefined;
   stage.addEventListener("pointerdown", (event) => {
+    last = undefined;
     start =
       event.pointerType !== "mouse" &&
       !(event.target as Element).closest(interactive)
         ? { x: event.clientX, y: event.clientY, id: event.pointerId }
         : undefined;
   });
+  // The end of a swipe is where the finger last moved: Safari on iOS can
+  // report a touch pointerup at (0, 0).
+  stage.addEventListener("pointermove", (event) => {
+    if (start && event.pointerId === start.id)
+      last = { x: event.clientX, y: event.clientY };
+  });
   stage.addEventListener("pointerup", (event) => {
     if (!start || event.pointerId !== start.id) return;
-    const dx = event.clientX - start.x,
-      dy = event.clientY - start.y;
+    const end = last ?? { x: event.clientX, y: event.clientY };
+    const dx = end.x - start.x,
+      dy = end.y - start.y;
     start = undefined;
     if (Math.abs(dx) < 50 || Math.abs(dx) < 1.5 * Math.abs(dy)) return;
     void (dx < 0 ? player.next() : player.prev());

@@ -161,7 +161,9 @@ export function Studio({
     redoButton = useRef<HTMLButtonElement>(null);
   const file = useRef<HTMLInputElement>(null),
     presentButton = useRef<HTMLButtonElement>(null),
-    presentation = useRef<HTMLDivElement>(null);
+    presentation = useRef<HTMLDivElement>(null),
+    // The kind of the last pointer pressed anywhere: mouse, touch or pen.
+    lastPointer = useRef("mouse");
   const autosave = useMemo(
     () =>
       new Autosave(repository, new Map(), setWarning, (doc) =>
@@ -179,6 +181,13 @@ export function Studio({
   );
   // Block selection belongs to one scene and drops blocks that no longer exist.
   useEffect(() => setBlockSelection([]), [session.selection, layoutMode]);
+  useEffect(() => {
+    const note = (event: PointerEvent) => {
+      lastPointer.current = event.pointerType;
+    };
+    window.addEventListener("pointerdown", note, true);
+    return () => window.removeEventListener("pointerdown", note, true);
+  }, []);
   useEffect(() => {
     setBlockSelection((ids) => {
       const kept = ids.filter((id) =>
@@ -277,14 +286,17 @@ export function Studio({
       if (document.fullscreenElement) void document.exitFullscreen?.();
     }
   }, [present]);
-  // The presentation controls fade after the pointer rests; focus keeps them visible.
+  // The presentation controls fade after the mouse rests; focus keeps them
+  // visible. Touch has no pointer to rest, and a tap that only revealed a
+  // faded control would not press it (iOS Safari): there they stay.
   useEffect(() => {
     if (!present) return;
     const node = presentation.current;
     let timer = 0;
-    const wake = () => {
+    const wake = (event?: PointerEvent) => {
       setIdle(false);
       window.clearTimeout(timer);
+      if ((event?.pointerType ?? lastPointer.current) !== "mouse") return;
       timer = window.setTimeout(() => setIdle(true), 2500);
     };
     wake();
