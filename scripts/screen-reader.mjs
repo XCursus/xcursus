@@ -180,6 +180,42 @@ async function hearKey(key) {
   );
   return [...acted, ...after];
 }
+/**
+ * Moves to the next scene with Enter on the focused Next button and hears
+ * the announcement. NVDA presses the key itself; with VoiceOver the page
+ * gets the key and VoiceOver repeats what it last said, since its own
+ * activation is followed by a usage hint that hides the announcement.
+ */
+async function hearMove() {
+  if (reader !== "voiceover") return command(() => nvda.press("Enter"));
+  await page.press("Enter");
+  await delay(1500);
+  return command(() =>
+    voiceOver.perform(voiceOverKeyCodeCommands.repeatLastSpokenPhrase),
+  );
+}
+/**
+ * VoiceOver: from the element named `fromName`, moves the VoiceOver cursor
+ * item by item until it reaches the first match of `target`, as a user
+ * walks into a list; everything said on the way is returned.
+ */
+async function walkTo(fromSelector, fromName, target) {
+  const name = await page.run(
+    (selector) =>
+      [...document.querySelectorAll(selector)]
+        .find((e) => e.getClientRects().length > 0)
+        ?.textContent.trim() ?? null,
+    target,
+  );
+  await focus(fromSelector, fromName);
+  await voiceOver.perform(voiceOverKeyCodeCommands.moveCursorToKeyboardFocus, {
+    capture: false,
+  });
+  const heard = [];
+  for (let i = 0; i < 15 && !said(heard, name ?? ""); i++)
+    heard.push(...(await command(() => voiceOver.next())));
+  return { target: { name }, heard };
+}
 /** Closes the open dialog with Escape and hears where focus lands. */
 async function hearClose() {
   await page.press("Escape");
@@ -295,14 +331,20 @@ async function player() {
   await check("player: every move announces the scene title", async () => {
     const moves = [];
     await focus('nav[aria-label="Player 1 controls"] button', "Next");
-    for (let i = 0; i < 2; i++) {
-      const heard = await hearKey("Enter");
+    // Two moves announced; a press heard as the browser window coming to
+    // the front (the reader was elsewhere) is repeated once it is in front.
+    for (let presses = 0; moves.length < 2 && presses < 4; presses++) {
+      const heard = await hearMove();
       const title = await page.run(
         () => document.querySelector("#player-1 .xc-live").textContent,
       );
-      moves.push({ title, heard });
-      assert(said(heard, title), `"${title}" not announced`, heard);
+      if (said(heard, title)) moves.push({ title, heard });
+      else if (heard.some((h) => / window$/i.test(h.trim()))) {
+        await forward();
+        await focus('nav[aria-label="Player 1 controls"] button', "Next");
+      } else assert(false, `"${title}" not announced`, heard);
     }
+    assert(moves.length === 2, "moves announced", moves);
     return moves;
   });
   await check("player: the Text view is a list of named items", async () => {
@@ -312,9 +354,14 @@ async function player() {
       () => !document.querySelector("#player-1 .xc-outline").hidden,
       { what: "the outline" },
     );
-    const { target: first, heard } = await hearFocus(
-      "#player-1 .xc-outline button",
-    );
+    const { target: first, heard } =
+      reader === "voiceover"
+        ? await walkTo(
+            "#player-1 button",
+            "Text view",
+            "#player-1 .xc-outline button",
+          )
+        : await hearFocus("#player-1 .xc-outline button");
     assert(first && said(heard, first.name), "item not announced", {
       first,
       heard,
