@@ -188,6 +188,12 @@ async function hearKey(key) {
  */
 async function hearMove() {
   if (reader !== "voiceover") return command(() => nvda.press("Enter"), 1500);
+  // The last phrase becomes the button again, so an earlier title cannot
+  // be repeated as if it were new; its usage hint is let pass.
+  await voiceOver.perform(voiceOverKeyCodeCommands.moveCursorToKeyboardFocus, {
+    capture: false,
+  });
+  await delay(6000);
   await page.press("Enter");
   // VoiceOver follows an announcement with a usage hint after a pause: its
   // last phrase is sampled meanwhile, then the hint is let pass.
@@ -202,7 +208,6 @@ async function hearMove() {
       )),
     );
   }
-  await delay(5000);
   return heard;
 }
 /**
@@ -342,8 +347,13 @@ async function player() {
   await check("player: moves announce the scene title", async () => {
     const moves = [],
       missed = [];
+    // The demo page shows the scene ID in <output> elements, live regions of
+    // the page and not of the player: removed, only the player is heard.
+    await page.run(() =>
+      document.querySelectorAll("output").forEach((o) => o.remove()),
+    );
     await focus('nav[aria-label="Player 1 controls"] button', "Next");
-    await delay(reader === "voiceover" ? 6000 : 2500);
+    await delay(2500);
     // At least two moves announced in up to five presses; each expected
     // title differs from the one before, so an old phrase cannot match. A
     // press heard as the browser window coming to the front (the reader
@@ -355,7 +365,7 @@ async function player() {
         await page.run(() =>
           window.demoPlayers[0].goTo({ nodeId: "n1" }, { durationMs: 0 }),
         );
-        await delay(reader === "voiceover" ? 6000 : 2500);
+        await delay(2500);
       }
       const heard = await hearMove();
       const title = await page.run(
