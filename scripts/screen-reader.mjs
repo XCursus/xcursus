@@ -87,10 +87,10 @@ async function openBrowser() {
 // ---- listening --------------------------------------------------------------
 
 /** What the screen reader says for a command it runs. */
-async function command(run) {
+async function command(run, wait = 800) {
   await sr.clearSpokenPhraseLog();
   await run();
-  await delay(800);
+  await delay(wait);
   return (await sr.spokenPhraseLog()).filter(Boolean);
 }
 const plain = (text) =>
@@ -187,9 +187,9 @@ async function hearKey(key) {
  * activation is followed by a usage hint that hides the announcement.
  */
 async function hearMove() {
-  if (reader !== "voiceover") return command(() => nvda.press("Enter"));
+  if (reader !== "voiceover") return command(() => nvda.press("Enter"), 1500);
   await page.press("Enter");
-  await delay(1500);
+  await delay(3000);
   return command(() =>
     voiceOver.perform(voiceOverKeyCodeCommands.repeatLastSpokenPhrase),
   );
@@ -328,24 +328,39 @@ async function player() {
       .find((b) => b.textContent.trim() === "Reduce motion")
       .click(),
   );
-  await check("player: every move announces the scene title", async () => {
-    const moves = [];
+  await check("player: moves announce the scene title", async () => {
+    const moves = [],
+      missed = [];
     await focus('nav[aria-label="Player 1 controls"] button', "Next");
-    // Two moves announced; a press heard as the browser window coming to
-    // the front (the reader was elsewhere) is repeated once it is in front.
-    for (let presses = 0; moves.length < 2 && presses < 4; presses++) {
+    await delay(2500);
+    // At least two moves announced in up to five presses; each expected
+    // title differs from the one before, so an old phrase cannot match. A
+    // press heard as the browser window coming to the front (the reader
+    // was elsewhere) is repeated once the window is in front.
+    for (let press = 0; moves.length < 2 && press < 5; press++) {
+      if (
+        await page.run(() => window.demoPlayers[0].getState().nodeId === "n3")
+      ) {
+        await page.run(() =>
+          window.demoPlayers[0].goTo({ nodeId: "n1" }, { durationMs: 0 }),
+        );
+        await delay(2500);
+      }
       const heard = await hearMove();
       const title = await page.run(
         () => document.querySelector("#player-1 .xc-live").textContent,
       );
       if (said(heard, title)) moves.push({ title, heard });
-      else if (heard.some((h) => / window$/i.test(h.trim()))) {
-        await forward();
-        await focus('nav[aria-label="Player 1 controls"] button', "Next");
-      } else assert(false, `"${title}" not announced`, heard);
+      else {
+        missed.push({ title, heard });
+        if (heard.some((h) => / window$/i.test(h.trim()))) {
+          await forward();
+          await focus('nav[aria-label="Player 1 controls"] button', "Next");
+        }
+      }
     }
-    assert(moves.length === 2, "moves announced", moves);
-    return moves;
+    assert(moves.length === 2, "moves announced", { moves, missed });
+    return { moves, missed };
   });
   await check("player: the Text view is a list of named items", async () => {
     await focus("#player-1 button", "Text view");

@@ -1302,7 +1302,9 @@ async function touchChecks() {
       // Safari on the iOS Simulator turns a slow synthetic swipe into a
       // long press with text selection: a quick flick there.
       const steps = browser.startsWith("ios") ? [3, 20] : [12, 25];
-      const swipeTo = async (from, to, sceneId) => {
+      // A simulator that delivered no event at all gets the swipe again.
+      const swipeTo = async (from, to, sceneId, retry = true) => {
+        await s.run(() => (window.touchLog.length = 0));
         await s.swipe(
           { x: view.width * from, y },
           { x: view.width * to, y },
@@ -1312,6 +1314,8 @@ async function touchChecks() {
           await at(sceneId);
         } catch (error) {
           const events = await s.run(() => window.touchLog);
+          if (retry && events.length === 0)
+            return swipeTo(from, to, sceneId, false);
           throw new Error(`${error.message}; events: ${events.join(" ")}`, {
             cause: error,
           });
@@ -1354,20 +1358,27 @@ async function touchChecks() {
       // a tap inside a text selection opens its menu.
       await delay(2500);
       await s.run(() => getSelection()?.removeAllRanges());
-      await s.tap(
-        await centre(
-          'nav[aria-label="Presentation navigation"] button',
-          "Next",
-        ),
-      );
-      await at("context");
-      await s.tap(
-        await centre(
-          'nav[aria-label="Presentation navigation"] button',
-          "Previous",
-        ),
-      );
-      await at(first);
+      // A tap the simulator did not deliver at all is repeated once.
+      const tapTo = async (name, sceneId, retry = true) => {
+        await s.run(() => (window.touchLog = []));
+        await s.tap(
+          await centre(
+            'nav[aria-label="Presentation navigation"] button',
+            name,
+          ),
+        );
+        try {
+          await at(sceneId);
+        } catch (error) {
+          const events = await s.run(() => window.touchLog ?? []);
+          if (retry && events.length === 0) return tapTo(name, sceneId, false);
+          throw new Error(`${error.message}; events: ${events.join(" ")}`, {
+            cause: error,
+          });
+        }
+      };
+      await tapTo("Next", "context");
+      await tapTo("Previous", first);
       return { buttons: sizes };
     },
   );
