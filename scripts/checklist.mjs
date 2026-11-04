@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { copyFileSync, readFileSync, rmSync } from "node:fs";
 import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { cpus, platform, release, totalmem } from "node:os";
-import { basename, join } from "node:path";
+import { basename, extname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { preview, serveDir } from "./preview.mjs";
 import { Key, startBrowser } from "./webdriver.mjs";
@@ -36,8 +36,13 @@ const browser = option("--browser", "safari");
 const touchTarget = ["ios-phone", "ios-tablet", "android"].includes(browser);
 const out = join(root, "test-results/checklist", browser);
 // Files the browser reads from disk (file inputs, file:// pages) are copied
-// here first: XCURSUS_STAGE, by default the results folder.
+// here first: XCURSUS_STAGE, by default the results folder. Where the
+// browser cannot read local files (Safari on CI runners), XCURSUS_FILES=script
+// fills file inputs from the page and XCURSUS_DECK=http serves the exported
+// HTML instead of opening it from disk; both are recorded as stand-ins.
 const stage = process.env.XCURSUS_STAGE ?? out;
+const filesByScript = process.env.XCURSUS_FILES === "script";
+const deckOverHttp = process.env.XCURSUS_DECK === "http";
 const PLAYGROUND = "http://127.0.0.1:4173";
 const STUDIO = "http://127.0.0.1:4174";
 const STUDIO_URL = `${STUDIO}/?studio-debug`;
@@ -47,6 +52,38 @@ const only = option("--only")
   ? new Set(option("--only").split(",").map(Number))
   : null;
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** Sets the files of a file input: through the browser, or from the page. */
+async function setFiles(selector, files) {
+  if (!filesByScript) return s.sendKeys(selector, files.join("\n"));
+  const types = {
+    ".json": "application/json",
+    ".xcursus": "application/zip",
+    ".html": "text/html",
+    ".png": "image/png",
+    ".svg": "image/svg+xml",
+  };
+  await s.run(
+    (target, items) => {
+      const input = document.querySelector(target);
+      const data = new DataTransfer();
+      for (const item of items) {
+        const bytes = Uint8Array.from(atob(item.base64), (c) =>
+          c.charCodeAt(0),
+        );
+        data.items.add(new File([bytes], item.name, { type: item.type }));
+      }
+      input.files = data.files;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    },
+    selector,
+    files.map((file) => ({
+      name: basename(file),
+      type: types[extname(file)] ?? "application/octet-stream",
+      base64: readFileSync(file).toString("base64"),
+    })),
+  );
+}
 
 /** A copy of `file` in the staging folder. */
 function staged(file) {
@@ -259,7 +296,7 @@ const studioDoc = () => s.run(() => window.studio.store.getSnapshot().document);
 const history = () =>
   s.run(() => window.studio.store.getSnapshot().historyLength);
 async function openProject(path, scenes) {
-  await s.sendKeys(PROJECT_INPUT, path);
+  await setFiles(PROJECT_INPUT, [path]);
   await s.waitFor(
     (n) => window.studio.store.getSnapshot().document.scenes.length === n,
     { args: [scenes], what: `${scenes} scenes in Studio` },
@@ -650,16 +687,15 @@ async function impress() {
       await s.click(button("Create the first scene"));
       await s.click(button("Import impress.js"));
       await s.waitFor(() => !!document.querySelector(".import-panel[open]"));
-      await s.sendKeys(
-        '.import-panel input[aria-label="impress.js HTML file"]',
+      await setFiles('.import-panel input[aria-label="impress.js HTML file"]', [
         staged(join(dir, "deck.html")),
-      );
-      await s.sendKeys(
+      ]);
+      await setFiles(
         '.import-panel input[aria-label="Images and media of the presentation"]',
         [
           staged(join(dir, "images/ring.png")),
           staged(join(dir, "images/axes.svg")),
-        ].join("\n"),
+        ],
       );
       await s.click(button("Convert", ".import-panel"));
       await s.waitFor(
@@ -724,13 +760,16 @@ async function impress() {
 
 async function exported() {
   const html = exportDeck(stage);
-  await s.navigate(pathToFileURL(html).href);
+  const server = deckOverHttp ? await serveDir(stage, DECK) : undefined;
+  await s.navigate(
+    deckOverHttp ? `${DECK}/deck.html` : pathToFileURL(html).href,
+  );
   await s.waitFor(() => document.documentElement.dataset.xcursus === "ready", {
     what: "the exported presentation",
   });
   await check(
     4,
-    "exported HTML from file://: no remote request, formulas, images, theme font",
+    `exported HTML ${deckOverHttp ? "over http (stand-in)" : "from file://"}: no remote request, formulas, images, theme font`,
     async () => {
       const page = await s.run(async () => {
         await document.fonts.ready;
@@ -766,7 +805,11 @@ async function exported() {
           scriptInPayloadRan: window.pwned !== undefined,
         };
       });
-      assert(page.url === "file:", "not opened from disk", page);
+      assert(
+        page.url === (deckOverHttp ? "http:" : "file:"),
+        "not opened from disk",
+        page,
+      );
       assert(page.remoteRequests.length === 0, "remote requests", page);
       assert(page.cspConnectNone, "CSP", page);
       assert(page.katex === 1 && page.katexFont, "formula", page);
@@ -852,6 +895,7 @@ async function exported() {
     await delay(1000);
     return { labelInFullScreen: label };
   });
+  server?.kill();
 }
 
 // ---- 5. Presenter ----------------------------------------------------------

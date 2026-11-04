@@ -9,6 +9,7 @@ import {
   nvda,
   NVDAKeyCodeCommands,
   voiceOver,
+  voiceOverKeyCodeCommands,
   WindowsKeyCodes,
   WindowsModifiers,
 } from "@guidepup/guidepup";
@@ -17,10 +18,11 @@ import { Key, startBrowser } from "./webdriver.mjs";
 
 // Item 7 of the release checklist (docs/RELEASE_BLOCKERS.md) with a real
 // screen reader: VoiceOver with Safari on macOS, NVDA with Google Chrome on
-// Windows. VoiceOver is heard while the page moves focus and receives keys;
-// NVDA reports what it says only for the commands it runs, so with NVDA the
-// keys go through the screen reader (Tab into each element, Enter). What is
-// said is read back through Guidepup and recorded. The machine must be
+// Windows. Guidepup reports what a screen reader says for the commands it
+// runs, so keys go through the screen reader (Tab into an element, Enter)
+// and an element focused by the page is read with the reader's own command
+// (VoiceOver: move the cursor to the keyboard focus; NVDA: report the
+// focus). What is said is recorded. The machine must be
 // prepared for automation (`@guidepup/setup setup` and `install`); run
 // `pnpm build` first.
 //
@@ -89,39 +91,26 @@ async function openBrowser() {
 
 // ---- listening --------------------------------------------------------------
 
-/** VoiceOver: everything said while `action` runs and shortly after. */
-async function listen(action, ms = 2500) {
-  await sr.clearSpokenPhraseLog().catch(() => {});
-  const before = await sr.lastSpokenPhrase().catch(() => "");
-  await action();
-  const heard = [];
-  const end = Date.now() + ms;
-  while (Date.now() < end) {
-    await delay(150);
-    const last = (await sr.lastSpokenPhrase().catch(() => "")) ?? "";
-    if (
-      last &&
-      last !== heard.at(-1) &&
-      !(heard.length === 0 && last === before)
-    )
-      heard.push(last);
-  }
-  const log = await sr.spokenPhraseLog().catch(() => []);
-  return [...new Set([...log, ...heard])].filter(Boolean);
-}
-/** NVDA: what it says for a command it runs. */
+/** What the screen reader says for a command it runs. */
 async function command(run) {
-  await nvda.clearSpokenPhraseLog();
+  await sr.clearSpokenPhraseLog();
   await run();
   await delay(800);
-  return (await nvda.spokenPhraseLog()).filter(Boolean);
+  return (await sr.spokenPhraseLog()).filter(Boolean);
 }
 const plain = (text) =>
   (text ?? "")
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
-const said = (heard, text) => plain(heard.join(" ")).includes(plain(text));
+/** Whether `text` was said; speech spells "." as "dot" and splits camel case. */
+const said = (heard, text) => {
+  const compact = (t) => plain(t).replace(/ /g, "");
+  const all = compact(heard.join(" "));
+  return [text, text.replace(/\./g, " dot ")].some((t) =>
+    all.includes(compact(t)),
+  );
+};
 
 /** Brings the browser in front of the screen reader. */
 async function forward() {
@@ -145,57 +134,42 @@ async function forward() {
   throw new Error("the browser window is not in front of NVDA");
 }
 
-/** Moves to the element (with NVDA, by Tab from the one before) and listens. */
-async function hearFocus(selector, name = null, index = 0) {
-  if (reader === "voiceover") {
-    let target;
-    const heard = await listen(async () => {
-      target = await focus(selector, name, index);
-    }, 1500);
-    return { target, heard };
-  }
+/**
+ * Focuses the element and hears it. "tab": Tab into it from the element
+ * before, as a keyboard user arrives (with list and group context);
+ * "report": the reader reads the element the page focused.
+ */
+async function hearFocus(selector, name = null, index = 0, how = "tab") {
   const target = await focus(selector, name, index);
-  await nvda.press("Shift+Tab", { capture: false });
-  await delay(200);
-  const heard = await command(() => nvda.press("Tab"));
+  let heard;
+  if (reader === "voiceover")
+    heard = await command(() =>
+      voiceOver.perform(voiceOverKeyCodeCommands.moveCursorToKeyboardFocus),
+    );
+  else if (how === "report")
+    heard = await command(() =>
+      nvda.perform(NVDAKeyCodeCommands.reportCurrentFocus),
+    );
+  else {
+    await nvda.press("Shift+Tab", { capture: false });
+    await delay(200);
+    heard = await command(() => nvda.press("Tab"));
+  }
   return { target, heard, landed: (await page.run(STATE)).focus };
 }
-/** Presses a key on the focused element and listens. */
-async function hearKey(key) {
-  if (reader === "voiceover") return listen(() => page.press(key));
-  return command(() => nvda.press(key));
-}
-/** Closes the open dialog with Escape and listens to where focus lands. */
+/** Presses a key through the screen reader and hears the result. */
+const hearKey = (key) => command(() => sr.press(key));
+/** Closes the open dialog with Escape and hears where focus lands. */
 async function hearClose() {
-  if (reader === "voiceover") return listen(() => page.press("Escape"));
   await page.press("Escape");
   await delay(300);
-  return command(() => nvda.perform(NVDAKeyCodeCommands.reportCurrentFocus));
-}
-
-function assert(condition, message, details) {
-  if (!condition)
-    throw new Error(`${message}: ${JSON.stringify(details).slice(0, 1500)}`);
-}
-async function check(name, fn) {
-  const started = Date.now();
-  try {
-    const details = await fn();
-    results.push({ name, ok: true, ms: Date.now() - started, details });
-    console.log(`  ok   ${name}`);
-  } catch (error) {
-    results.push({
-      name,
-      ok: false,
-      ms: Date.now() - started,
-      error: error.message,
-    });
-    console.log(`  FAIL ${name}\n       ${error.message}`);
-    await writeFile(
-      join(out, `${reader}-failure-${results.length}.png`),
-      await page.screenshot(),
-    ).catch(() => {});
-  }
+  return command(() =>
+    reader === "voiceover"
+      ? voiceOver.perform(
+          voiceOverKeyCodeCommands.describeItemWithKeyboardFocus,
+        )
+      : nvda.perform(NVDAKeyCodeCommands.reportCurrentFocus),
+  );
 }
 
 // Page functions: they only see their arguments.
@@ -378,6 +352,7 @@ async function studio() {
         "header.toolbar button",
         null,
         i,
+        "report",
       );
       buttons.push({ name: target?.name, heard });
       assert(target?.name, "button without a name", buttons.at(-1));
@@ -421,7 +396,7 @@ async function studio() {
     assert(count > 3, "inspector fields", count);
     const fields = [];
     for (let i = 0; i < count; i++) {
-      const { target, heard } = await hearFocus(selector, null, i);
+      const { target, heard } = await hearFocus(selector, null, i, "report");
       fields.push({ name: target?.name, heard });
       assert(target?.name, "field without a name", fields.at(-1));
       assert(said(heard, target.name), `"${target.name}" not announced`, heard);

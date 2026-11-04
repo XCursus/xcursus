@@ -31,7 +31,13 @@ jobs:
       - run: sudo safaridriver --enable
       - run: node scripts/checklist.mjs --browser safari
         env:
-          XCURSUS_STAGE: /tmp/xcursus-checklist
+          # Safari on the runner cannot read local files (the file chooser
+          # accepts them, the page gets NotReadableError): file inputs are
+          # filled from the page and the exported HTML is served over http.
+          # The file picker and file:// are checked on a Mac with
+          # `pnpm test:safari`.
+          XCURSUS_FILES: script
+          XCURSUS_DECK: http
           SAFARI_DIAGNOSE: "1"
       - if: always()
         run: cp -R ~/Library/Logs/com.apple.WebDriver test-results/checklist/safaridriver-logs || true
