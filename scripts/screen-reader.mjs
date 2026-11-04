@@ -14,11 +14,12 @@ import {
   WindowsModifiers,
 } from "@guidepup/guidepup";
 import { preview } from "./preview.mjs";
-import { Key, startBrowser } from "./webdriver.mjs";
 
 // Item 7 of the release checklist (docs/RELEASE_BLOCKERS.md) with a real
-// screen reader: VoiceOver with Safari on macOS, NVDA with Google Chrome on
-// Windows. Guidepup reports what a screen reader says for the commands it
+// screen reader: VoiceOver with WebKit on macOS, NVDA with Google Chrome on
+// Windows. VoiceOver runs with Playwright's WebKit, the engine of Safari:
+// Safari under WebDriver suspends the session at the first key a screen
+// reader sends. Guidepup reports what a screen reader says for the commands it
 // runs, so keys go through the screen reader (Tab into an element, Enter)
 // and an element focused by the page is read with the reader's own command
 // (VoiceOver: move the cursor to the keyboard focus; NVDA: report the
@@ -45,30 +46,24 @@ const results = [];
 // ---- the page: Safari through WebDriver, or Chrome through Playwright ------
 
 async function openBrowser() {
-  if (reader === "voiceover") {
-    const s = await startBrowser("safari");
-    await s.setWindowRect({ x: 0, y: 0, width: 1280, height: 900 });
-    return {
-      version: `Safari ${s.capabilities.browserVersion}`,
-      navigate: (url) => s.navigate(url),
-      run: (fn, ...a) => s.run(fn, ...a),
-      waitFor: (fn, options) => s.waitFor(fn, options),
-      press: (key) => s.press(Key[key]),
-      screenshot: () => s.screenshot(),
-      quit: () => s.quit(),
-    };
-  }
-  const { chromium } = await import("@playwright/test");
-  const browser = await chromium.launch({
-    channel: "chrome",
-    headless: false,
-    args: ["--force-renderer-accessibility", "--start-maximized"],
-  });
-  const context = await browser.newContext({ viewport: null });
+  const { chromium, webkit } = await import("@playwright/test");
+  const browser =
+    reader === "voiceover"
+      ? await webkit.launch({ headless: false })
+      : await chromium.launch({
+          channel: "chrome",
+          headless: false,
+          args: ["--force-renderer-accessibility", "--start-maximized"],
+        });
+  const context = await browser.newContext(
+    reader === "voiceover"
+      ? { viewport: { width: 1280, height: 860 } }
+      : { viewport: null },
+  );
   const page = await context.newPage();
   const run = (fn, ...a) => page.evaluate(`(${fn})(...${JSON.stringify(a)})`);
   return {
-    version: `Chrome ${browser.version()}`,
+    version: `${reader === "voiceover" ? "WebKit" : "Chrome"} ${browser.version()}`,
     async navigate(url) {
       await page.goto(url);
       await page.bringToFront();
@@ -115,7 +110,7 @@ const said = (heard, text) => {
 /** Brings the browser in front of the screen reader. */
 async function forward() {
   if (reader === "voiceover") {
-    await macOSActivateId("com.apple.Safari");
+    await macOSActivateId("org.webkit.Playwright");
     await delay(500);
     return;
   }

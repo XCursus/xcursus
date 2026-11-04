@@ -2,8 +2,8 @@ name: Release checks
 # The release checklist of docs/RELEASE_BLOCKERS.md where the hardware is:
 # real Safari, Firefox, Chrome and Edge builds (latest and previous stable),
 # Safari in the iOS Simulator and Chrome in the Android Emulator with touch
-# input, VoiceOver and NVDA, and informative performance timings. Runs on
-# demand and on release branches.
+# input, VoiceOver with WebKit and NVDA with Chrome, and informative
+# performance timings. Runs on demand and on release branches.
 on:
   workflow_dispatch:
   push:
@@ -207,7 +207,7 @@ jobs:
           path: test-results/checklist
 
   voiceover:
-    name: VoiceOver with Safari (macOS 15)
+    name: VoiceOver with WebKit (macOS 15)
     runs-on: macos-15
     timeout-minutes: 30
     steps:
@@ -225,7 +225,9 @@ jobs:
       # assets of the installed Guidepup version.
       - run: pnpm dlx @guidepup/setup@0.29.3 setup --ci
       - run: pnpm dlx @guidepup/setup@0.29.3 install voiceover
-      - run: sudo safaridriver --enable
+      # Playwright's WebKit, the engine of Safari: Safari under WebDriver
+      # suspends the session at the first key a screen reader sends.
+      - run: pnpm exec playwright install webkit
       - run: node scripts/screen-reader.mjs --reader voiceover
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()

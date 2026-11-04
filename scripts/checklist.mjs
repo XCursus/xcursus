@@ -788,10 +788,17 @@ async function exported() {
     4,
     `exported HTML ${deckOverHttp ? "over http (stand-in)" : "from file://"}: no remote request, formulas, images, theme font`,
     async () => {
+      // The image is verified before it is shown; slow machines take a while.
+      await s.waitFor(
+        () => {
+          const img = document.querySelector('[data-block-id="picture"] img');
+          return !!img && img.complete && img.naturalWidth > 0;
+        },
+        { timeout: 30000, what: "the image" },
+      );
       const page = await s.run(async () => {
         await document.fonts.ready;
         const img = document.querySelector('[data-block-id="picture"] img');
-        if (img && !img.complete) await img.decode().catch(() => {});
         const loaded = (family) =>
           [...document.fonts].some(
             (f) =>
