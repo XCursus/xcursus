@@ -232,6 +232,13 @@ body {
 [data-tip]:focus-visible::after {
   animation-delay: 0s;
 }
+/* On touch screens a hover that adds content turns the first tap into a
+   hover and the button needs a second tap (iOS Safari): no hover tooltip. */
+@media (hover: none) {
+  [data-tip]:hover:not(:focus-visible)::after {
+    content: none;
+  }
+}
 [data-tip-side="left"]:hover::after,
 [data-tip-side="left"]:focus-visible::after {
   left: auto;
