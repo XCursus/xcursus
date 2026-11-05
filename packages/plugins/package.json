@@ -1,6 +1,6 @@
 {
   "name": "@xcursus/plugins",
-  "version": "0.6.0",
+  "version": "1.0.0",
   "description": "Optional XCursus renderers (Markdown, HTML, SVG, LaTeX, media, links, embeds), the plugin SDK and the .xcursus archive format.",
   "license": "GPL-3.0-or-later",
   "author": "Francesco Vitucci",

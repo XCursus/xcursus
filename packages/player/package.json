@@ -1,6 +1,6 @@
 {
   "name": "@xcursus/player",
-  "version": "0.6.0",
+  "version": "1.0.0",
   "description": "Framework-free DOM/CSS 3D player of XCursus presentations: navigation, input, accessibility, renderer registry, asset resolver and capture clock.",
   "license": "GPL-3.0-or-later",
   "author": "Francesco Vitucci",

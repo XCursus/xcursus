@@ -1,6 +1,6 @@
 {
   "name": "@xcursus/impress-compat",
-  "version": "0.6.0",
+  "version": "1.0.0",
   "description": "Essential impress.js import for XCursus: inert parsing of an impress.js HTML presentation into a validated candidate project with explicit diagnostics. No script is executed and nothing is fetched.",
   "license": "GPL-3.0-or-later",
   "author": "Francesco Vitucci",

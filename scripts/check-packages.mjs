@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import {
   copyFile,
@@ -39,6 +40,7 @@ const check = (name, ok, detail) => {
 
 // 1. Pack every library and inspect the tarball contents.
 const manifests = {};
+const license = await readFile(join(root, "LICENSE"), "utf8");
 for (const name of names) {
   const dir = join(root, "packages", name);
   const manifest = JSON.parse(
@@ -58,11 +60,14 @@ for (const name of names) {
     ),
   );
   const size = (await stat(join(tarballs, file))).size;
+  const bytes = await readFile(join(tarballs, file));
   report.packages.push({
     name: manifest.name,
     file,
     bytes: size,
     files: listing.length,
+    sha256: createHash("sha256").update(bytes).digest("hex"),
+    integrity: `sha512-${createHash("sha512").update(bytes).digest("base64")}`,
   });
   for (const field of [
     "license",
@@ -87,6 +92,36 @@ for (const name of names) {
     `${name}: README and LICENSE packed`,
     listing.includes("package/README.md") &&
       listing.includes("package/LICENSE"),
+  );
+  check(
+    `${name}: packed GPL matches the repository license`,
+    run("tar", ["xzf", join(tarballs, file), "-O", "package/LICENSE"], root) ===
+      license,
+  );
+  const targets = (value) =>
+    typeof value === "string" ? [value] : Object.values(value).flatMap(targets);
+  check(
+    `${name}: every public export and binary is packed`,
+    [...targets(packed.exports), ...Object.values(packed.bin ?? {})].every(
+      (target) => listing.includes(`package/${target.replace(/^\.\//, "")}`),
+    ),
+  );
+  check(
+    `${name}: only distribution files are packed`,
+    listing.every((entry) =>
+      /^package\/(?:dist\/|schema\/|package\.json$|README\.md$|LICENSE$)/.test(
+        entry,
+      ),
+    ),
+  );
+  check(
+    `${name}: no workspace protocol remains in packed dependencies`,
+    ["dependencies", "optionalDependencies", "peerDependencies"].every(
+      (field) =>
+        Object.values(packed[field] ?? {}).every(
+          (range) => !range.startsWith("workspace:"),
+        ),
+    ),
   );
   check(
     `${name}: internal dependencies pinned to the same version`,
@@ -129,6 +164,19 @@ for (const [name, notices] of [
   ["player", "packages/player/dist/iife/THIRD_PARTY_NOTICES.txt"],
   ["cli", "packages/cli/dist/runtime/THIRD_PARTY_NOTICES.txt"],
 ]) {
+  check(
+    `${name}: third-party notices are in the tarball`,
+    run(
+      "tar",
+      [
+        "xzf",
+        join(tarballs, `xcursus-${name}-${manifests[name].version}.tgz`),
+        "-O",
+        `package/${notices.replace(`packages/${name}/`, "")}`,
+      ],
+      root,
+    ) === (await readFile(join(root, notices), "utf8")),
+  );
   const text = await readFile(join(root, notices), "utf8");
   check(
     `${name}: notices start with the GPL notice and the source`,

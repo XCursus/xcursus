@@ -1,6 +1,6 @@
 {
   "name": "@xcursus/cli",
-  "version": "0.6.0",
+  "version": "1.0.0",
   "description": "XCursus command line: validate projects, build static bundles and export standalone HTML, PDF and WebM from an explicit itinerary.",
   "license": "GPL-3.0-or-later",
   "author": "Francesco Vitucci",

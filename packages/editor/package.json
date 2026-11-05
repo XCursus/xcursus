@@ -1,6 +1,6 @@
 {
   "name": "@xcursus/editor",
-  "version": "0.6.0",
+  "version": "1.0.0",
   "description": "React editor of XCursus Studio: command store with undo/redo, IndexedDB recovery, archive I/O and the Studio component.",
   "license": "GPL-3.0-or-later",
   "author": "Francesco Vitucci",
