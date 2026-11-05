@@ -563,6 +563,86 @@ describe("messages, language and outline", () => {
       "Again (limit of 1 visits reached for TEXT)",
     );
     expect(choices.textContent).not.toContain("Limit");
+    const live = host.querySelector(".xc-live")!;
+    expect(live.textContent).toContain("TEXT");
+    expect(live.textContent).toContain("Choose the path");
+    expect(live.textContent).toContain(
+      "Again (limit of 1 visits reached for TEXT)",
+    );
+    expect(live.textContent).toContain("Jump");
+    expect(live.querySelector<HTMLElement>("[lang]")!.lang).toBe("en");
+  });
+  it("announces arrival choices, clears them on exit and updates paths sharing a scene", async () => {
+    const doc = edit(gallery(), (d) => {
+      d.requiredCapabilities = ["linear", "blocks", "structure"];
+      d.scenes = d.scenes.filter((scene) =>
+        ["text", "html", "markdown"].includes(scene.id),
+      );
+      const transition = { durationMs: 0, easing: "linear" as const };
+      d.paths = [
+        {
+          id: "branch",
+          name: "Branch",
+          startNodeId: "start",
+          nodes: [
+            { id: "start", sceneId: "text", holdMs: 0 },
+            { id: "fork", sceneId: "html", holdMs: 0 },
+            { id: "end", sceneId: "markdown", holdMs: 0 },
+          ],
+          edges: [
+            {
+              id: "arrive",
+              from: "start",
+              to: "fork",
+              label: "Arrive",
+              transition,
+            },
+            { id: "one", from: "fork", to: "end", label: "One", transition },
+            { id: "two", from: "fork", to: "end", label: "Two", transition },
+          ],
+        },
+        {
+          id: "other",
+          name: "Other",
+          startNodeId: "fork",
+          nodes: [
+            { id: "fork", sceneId: "html", holdMs: 0 },
+            { id: "end", sceneId: "markdown", holdMs: 0 },
+          ],
+          edges: [
+            {
+              id: "choose",
+              from: "fork",
+              to: "end",
+              label: "<img src=x onerror=alert(1)>",
+              condition: { kind: "manual" },
+              transition,
+            },
+          ],
+        },
+      ];
+      d.defaultPathId = "branch";
+    });
+    const checked = validateDocument(doc);
+    expect(checked.ok, JSON.stringify(checked.diagnostics)).toBe(true);
+    const { host, player } = await mounted(doc, { messages: italianMessages });
+    const live = host.querySelector<HTMLElement>(".xc-live")!;
+    expect(live.textContent).toBe("TEXT");
+    await player.next();
+    expect(live.textContent).toBe("HTML Scegli il percorso. One; Two");
+    await player.next({ edgeId: "one" });
+    expect(live.textContent).toBe("MARKDOWN");
+    await player.prev();
+    expect(live.textContent).toContain("One; Two");
+    await player.setPath("other");
+    expect(live.textContent).toContain("<img src=x onerror=alert(1)>");
+    expect(live.textContent).not.toContain("One; Two");
+    expect(live.querySelector("img")).toBeNull();
+    expect(live.querySelector<HTMLElement>("[lang]")!.lang).toBe("it");
+    await player.updateDocument(
+      edit(doc, (d) => void (d.paths[1]!.edges[0]!.label = "Updated")),
+    );
+    expect(live.textContent).toBe("HTML Scegli il percorso. Updated");
   });
   it("outline shows derived text, never Markdown or HTML source", async () => {
     const { registry, assets } = harness();

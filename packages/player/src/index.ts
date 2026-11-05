@@ -750,13 +750,23 @@ export function createPlayer(options: PlayerOptions = {}): Player {
         }
       }
     }
-    const announced = `${revision}|${s.sceneId}`;
+    const announced = `${revision}|${s.pathId}|${s.nodeId}|${s.sceneId}|${choicesRendered}`;
     if (live && announced !== liveKey) {
       liveKey = announced;
       const scene = doc.scenes.find((sc) => sc.id === s.sceneId);
       const title = scene?.title ?? messages.emptyPresentation;
       live.lang = scene ? doc.metadata.language : messages.lang;
-      if (live.textContent !== title) live.textContent = title;
+      live.replaceChildren(title);
+      if (choicesElement && !choicesElement.hidden) {
+        const summary = element("span");
+        summary.lang = messages.lang;
+        summary.textContent = ` ${messages.choicePrompt}. ${[
+          ...choicesElement.querySelectorAll("button"),
+        ]
+          .map((button) => button.textContent)
+          .join("; ")}`;
+        live.append(summary);
+      }
     }
     if (
       s.status === "transitioning" &&

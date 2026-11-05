@@ -104,6 +104,9 @@ test("vanilla branch choices, actual prev poses, manual loop limits and keyboard
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/structure");
   const host = page.locator("#player-1");
+  await expect(host.locator(".xc-live")).toContainText(
+    "Choose the path. Explore B; Explore C",
+  );
   expect(
     await page.evaluate(() => window.demoPlayers[0]!.getState().nodeId),
   ).toBe("A");
@@ -117,6 +120,7 @@ test("vanilla branch choices, actual prev poses, manual loop limits and keyboard
   await host.getByRole("button", { name: "Explore B", exact: true }).focus();
   await page.keyboard.press("Enter");
   await expect(host.locator('[data-scene-id="B"] h2')).toBeFocused();
+  await expect(host.locator(".xc-live")).not.toContainText("Explore C");
   const endpoint = cameraPose(doc().cameraTracks[0]!.keyframes.at(-1)!.pose);
   expect(
     await page.evaluate(() => window.demoPlayers[0]!.getState().camera),
@@ -143,6 +147,7 @@ test("vanilla branch choices, actual prev poses, manual loop limits and keyboard
   await expect(
     host.getByRole("button", { name: /Repeat.*Limit/ }),
   ).toBeDisabled();
+  await expect(host.locator(".xc-live")).toContainText("Limit");
   await host.focus();
   await page.keyboard.press("ArrowRight");
   expect(
