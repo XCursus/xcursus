@@ -383,6 +383,50 @@ async function player() {
     assert(moves.length === 2, "moves announced", { moves, missed });
     return { moves, missed };
   });
+  // Diagnostic, VoiceOver only, never a failure: what VoiceOver says after
+  // a move started by the page, with the live region as it is, with
+  // role="status" and made visible, to locate a missing announcement.
+  if (reader === "voiceover")
+    await check("player: announcement variants (diagnostic)", async () => {
+      const variants = {};
+      for (const variant of ["as is", "role status", "visible"]) {
+        await page.run((v) => {
+          const live = document.querySelector("#player-1 .xc-live");
+          if (v === "role status") live.setAttribute("role", "status");
+          if (v === "visible")
+            live.style.cssText =
+              "position:static;width:auto;height:auto;overflow:visible;clip-path:none";
+          return window.demoPlayers[0].goTo(
+            { nodeId: "n1" },
+            { durationMs: 0 },
+          );
+        }, variant);
+        await focus('nav[aria-label="Player 1 controls"] button', "Next");
+        await voiceOver.perform(
+          voiceOverKeyCodeCommands.moveCursorToKeyboardFocus,
+          { capture: false },
+        );
+        await delay(6000);
+        await page.run(() =>
+          window.demoPlayers[0].goTo({ nodeId: "n2" }, { durationMs: 0 }),
+        );
+        const heard = [];
+        for (let i = 0; i < 8; i++) {
+          await delay(400);
+          heard.push(
+            ...(await command(
+              () =>
+                voiceOver.perform(
+                  voiceOverKeyCodeCommands.repeatLastSpokenPhrase,
+                ),
+              200,
+            )),
+          );
+        }
+        variants[variant] = { announced: said(heard, "Detail"), heard };
+      }
+      return variants;
+    });
   await check("player: the Text view is a list of named items", async () => {
     await focus("#player-1 button", "Text view");
     await page.press("Enter");
