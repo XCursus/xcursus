@@ -1228,6 +1228,57 @@ const CENTRE = (selector, name) => {
 const centre = (selector, name) =>
   s.waitFor(CENTRE, { args: [selector, name], what: `${name}` });
 
+// The input events the page receives, reported when a gesture fails.
+const logTouches = () =>
+  s.run(() => {
+    window.touchLog = [];
+    for (const type of [
+      "pointerdown",
+      "pointermove",
+      "pointerup",
+      "pointercancel",
+      "touchstart",
+      "touchend",
+      "touchcancel",
+    ])
+      document.addEventListener(
+        type,
+        (e) =>
+          window.touchLog.push(
+            `${type}:${e.pointerType ?? "touch"}@${Math.round(e.clientX ?? e.changedTouches?.[0]?.clientX ?? -1)}`,
+          ),
+        true,
+      );
+  });
+const clearTouches = () => s.run(() => (window.touchLog.length = 0));
+const touches = () => s.run(() => window.touchLog ?? []);
+// The iOS Simulator now and then delivers a synthetic gesture only in part
+// (no pointerdown at all, or stray events at x = 0). Such a gesture never
+// reached the page as a gesture and is performed once more; a gesture the
+// page did receive is never repeated, so a page that needs a second tap or
+// mishandles a swipe still fails.
+const undelivered = (events) =>
+  !events.some((e) => e.startsWith("pointerdown:"));
+const repeated = [];
+
+/** Performs `gesture`, waits with `until`, and repeats an undelivered gesture once. */
+async function gesture(name, perform, until, retry = true) {
+  await clearTouches();
+  await perform();
+  try {
+    return await until();
+  } catch (error) {
+    const events = await touches();
+    if (retry && undelivered(events)) {
+      repeated.push({ gesture: name, events });
+      return gesture(name, perform, until, false);
+    }
+    throw new Error(`${error.message}; events: ${events.join(" ")}`, {
+      cause: error,
+    });
+  }
+}
+
 async function touchChecks() {
   const tablet =
     browser === "ios-tablet" ||
@@ -1278,49 +1329,21 @@ async function touchChecks() {
     "exported HTML: swipes move to the next and previous visit",
     async () => {
       assert(view.maxTouchPoints > 0, "no touch input", view);
-      // The input events the page receives, reported when a swipe fails.
-      await s.run(() => {
-        window.touchLog = [];
-        for (const type of [
-          "pointerdown",
-          "pointermove",
-          "pointerup",
-          "pointercancel",
-          "touchstart",
-          "touchend",
-          "touchcancel",
-        ])
-          document.addEventListener(
-            type,
-            (e) =>
-              window.touchLog.push(
-                `${type}:${e.pointerType ?? "touch"}@${Math.round(e.clientX ?? e.changedTouches?.[0]?.clientX ?? -1)}`,
-              ),
-            true,
-          );
-      });
+      await logTouches();
       // Safari on the iOS Simulator turns a slow synthetic swipe into a
       // long press with text selection: a quick flick there.
       const steps = browser.startsWith("ios") ? [3, 20] : [12, 25];
-      // A simulator that delivered no event at all gets the swipe again.
-      const swipeTo = async (from, to, sceneId, retry = true) => {
-        await s.run(() => (window.touchLog.length = 0));
-        await s.swipe(
-          { x: view.width * from, y },
-          { x: view.width * to, y },
-          ...steps,
+      const swipeTo = (from, to, sceneId) =>
+        gesture(
+          `swipe to ${sceneId}`,
+          () =>
+            s.swipe(
+              { x: view.width * from, y },
+              { x: view.width * to, y },
+              ...steps,
+            ),
+          () => at(sceneId),
         );
-        try {
-          await at(sceneId);
-        } catch (error) {
-          const events = await s.run(() => window.touchLog);
-          if (retry && events.length === 0)
-            return swipeTo(from, to, sceneId, false);
-          throw new Error(`${error.message}; events: ${events.join(" ")}`, {
-            cause: error,
-          });
-        }
-      };
       const first = await active();
       const y = view.height / 2;
       await swipeTo(0.8, 0.2, "context");
@@ -1358,24 +1381,18 @@ async function touchChecks() {
       // a tap inside a text selection opens its menu.
       await delay(2500);
       await s.run(() => getSelection()?.removeAllRanges());
-      // A tap the simulator did not deliver at all is repeated once.
-      const tapTo = async (name, sceneId, retry = true) => {
-        await s.run(() => (window.touchLog = []));
-        await s.tap(
-          await centre(
-            'nav[aria-label="Presentation navigation"] button',
-            name,
-          ),
+      if (!(await s.run(() => Array.isArray(window.touchLog))))
+        await logTouches();
+      const tapTo = async (name, sceneId) => {
+        const point = await centre(
+          'nav[aria-label="Presentation navigation"] button',
+          name,
         );
-        try {
-          await at(sceneId);
-        } catch (error) {
-          const events = await s.run(() => window.touchLog ?? []);
-          if (retry && events.length === 0) return tapTo(name, sceneId, false);
-          throw new Error(`${error.message}; events: ${events.join(" ")}`, {
-            cause: error,
-          });
-        }
+        return gesture(
+          `tap ${name}`,
+          () => s.tap(point),
+          () => at(sceneId),
+        );
       };
       await tapTo("Next", "context");
       await tapTo("Previous", first);
@@ -1498,13 +1515,19 @@ async function touchChecks() {
       () => window.studio.presentation.getState().nodeId,
       { what: "the presented node" },
     );
-    await s.tap(await centre("button", "Next scene"));
-    const next = await s.waitFor(
-      (n) => {
-        const state = window.studio.presentation.getState();
-        return state.nodeId !== n && !state.transition && state.nodeId;
-      },
-      { args: [first], what: "the next scene" },
+    await logTouches();
+    const point = await centre("button", "Next scene");
+    const next = await gesture(
+      "tap Next scene in Studio",
+      () => s.tap(point),
+      () =>
+        s.waitFor(
+          (n) => {
+            const state = window.studio.presentation.getState();
+            return state.nodeId !== n && !state.transition && state.nodeId;
+          },
+          { args: [first], what: "the next scene" },
+        ),
     );
     await shot("touch-studio-present");
     return { from: first, to: next };
@@ -1619,11 +1642,17 @@ const report = {
   passed: results.filter((r) => r.ok === true).length,
   failed: results.filter((r) => r.ok === false).length,
   notVerified: results.filter((r) => r.ok === null).length,
+  // Gestures the device did not deliver to the page, performed again.
+  repeatedGestures: repeated,
   results,
 };
 const version = (s?.capabilities?.browserVersion ?? "unknown").split(" ")[0];
 const file = join(out, `${browser}-${version}.json`);
 await writeFile(file, `${JSON.stringify(report, null, 2)}\n`);
+for (const { gesture: name, events } of repeated)
+  console.log(
+    `  note: ${name} not delivered to the page, performed again (events: ${events.join(" ") || "none"})`,
+  );
 console.log(
   `${report.passed} passed, ${report.failed} failed, ${report.notVerified} not verifiable here · ${file.slice(root.length)}`,
 );
