@@ -140,7 +140,7 @@ Order of a navigation: any `navigationcancel` of the replaced plan, `navigations
 
 ### Keyboard, focus and accessibility
 
-Arrows, Page Up, Page Down and Space act only on the focused container and its content; inputs, text areas, selects, contenteditable, media and interactive controls are not intercepted. Keyboard and outline navigation move focus to the target when it completes; mounting never steals focus. Inactive scenes are `inert` and `aria-hidden`. The text view exposes the path once and navigates without motion; it is also the fallback when CSS 3D is unavailable. The root receives `metadata.language` as `lang`.
+Arrows, Page Up, Page Down and Space act only on the focused container and its content; inputs, text areas, selects, contenteditable, media and interactive controls are not intercepted. Keyboard and outline navigation move focus to the target when it completes; mounting never steals focus. Inactive scenes are `inert` and `aria-hidden`. The text view exposes the path once and navigates without motion; it is also the fallback when CSS 3D is unavailable. The root receives `metadata.language` as `lang`. The polite live region contains the scene title and, at a branch or manual choice, the labelled choices and any disabled reasons. The choice summary carries the interface language separately.
 
 ### Theming hooks
 

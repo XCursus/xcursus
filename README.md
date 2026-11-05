@@ -116,7 +116,7 @@ if (mounted.ok) await player.next();
 ```
 
 > [!NOTE]
-> Install from npm: `npm install @xcursus/core @xcursus/player` for the player, `@xcursus/plugins` for the rich renderers and archives, `@xcursus/editor` to embed Studio, and `npm install --global @xcursus/cli` for the `xcursus` command. The published version is 0.6.0; the 1.0 candidate described here, with `@xcursus/impress-compat`, is in this repository and not published yet.
+> Install from npm: `npm install @xcursus/core @xcursus/player` for the player, `@xcursus/plugins` for the rich renderers and archives, `@xcursus/editor` to embed Studio, and `npm install --global @xcursus/cli` for the `xcursus` command. The published version is 0.6.0; the six packages in this repository are prepared at 1.0.0, including `@xcursus/impress-compat`, and await final maintainer approval and publication. See the [1.0 release procedure](docs/RELEASE_1_0.md).
 
 ## Documentation
 
@@ -134,6 +134,7 @@ if (mounted.ok) await player.next();
 | Importing impress.js presentations          | [docs/IMPRESS.md](docs/IMPRESS.md)                             |
 | Roadmap and known issues                    | [docs/ROADMAP.md](docs/ROADMAP.md)                             |
 | What blocks 1.0                             | [docs/RELEASE_BLOCKERS.md](docs/RELEASE_BLOCKERS.md)           |
+| Preparing and approving 1.0                 | [docs/RELEASE_1_0.md](docs/RELEASE_1_0.md)                     |
 | Changes by release                          | [CHANGELOG.md](CHANGELOG.md)                                   |
 | Contributing and reporting vulnerabilities  | [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md) |
 
@@ -150,7 +151,7 @@ if (mounted.ok) await player.next();
 
 ## Status
 
-XCursus is a **1.0 candidate**, still a pre-release: the 1.0 Stabilization work (impress.js import, hardening, budgets, project documents) is done and tested on the two latest stable versions of Chrome, Edge, Firefox and Safari, with touch on the iOS Simulator and the Android Emulator and with NVDA and VoiceOver. Every [release blocker](docs/RELEASE_BLOCKERS.md) is closed; the candidate stays a pre-release at 0.6.0 until 1.0 is declared. See the [roadmap](docs/ROADMAP.md) and [VERIFICATION](docs/VERIFICATION.md) for what is tested and how.
+XCursus is a **1.0 candidate**, still a pre-release: the 1.0 Stabilization work (impress.js import, hardening, budgets, project documents) is done and tested on the two latest stable versions of Chrome, Edge, Firefox and Safari, with touch on the iOS Simulator and the Android Emulator and with NVDA and VoiceOver. Every [release blocker](docs/RELEASE_BLOCKERS.md) is closed; the packages are prepared at 1.0.0 but the candidate remains unpublished until the maintainer declares the release. See the [roadmap](docs/ROADMAP.md) and [VERIFICATION](docs/VERIFICATION.md) for what is tested and how.
 
 ## Licence
 

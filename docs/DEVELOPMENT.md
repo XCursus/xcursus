@@ -42,7 +42,7 @@ The development servers resolve the workspace sources through Vite aliases. The 
 | `pnpm format` / `pnpm format:check`                                | Prettier                                                                                                                                                                                                               |
 | `pnpm test`                                                        | Unit and integration tests (Vitest, jsdom and fake-indexeddb where needed)                                                                                                                                             |
 | `pnpm test:coverage`                                               | The same with V8 coverage and per-area floors                                                                                                                                                                          |
-| `pnpm build`                                                       | Builds core, player, plugins, CLI, editor, playground and Studio in dependency order                                                                                                                                   |
+| `pnpm build`                                                       | Builds core, impress-compat, player, plugins, CLI, editor, playground and Studio in dependency order                                                                                                                   |
 | `pnpm check:boundaries`                                            | Dependency rules between packages, on sources and built output                                                                                                                                                         |
 | `pnpm check:bundle`                                                | Builds a minimal consumer from `dist` and checks the gzip budget                                                                                                                                                       |
 | `pnpm check:packages`                                              | Packs the packages and tests the tarballs in an external consumer                                                                                                                                                      |
@@ -90,7 +90,7 @@ The E2E suites serve production builds of the playground (port 4173) and Studio 
 
 The six packages build with Vite library mode and `tsc --emitDeclarationOnly`; `prepack` copies the repository `LICENSE` into each package. Third-party dependencies are external (a build plugin fails if a chunk bundles a module from `node_modules`); artefacts that embed third-party code generate their notices from an allowlist of licences compatible with GPL-3.0-or-later. `pnpm check:packages` verifies the manifests, packs the tarballs into `test-results/packages/`, installs them in an external consumer without source aliases, type-checks it with `skipLibCheck: false` and builds a minimal and a realistic consumer.
 
-The packages are ready for npm (public access under the `@xcursus` scope) but nothing is published automatically: publishing is a manual maintainer step, described in [DISTRIBUTION](DISTRIBUTION.md#packages).
+The packages are ready for npm (public access under the `@xcursus` scope) but nothing is published automatically: publishing is a manual maintainer step, described in [RELEASE_1_0](RELEASE_1_0.md).
 
 ## Contributing
 

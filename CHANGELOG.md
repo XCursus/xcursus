@@ -2,9 +2,9 @@
 
 Notable changes by product release. Product versions are independent of the document schema, the archive manifest and the plugin API, which are versioned separately (see the [specification](docs/SPECIFICATION.md#13-versioning-and-release)). Dates are those of the release in the repository.
 
-## Unreleased: 1.0 candidate
+## Unreleased: 1.0.0
 
-Schema `1.3.0`, archive manifest `1.0.0` and plugin API `1.0.0` are unchanged; documents of every earlier version open as before. Package versions stay at 0.6.0 until 1.0 is declared; every [release blocker](docs/RELEASE_BLOCKERS.md) is closed, and the candidate stays a pre-release until that declaration.
+Schema `1.3.0`, archive manifest `1.0.0` and plugin API `1.0.0` are unchanged; documents of every earlier version open as before. The six packages and the private root and apps are prepared at 1.0.0; npm still serves 0.6.0. Every [release blocker](docs/RELEASE_BLOCKERS.md) remains closed. Final approval, publication and the tag are pending ([release procedure](docs/RELEASE_1_0.md)).
 
 ### Added
 
@@ -24,6 +24,8 @@ Schema `1.3.0`, archive manifest `1.0.0` and plugin API `1.0.0` are unchanged; d
 
 ### Fixed
 
+- The player's polite live region now includes branch choices and disabled reasons on arrival, with the interface language marked separately from the scene title. It refreshes when paths share a scene and clears choices after leaving the branch, matching the accessibility contract.
+
 - Exported HTML on touch screens: a horizontal swipe that started on scrollable scene content or on a framed block was taken by the browser (`pointercancel`) and did not move to the next or previous visit. Found with real touch input in Chrome on Android.
 - Text view on narrow players: where the control bar wraps to two rows the outline extended below the player and its end could not be read; in exported HTML its last item also stayed under the on-screen buttons.
 - Exported HTML on iOS: Safari reports a touch `pointerup` at (0, 0), so swipes looked vertical and did nothing; a swipe now ends where the finger last moved.
@@ -32,6 +34,12 @@ Schema `1.3.0`, archive manifest `1.0.0` and plugin API `1.0.0` are unchanged; d
 - Firefox drew some child scenes behind their large section (only the section's background was visible). Gecko sorts 3D planes in paint order and loses precision when a large plane is cut; the player now gives scene wrappers a split-minimizing paint order in that engine, with the scene being shown first, without moving them in the DOM.
 - LaTeX blocks with alternative text named a generic element (`aria-label` without a role, an axe `aria-prohibited-attr` violation in exported HTML); the formula is now a `math` region.
 - The review list of the import dialog scrolls and is keyboard focusable.
+
+### Release preparation
+
+- Coordinated 1.0.0 package versions; schema 1.3.0, archive manifest 1.0.0 and plugin API 1.0.0 stay unchanged.
+- Packaging checks verify every export and binary, the exact GPL text, bundled notices, distribution-only contents and the absence of workspace protocols; the report records SHA-256 and npm-compatible SHA-512 integrity for each tarball.
+- Public [1.0 procedure](docs/RELEASE_1_0.md), release notes, registry checks and recovery instructions.
 
 ## 0.6 Distribution, 26 October 2026, updated to 2 November 2026
 
