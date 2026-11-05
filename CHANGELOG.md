@@ -4,7 +4,7 @@ Notable changes by product release. Product versions are independent of the docu
 
 ## Unreleased: 1.0 candidate
 
-Schema `1.3.0`, archive manifest `1.0.0` and plugin API `1.0.0` are unchanged; documents of every earlier version open as before. Package versions stay at 0.6.0 until 1.0 is declared; the open [release blockers](docs/RELEASE_BLOCKERS.md) keep the candidate a pre-release.
+Schema `1.3.0`, archive manifest `1.0.0` and plugin API `1.0.0` are unchanged; documents of every earlier version open as before. Package versions stay at 0.6.0 until 1.0 is declared; every [release blocker](docs/RELEASE_BLOCKERS.md) is closed, and the candidate stays a pre-release until that declaration.
 
 ### Added
 
