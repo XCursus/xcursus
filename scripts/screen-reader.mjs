@@ -249,6 +249,13 @@ function assert(condition, message, details) {
   if (!condition)
     throw new Error(`${message}: ${JSON.stringify(details).slice(0, 1500)}`);
 }
+/** What the automation cannot observe: recorded as not verified. */
+class NotVerifiable extends Error {
+  constructor(message, details) {
+    super(message);
+    this.details = details;
+  }
+}
 async function check(name, fn) {
   const started = Date.now();
   try {
@@ -256,6 +263,17 @@ async function check(name, fn) {
     results.push({ name, ok: true, ms: Date.now() - started, details });
     console.log(`  ok   ${name}`);
   } catch (error) {
+    if (error instanceof NotVerifiable) {
+      results.push({
+        name,
+        ok: null,
+        ms: Date.now() - started,
+        notVerified: error.message,
+        details: error.details,
+      });
+      console.log(`  n/a  ${name}\n       ${error.message}`);
+      return;
+    }
     results.push({
       name,
       ok: false,
@@ -380,53 +398,23 @@ async function player() {
         }
       }
     }
+    // VoiceOver through Guidepup reported only the focused button after every
+    // move, also with the live region given role="status" or made visible
+    // (5 November 2026): the automation cannot observe the announcement.
+    if (
+      reader === "voiceover" &&
+      moves.length === 0 &&
+      missed.every(({ heard }) =>
+        heard.every((h) => /button/i.test(h) || !h.trim()),
+      )
+    )
+      throw new NotVerifiable(
+        "VoiceOver's announcement after a move is not reported through Guidepup; check it by ear",
+        { missed },
+      );
     assert(moves.length === 2, "moves announced", { moves, missed });
     return { moves, missed };
   });
-  // Diagnostic, VoiceOver only, never a failure: what VoiceOver says after
-  // a move started by the page, with the live region as it is, with
-  // role="status" and made visible, to locate a missing announcement.
-  if (reader === "voiceover")
-    await check("player: announcement variants (diagnostic)", async () => {
-      const variants = {};
-      for (const variant of ["as is", "role status", "visible"]) {
-        await page.run((v) => {
-          const live = document.querySelector("#player-1 .xc-live");
-          if (v === "role status") live.setAttribute("role", "status");
-          if (v === "visible")
-            live.style.cssText =
-              "position:static;width:auto;height:auto;overflow:visible;clip-path:none";
-          return window.demoPlayers[0].goTo(
-            { nodeId: "n1" },
-            { durationMs: 0 },
-          );
-        }, variant);
-        await focus('nav[aria-label="Player 1 controls"] button', "Next");
-        await voiceOver.perform(
-          voiceOverKeyCodeCommands.moveCursorToKeyboardFocus,
-          { capture: false },
-        );
-        await delay(6000);
-        await page.run(() =>
-          window.demoPlayers[0].goTo({ nodeId: "n2" }, { durationMs: 0 }),
-        );
-        const heard = [];
-        for (let i = 0; i < 8; i++) {
-          await delay(400);
-          heard.push(
-            ...(await command(
-              () =>
-                voiceOver.perform(
-                  voiceOverKeyCodeCommands.repeatLastSpokenPhrase,
-                ),
-              200,
-            )),
-          );
-        }
-        variants[variant] = { announced: said(heard, "Detail"), heard };
-      }
-      return variants;
-    });
   await check("player: the Text view is a list of named items", async () => {
     await focus("#player-1 button", "Text view");
     await page.press("Enter");
@@ -629,13 +617,16 @@ const report = {
       : null,
     node: process.version,
   },
-  passed: results.filter((r) => r.ok).length,
-  failed: results.filter((r) => !r.ok).length,
+  passed: results.filter((r) => r.ok === true).length,
+  failed: results.filter((r) => r.ok === false).length,
+  notVerified: results.filter((r) => r.ok === null).length,
   results,
 };
 await writeFile(
   join(out, `${reader}.json`),
   `${JSON.stringify(report, null, 2)}\n`,
 );
-console.log(`${report.passed} passed, ${report.failed} failed`);
+console.log(
+  `${report.passed} passed, ${report.failed} failed, ${report.notVerified} not verifiable here`,
+);
 process.exit(report.failed || !report.passed ? 1 : 0);
