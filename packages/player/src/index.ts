@@ -190,7 +190,9 @@ export function createPlayer(options: PlayerOptions = {}): Player {
     liveKey = "",
     paintKey = "",
     paintGeometry = "",
-    paintBase: string[] = [];
+    paintBase: string[] = [],
+    // Scene wrappers created or removed; block layout does not count.
+    sceneViews = 0;
   let mediaEnabled = false;
   const scenes = new Map<string, SceneView>();
   const clearContents = () => {
@@ -436,6 +438,7 @@ export function createPlayer(options: PlayerOptions = {}): Player {
         for (const block of view.blocks.values()) removeBlock(block);
         view.wrapper.remove();
         scenes.delete(id);
+        sceneViews++;
       }
     let previous: ChildNode | null = null;
     for (const scene of d.scenes) {
@@ -461,6 +464,7 @@ export function createPlayer(options: PlayerOptions = {}): Player {
         };
         scenes.set(scene.id, view);
         layout++;
+        sceneViews++;
       }
       view.wrapper.hidden = !isSceneVisible(d, scene.id);
       const matrix = getWorldMatrix(d, scene.id);
@@ -651,9 +655,10 @@ export function createPlayer(options: PlayerOptions = {}): Player {
       world.style.transform = `matrix3d(${viewMatrix(s.camera).join(",")})`;
     }
     if (planeOrder) {
-      // The split-minimizing order depends on the geometry only; the scene
-      // shown, or arrived at, moves to the front (paint.ts).
-      const geometry = `${revision}|${layout}`;
+      // The split-minimizing order depends on the document only, so it is
+      // not recomputed as block renderers finish; the scene shown, or
+      // arrived at, moves to the front (paint.ts).
+      const geometry = `${revision}|${sceneViews}`;
       if (geometry !== paintGeometry) {
         paintGeometry = geometry;
         paintBase = paintOrder(doc);

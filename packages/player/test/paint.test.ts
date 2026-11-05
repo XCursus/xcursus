@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { validateDocument } from "@xcursus/core";
 import type { ProjectDocument } from "@xcursus/core";
 import tilted from "../../../tests/fixtures/paint/tilted-section.json";
@@ -7,6 +7,12 @@ import wide from "../../../tests/fixtures/paint/wide-sections.json";
 import { createPlayer } from "../src/index.js";
 import type { Player } from "../src/index.js";
 import { activeFirst, needsPaintOrder, paintOrder } from "../src/paint.js";
+
+// The real order, counted: the player must not recompute it needlessly.
+vi.mock("../src/paint.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../src/paint.js")>();
+  return { ...actual, paintOrder: vi.fn(actual.paintOrder) };
+});
 
 const load = (input: unknown): ProjectDocument => {
   const result = validateDocument(input);
@@ -126,5 +132,42 @@ describe("paint order of scene planes (Gecko 3D sorting)", () => {
       ),
     ).toBe(true);
     expect(needsPaintOrder(undefined)).toBe(false);
+  });
+
+  it("is computed once per document, not again as block renderers finish", async () => {
+    const withBlocks = (moved: number) =>
+      load({
+        ...tilted,
+        scenes: tilted.scenes.map((scene, i) => ({
+          ...scene,
+          layout: "flow",
+          position:
+            i === 1
+              ? [scene.position[0]! + moved, ...scene.position.slice(1)]
+              : scene.position,
+          blocks: Array.from({ length: 5 }, (_, j) => ({
+            id: `b${j}`,
+            type: "text",
+            data: { text: `Block ${j}` },
+          })),
+        })),
+      });
+    const doc = withBlocks(0);
+    const order = vi.mocked(paintOrder);
+    order.mockClear();
+    const host = document.createElement("div");
+    document.body.append(host);
+    const player = createPlayer();
+    players.push(player);
+    expect((await player.mount(host, doc)).ok).toBe(true);
+    // Each of the 20 blocks bumps the layout as its renderer becomes ready.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(order).toHaveBeenCalledTimes(1);
+    await player.goTo({ nodeId: "left" }, { durationMs: 0 });
+    expect(order).toHaveBeenCalledTimes(1);
+    // A new document with other geometry gets a new order, once.
+    expect((await player.updateDocument(withBlocks(40))).ok).toBe(true);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(order).toHaveBeenCalledTimes(2);
   });
 });
